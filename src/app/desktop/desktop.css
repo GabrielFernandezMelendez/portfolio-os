@@ -1,0 +1,83 @@
+.desktop {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Segoe UI', sans-serif;
+  background: #06060f;
+}
+
+canvas#gol-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  cursor: crosshair;
+}
+
+.desktop-label {
+  position: absolute;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.desktop-label .name {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 20px rgba(99,102,241,0.5);
+}
+
+.desktop-label .role {
+  display: block;
+  font-size: 0.85rem;
+  color: rgba(99,102,241,0.9);
+  letter-spacing: 0.15em;
+  margin-top: 0.3rem;
+  text-transform: uppercase;
+}
+
+.desktop.light .desktop-label .name {
+  color: rgba(30,27,75,0.9);
+  text-shadow: none;
+}
+
+.desktop.light .desktop-label .role {
+  color: rgba(55,48,163,0.8);
+}
+
+.test-buttons {
+  position:   absolute;
+  bottom:     2rem;
+  left:       50%;
+  transform:  translateX(-50%);
+  display:    flex;
+  gap:        0.5rem;
+  flex-wrap:  wrap;
+  justify-content: center;
+  z-index:    999;
+}
+
+.test-buttons button {
+  padding:       0.4rem 0.8rem;
+  background:    rgba(99,102,241,0.2);
+  border:        1px solid rgba(99,102,241,0.4);
+  border-radius: 6px;
+  color:         white;
+  cursor:        pointer;
+  font-size:     0.8rem;
+  transition:    background 0.2s;
+}
+
+.test-buttons button:hover {
+  background: rgba(99,102,241,0.4);
+}
+
+.desktop.light {
+  background: #f0f0f8;
+}

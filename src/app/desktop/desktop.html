@@ -1,0 +1,34 @@
+<div class="desktop" [class.light]="!isDark()">
+  <canvas id="gol-canvas"></canvas>
+
+  <div class="desktop-label">
+    <span class="name">Gabriel Fernández Meléndez</span>
+    <span class="role">Software Developer · .NET · Java · Frontend</span>
+  </div>
+
+  <!-- Ventanas abiertas -->
+  @for (win of windows(); track win.id) {
+    @if (win.isOpen && !win.isMinimized) {
+      <app-window
+        [win]="win"
+        (onClose)="closeWindow($event)"
+        (onFocus)="focusWindow($event)"
+        (onMove)="moveWindow($event.id, $event.x, $event.y)"
+        (onResize)="resizeWindow($event)">
+
+        <p>Contenido de {{ win.title }}</p>
+
+      </app-window>
+    }
+  }
+
+  <!-- Botones temporales para probar apertura -->
+  <div class="test-buttons">
+    @for (win of windows(); track win.id) {
+      <button (click)="openWindow(win.id)">
+        {{ win.icon }} {{ win.title }}
+      </button>
+    }
+  </div>
+
+</div>
