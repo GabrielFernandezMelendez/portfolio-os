@@ -1,0 +1,357 @@
+/* ════════════════════════════════
+   CONTENEDOR PRINCIPAL
+════════════════════════════════ */
+.github-container {
+  height:         100%;
+  overflow-y:     auto;
+  padding:        1.2rem;
+  font-family:    'Courier New', monospace;
+  display:        flex;
+  flex-direction: column;
+  gap:            1.5rem;
+}
+
+.github-container::-webkit-scrollbar       { width: 4px; }
+.github-container::-webkit-scrollbar-track { background: transparent; }
+.github-container::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 2px; }
+
+/* ════════════════════════════════
+   ESTADOS: LOADING / ERROR
+════════════════════════════════ */
+.gh-loading,
+.gh-error {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  height:          100%;
+  gap:             1rem;
+}
+
+.loading-text {
+  font-size:  0.9rem;
+  color:      rgba(99,102,241,0.8);
+  animation:  blink 1s step-end infinite;
+}
+
+.gh-error { color: rgba(239,68,68,0.8); font-size: 0.9rem; }
+
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ════════════════════════════════
+   PERFIL
+════════════════════════════════ */
+.gh-profile {
+  display:        flex;
+  gap:            1.5rem;
+  align-items:    flex-start;
+  padding-bottom: 1.2rem;
+  border-bottom:  1px solid rgba(99,102,241,0.2);
+}
+
+.gh-avatar {
+  width:         90px;
+  height:        90px;
+  border-radius: 50%;
+  border:        2px solid rgba(99,102,241,0.5);
+  box-shadow:    0 0 16px rgba(99,102,241,0.3);
+  flex-shrink:   0;
+}
+
+.gh-profile-info {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.4rem;
+  flex:           1;
+}
+
+.gh-name {
+  font-size:   1.1rem;
+  font-weight: 700;
+  color:       rgba(255,255,255,0.9);
+  margin:      0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.gh-login {
+  font-size: 0.8rem;
+  color:     rgba(99,102,241,0.8);
+  margin:    0;
+}
+
+.gh-bio {
+  font-size:  0.8rem;
+  color:      rgba(255,255,255,0.6);
+  margin:     0.2rem 0;
+  font-style: italic;
+}
+
+/* ════════════════════════════════
+   STATS
+════════════════════════════════ */
+.gh-stats {
+  display: flex;
+  gap:     1.5rem;
+  margin:  0.4rem 0;
+}
+
+.gh-stat {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            2px;
+}
+
+.gh-stat-value {
+  font-size:   1rem;
+  font-weight: 700;
+  color:       rgba(99,102,241,0.9);
+}
+
+.gh-stat-label {
+  font-size:      0.65rem;
+  color:          rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ════════════════════════════════
+   BOTÓN PRINCIPAL
+════════════════════════════════ */
+.gh-btn-primary {
+  margin-top:    0.4rem;
+  padding:       0.5rem 1rem;
+  background:    rgba(99,102,241,0.15);
+  border:        1px solid rgba(99,102,241,0.4);
+  border-radius: 6px;
+  color:         rgba(255,255,255,0.85);
+  font-size:     0.8rem;
+  cursor:        pointer;
+  font-family:   'Courier New', monospace;
+  transition:    all 0.2s;
+  width:         fit-content;
+}
+
+.gh-btn-primary:hover {
+  background:   rgba(99,102,241,0.3);
+  border-color: rgba(99,102,241,0.7);
+}
+
+/* ════════════════════════════════
+   REPOS
+════════════════════════════════ */
+.gh-section-title {
+  font-size:      0.75rem;
+  color:          rgba(99,102,241,0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin:         0 0 0.8rem 0;
+  font-family:    'Segoe UI', sans-serif;
+}
+
+.gh-repos-grid {
+  display:               grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap:                   0.6rem;
+}
+
+.gh-repo-card {
+  padding:        0.7rem;
+  background:     rgba(99,102,241,0.06);
+  border:         1px solid rgba(99,102,241,0.15);
+  border-radius:  6px;
+  cursor:         pointer;
+  transition:     all 0.2s;
+  display:        flex;
+  flex-direction: column;
+  gap:            0.3rem;
+}
+
+.gh-repo-card:hover {
+  background:   rgba(99,102,241,0.12);
+  border-color: rgba(99,102,241,0.35);
+  transform:    translateY(-1px);
+}
+
+.gh-repo-header {
+  display:     flex;
+  align-items: center;
+  gap:         0.4rem;
+}
+
+.gh-repo-name {
+  font-size:     0.78rem;
+  font-weight:   700;
+  color:         rgba(99,102,241,0.9);
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+
+.gh-repo-desc {
+  font-size:          0.7rem;
+  color:              rgba(255,255,255,0.5);
+  margin:             0;
+  overflow:           hidden;
+  display:            -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.gh-repo-footer {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  margin-top:      auto;
+}
+
+.gh-repo-lang {
+  font-size:     0.65rem;
+  padding:       2px 6px;
+  background:    rgba(99,102,241,0.15);
+  border-radius: 10px;
+  color:         rgba(99,102,241,0.8);
+}
+
+.gh-repo-date {
+  font-size: 0.62rem;
+  color:     rgba(255,255,255,0.35);
+}
+/* ════════════════════════════════
+   SECCIÓN 8-BIT
+════════════════════════════════ */
+.iframe-explanation {
+  border-top:  1px solid rgba(99,102,241,0.2);
+  padding-top: 1.5rem;
+}
+
+.pixel-dev {
+  display:     flex;
+  align-items: flex-end;
+  gap:         2rem;
+}
+
+.pixel-character-img {
+  width:           200px;
+  height:          auto;
+  image-rendering: pixelated;
+  flex-shrink:     0;
+}
+
+/* ── Globo de diálogo estilo videojuego ── */
+.speech-bubble {
+  position:       relative;
+  flex:           1;
+  background:     #ffffff;
+  color:          #000000;
+  padding:        1.5rem 1.8rem;
+  display:        flex;
+  flex-direction: column;
+  gap:            0.9rem;
+
+  /* Borde pixelado más grueso */
+  border:         6px solid #000000;
+box-shadow:
+  inset  3px  3px 0 #ffffff,
+  inset -3px -3px 0 #707070,
+           22px 22px 0 #000000;
+  image-rendering: pixelated;
+}
+
+/* Triángulo pixelado apuntando al personaje */
+.speech-bubble::before {
+  content:     '';
+  position:    absolute;
+  bottom:      3rem;
+  left:        -16px;
+  width:       0;
+  height:      0;
+  border-top:    10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right:  16px solid #000000;
+}
+
+.speech-bubble::after {
+  content:     '';
+  position:    absolute;
+  bottom:      3.15rem;
+  left:        -9px;
+  width:       0;
+  height:      0;
+  border-top:    8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right:  10px solid #ffffff;
+}
+
+.speech-main {
+  font-family: 'Courier New', monospace;
+  font-size:   0.95rem;
+  color:       #222222;
+  margin:      0;
+  line-height: 1.7;
+}
+
+.speech-secondary {
+  font-family: 'Courier New', monospace;
+  font-size:   0.95rem;
+  color:       #1a1a8c;
+  margin:      0;
+  line-height: 1.7;
+  font-style:  italic;
+}
+
+.speech-bubble code {
+  display:     block;
+  font-family: 'Courier New', monospace;
+  font-size:   0.85rem;
+  color:       #cc0000;
+  background:  #fff0f0;
+  border:      2px solid #cc0000;
+  padding:     0.5rem 0.8rem;
+  word-break:  break-all;
+}
+
+.speech-bubble .gh-btn-primary {
+  background:    #000080;
+  border:        2px solid #000000;
+  border-radius: 0;
+  color:         #ffffff;
+  font-family:   'Courier New', monospace;
+  font-size:     0.9rem;
+  box-shadow:    3px 3px 0 #000000;
+  margin-top:    0.2rem;
+  padding:       0.6rem 1.2rem;
+}
+
+.speech-bubble .gh-btn-primary:hover {
+  background:  #0000aa;
+  transform:   translate(-1px, -1px);
+  box-shadow:  4px 4px 0 #000000;
+}
+/* ════════════════════════════════
+   TEMA CLARO
+════════════════════════════════ */
+:host-context(.light) .gh-name      { color: rgba(30,27,75,0.9); }
+:host-context(.light) .gh-bio       { color: rgba(30,27,75,0.6); }
+:host-context(.light) .gh-repo-desc { color: rgba(30,27,75,0.5); }
+
+
+.gh-repo-fake-stats {
+  display:     flex;
+  gap:         0.6rem;
+  align-items: center;
+}
+
+.fake-stat {
+  font-size:   0.78rem;
+  font-family: 'Courier New', monospace;
+  cursor:      help;
+  transition:  transform 0.15s;
+  font-weight: 600;
+}
+
+.fake-stat:hover { transform: scale(1.25); }
+
+.fake-stat.stars    { color: rgba(255, 210, 0,   0.9); }
+.fake-stat.forks    { color: rgba(130, 180, 255, 0.9); }
+.fake-stat.watchers { color: rgba(80,  220, 130, 0.9); }

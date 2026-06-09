@@ -3,32 +3,56 @@
 
   <div class="desktop-label">
     <span class="name">Gabriel Fernández Meléndez</span>
-    <span class="role">Software Developer · .NET · Java · Frontend</span>
+    <span class="role">Software Developer · .NET · Java · Frontend Backend FullStack</span>
   </div>
 
-  <!-- Ventanas abiertas -->
+  <!-- Papelera fija esquina superior derecha -->
+  <div class="trash-bin" id="trash-bin">
+    <div class="trash-icon">🗑</div>
+    <div class="trash-label">Recycle Bin</div>
+  </div>
+
+  <!-- Iconos del escritorio -->
   @for (win of windows(); track win.id) {
-    @if (win.isOpen && !win.isMinimized) {
-      <app-window
+    @if (win.onDesktop) {
+      <app-desktop-icon
         [win]="win"
-        (onClose)="closeWindow($event)"
-        (onFocus)="focusWindow($event)"
-        (onMove)="moveWindow($event.id, $event.x, $event.y)"
-        (onResize)="resizeWindow($event)">
-
-        <p>Contenido de {{ win.title }}</p>
-
-      </app-window>
+        (onOpen)="openWindow($event)"
+        (onMoveIcon)="moveDesktopIcon($event.id, $event.x, $event.y)"
+        (onTrash)="removeFromDesktop($event)">
+      </app-desktop-icon>
     }
   }
 
-  <!-- Botones temporales para probar apertura -->
-  <div class="test-buttons">
-    @for (win of windows(); track win.id) {
-      <button (click)="openWindow(win.id)">
-        {{ win.icon }} {{ win.title }}
-      </button>
-    }
-  </div>
+  <!-- Ventanas abiertas -->
+@for (win of windows(); track win.id) {
+  @if (win.isOpen && !win.isMinimized) {
+    <app-window
+      [win]="win"
+      (onClose)="closeWindow($event)"
+      (onFocus)="focusWindow($event)"
+      (onMove)="moveWindow($event.id, $event.x, $event.y)"
+      (onResize)="resizeWindow($event)"
+      (onMinimize)="minimizeWindow($event)">
 
+      @switch (win.id) {
+        @case ('github') { <app-github /> }
+        @case ('about') { <app-about /> }
+        @case ('skills') { <app-skills /> }
+        @default { <p>Contenido de {{ win.title }}</p> }
+      }
+
+    </app-window>
+  }
+}
+<app-taskbar
+  [windows]="windows()"
+  [isDark]="isDark()"
+  [golRunning]="golRunning()"
+  [golSpeed]="golSpeed()"
+  (onOpenWindow)="openWindow($event)"
+  (onToggleTheme)="toggleTheme()"
+  (onToggleGol)="toggleGol()"
+  (onSetSpeed)="setGolSpeed($event)">
+</app-taskbar>
 </div>

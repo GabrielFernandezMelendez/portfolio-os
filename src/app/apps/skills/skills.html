@@ -1,0 +1,31 @@
+<div class="skills-container" (mouseenter)="onMouseEnter()">
+
+  @for (category of categories; track category.title) {
+    <div class="skill-category">
+
+      <h3 class="category-title" [style.color]="category.color">
+        // {{ category.title }}
+      </h3>
+
+      <div class="skill-list">
+        @for (skill of category.skills; track skill.name) {
+          <div class="skill-row">
+            <span class="skill-name">{{ skill.name }}</span>
+            <div class="skill-bar-wrapper">
+              <div
+                class="skill-bar"
+                [style.width.%]="skill.current"
+                [style.background]="category.color">
+              </div>
+            </div>
+            <span class="skill-percent" [style.color]="category.color">
+              {{ skill.current }}%
+            </span>
+          </div>
+        }
+      </div>
+
+    </div>
+  }
+
+</div>

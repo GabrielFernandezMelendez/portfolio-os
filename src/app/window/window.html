@@ -7,7 +7,7 @@
   [style.zIndex]="win().zIndex"
   (mousedown)="focus()">
 
-  <!-- Handles de resize en los 8 bordes/esquinas -->
+  <!-- Resize handles -->
   <div class="resize-handle n"  (mousedown)="startResize($event, 'n')"></div>
   <div class="resize-handle s"  (mousedown)="startResize($event, 's')"></div>
   <div class="resize-handle e"  (mousedown)="startResize($event, 'e')"></div>
@@ -17,13 +17,29 @@
   <div class="resize-handle se" (mousedown)="startResize($event, 'se')"></div>
   <div class="resize-handle sw" (mousedown)="startResize($event, 'sw')"></div>
 
-  <!-- Barra de título -->
+  <!-- Barra de título estilo Win2k -->
   <div class="titlebar" (mousedown)="startDrag($event)">
     <span class="titlebar-icon">{{ win().icon }}</span>
     <span class="titlebar-title">{{ win().title }}</span>
+
     <div class="titlebar-controls">
       <button
-        class="btn-close"
+        class="win-btn btn-minimize"
+        title="Minimizar"
+        (mousedown)="$event.stopPropagation()"
+        (click)="minimize()">
+        _
+      </button>
+      <button
+        class="win-btn btn-maximize"
+        title="Maximizar"
+        (mousedown)="$event.stopPropagation()"
+        (click)="maximize()">
+        □
+      </button>
+      <button
+        class="win-btn btn-close"
+        title="Cerrar"
         (mousedown)="$event.stopPropagation()"
         (click)="close()">
         ✕

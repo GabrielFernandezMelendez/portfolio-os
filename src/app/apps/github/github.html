@@ -1,0 +1,111 @@
+<div class="github-container">
+
+  @if (loading()) {
+  <div class="gh-loading">
+    <span class="loading-text">Conectando con GitHub...</span>
+  </div>
+  }
+
+  @if (error()) {
+  <div class="gh-error">
+    <p>⚠ {{ error() }}</p>
+    <button class="gh-btn-primary" (click)="openGithub()">
+      Abrir GitHub directamente
+    </button>
+  </div>
+  }
+
+  @if (!loading() && !error() && user()) {
+
+  <!-- Perfil -->
+  <div class="gh-profile">
+    <div class="gh-avatar-wrapper">
+      <img [src]="user()!.avatar_url" [alt]="user()!.login" class="gh-avatar" />
+    </div>
+
+    <div class="gh-profile-info">
+      <h2 class="gh-name">{{ user()!.name }}</h2>
+      <p class="gh-login">@{{ user()!.login }}</p>
+      @if (user()!.bio) {
+      <p class="gh-bio">{{ user()!.bio }}</p>
+      }
+
+      <div class="gh-stats">
+        <div class="gh-stat">
+          <span class="gh-stat-value">{{ user()!.public_repos }}</span>
+          <span class="gh-stat-label">Repositorios</span>
+        </div>
+        <div class="gh-stat">
+          <span class="gh-stat-value">{{ user()!.followers }}</span>
+          <span class="gh-stat-label">Seguidores</span>
+        </div>
+        <div class="gh-stat">
+          <span class="gh-stat-value">{{ user()!.following }}</span>
+          <span class="gh-stat-label">Siguiendo</span>
+        </div>
+      </div>
+
+      <button class="gh-btn-primary" (click)="openGithub()">
+        🐙 Ver perfil completo en GitHub
+      </button>
+    </div>
+  </div>
+
+  <!-- Repos -->
+  <div class="gh-repos-section">
+    <h3 class="gh-section-title">Repositorios recientes</h3>
+    <div class="gh-repos-grid">
+      @for (repo of repos(); track repo.id) {
+      <div class="gh-repo-card" (click)="openGithub()">
+        <div class="gh-repo-header">
+          <span class="gh-repo-icon">📁</span>
+          <span class="gh-repo-name">{{ repo.name }}</span>
+        </div>
+        @if (repo.description) {
+        <p class="gh-repo-desc">{{ repo.description }}</p>
+        }
+<div class="gh-repo-fake-stats">
+  <span class="fake-stat stars" title="Stars (puede que no sean reales)">
+    ⭐ {{ formatNumber(generateFakeStats(repo.id).stars) }}
+  </span>
+  <span class="fake-stat forks" title="Forks (puede que no sean reales)">
+    ⑂ {{ formatNumber(generateFakeStats(repo.id).forks) }}
+  </span>
+  <span class="fake-stat watchers" title="Watchers (puede que no sean reales)">
+    👁 {{ formatNumber(generateFakeStats(repo.id).watchers) }}
+  </span>
+</div>
+      </div>
+      }
+    </div>
+  </div>
+
+  }
+  <!-- 8-bit dev explicando el iframe -->
+  <div class="iframe-explanation">
+    <div class="pixel-dev">
+
+      <img src="pixel-programmer.gif" alt="pixel dev" class="pixel-character-img" />
+
+      <div class="pixel-speech">
+        <div class="speech-bubble">
+          <p class="speech-main">
+            Intenté cargar GitHub directamente aquí dentro...
+            pero me bloquearon con:
+          </p>
+          <code>X-Frame-Options: deny</code>
+          <p class="speech-secondary">
+            Al final puedo mostrar todos mis proyectos
+            actualizados en tiempo real con la API pública...
+            pero puede que algún que otro ⭐ me inventara. 😄
+          </p>
+          <button class="gh-btn-primary" (click)="openGithub()">
+            Ver el GitHub de verdad →
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>

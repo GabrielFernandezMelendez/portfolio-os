@@ -21,7 +21,45 @@ export class WindowComponent implements OnInit {
   onFocus  = output<string>();
   onMove   = output<{ id: string; x: number; y: number }>();
   onResize = output<{ id: string; x: number; y: number; width: number; height: number }>();
+onMinimize = output<string>();
 
+private isMaximized  = false;
+private prevX        = 0;
+private prevY        = 0;
+private prevWidth    = 0;
+private prevHeight   = 0;
+
+
+
+minimize() {
+  this.onMinimize.emit(this.win().id);
+}
+
+maximize() {
+  if (!this.isMaximized) {
+    this.prevX      = this.win().x;
+    this.prevY      = this.win().y;
+    this.prevWidth  = this.win().width;
+    this.prevHeight = this.win().height;
+    this.onResize.emit({
+      id:     this.win().id,
+      x:      0,
+      y:      0,
+      width:  window.innerWidth,
+      height: window.innerHeight - 42
+    });
+    this.isMaximized = true;
+  } else {
+    this.onResize.emit({
+      id:     this.win().id,
+      x:      this.prevX,
+      y:      this.prevY,
+      width:  this.prevWidth,
+      height: this.prevHeight
+    });
+    this.isMaximized = false;
+  }
+}
   private dragging:        boolean          = false;
   private resizing:        boolean          = false;
   private resizeDir:       ResizeDirection  = null;
@@ -114,6 +152,8 @@ export class WindowComponent implements OnInit {
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup',   onUp);
   }
+
+  
 
   focus() { this.onFocus.emit(this.win().id); }
   close()  { this.onClose.emit(this.win().id); }

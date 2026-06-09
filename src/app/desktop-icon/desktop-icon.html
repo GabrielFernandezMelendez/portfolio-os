@@ -1,0 +1,10 @@
+<div
+  class="desktop-icon"
+  [style.left.px]="win().desktopX"
+  [style.top.px]="win().desktopY"
+  (mousedown)="startDrag($event)">
+
+  <div class="icon-image">{{ win().icon }}</div>
+  <div class="icon-label">{{ win().filename }}</div>
+
+</div>
