@@ -1,8 +1,62 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import 'tailwindcss';
 
+/* ════════════════════════════════════════
+   VARIABLES GLOBALES
+════════════════════════════════════════ */
+:root {
+  /* Fuentes */
+  --font-pixel: 'Pixelify Sans', 'Courier New', monospace;
+  --font-mono:  'Courier New', Courier, monospace;
+  --font-ui:    'Segoe UI', sans-serif;
+
+  /* Tamaños de texto */
+--text-xs:    1rem;
+--text-sm:    1.05rem;
+--text-base:  1.1rem;
+--text-md:    1.2rem;
+--text-lg:    1.3rem;
+--text-xl:    1.45rem;
+
+  /* Colores principales */
+  --color-accent:       #6366f1;
+  --color-accent-hover: rgba(99,102,241,0.3);
+  --color-accent-bg:    rgba(99,102,241,0.08);
+  --color-accent-border:rgba(99,102,241,0.2);
+  --color-green:        #10b981;
+  --color-purple:       #8b5cf6;
+  --color-yellow:       #f59e0b;
+  --color-red:          #ef4444;
+  --color-cyan:         #06b6d4;
+  --color-pink:         #ec4899;
+
+  /* Textos */
+  --text-primary:   rgba(255,255,255,0.9);
+  --text-secondary: rgba(255,255,255,0.65);
+  --text-muted:     rgba(255,255,255,0.45);
+
+  /* Bordes y fondos */
+  --border-subtle:  rgba(255,255,255,0.07);
+  --bg-card:        rgba(99,102,241,0.06);
+  --bg-card-hover:  rgba(99,102,241,0.12);
+}
+
+/* ════════════════════════════════════════
+   BASE
+════════════════════════════════════════ */
 html, body {
   background:  #06060f;
-  font-family: 'Pixelify Sans', 'Courier New', monospace;
+  font-family: var(--font-pixel);
+  font-size:   var(--text-base);
+}
+
+/* ════════════════════════════════════════
+   TEMA CLARO — variables override
+════════════════════════════════════════ */
+.light {
+  --text-primary:   rgba(30,27,75,0.9);
+  --text-secondary: rgba(30,27,75,0.65);
+  --text-muted:     rgba(30,27,75,0.45);
+  --border-subtle:  rgba(55,48,163,0.1);
+  --bg-card:        rgba(55,48,163,0.04);
+  --bg-card-hover:  rgba(55,48,163,0.1);
 }
