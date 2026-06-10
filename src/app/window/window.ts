@@ -72,8 +72,8 @@ maximize() {
   private offsetX:         number           = 0;
   private offsetY:         number           = 0;
 
-  readonly MIN_WIDTH  = 280;
-  readonly MIN_HEIGHT = 180;
+get MIN_WIDTH()  { return this.win().minWidth  ?? 280; }
+get MIN_HEIGHT() { return this.win().minHeight ?? 180; }
 
   // ── Drag ──────────────────────────────────────────
   startDrag(e: MouseEvent) {

@@ -13,4 +13,6 @@ export interface OsWindow {
   onDesktop:   boolean;
   desktopX:    number;
   desktopY:    number;
+  minWidth?:   number;
+  minHeight?:  number;
 }

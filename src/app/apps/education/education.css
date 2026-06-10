@@ -218,26 +218,43 @@
 }
 
 .learning-card {
-  padding:         0.9rem;
-  border-radius:   8px;
-  border:          1px solid rgba(245,158,11,0.2);
-  background:      rgba(245,158,11,0.04);
-  display:         flex;
-  flex-direction:  column;
-  gap:             0.5rem;
-  transition:      all 0.2s;
+  padding:      1.5rem 2rem;
+  border-radius:16px;
+  border:       2px solid rgba(245,158,11,0.6);
+  background:   rgba(245,158,11,0.06);
+  display:        flex;
+  flex-direction: column;
+  gap:            0.8rem;
+  max-height:     none;
+  overflow-y:     visible;
+  animation:      neon-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes neon-pulse {
+  0%, 100% {
+    border-color: rgba(245,158,11,0.7);
+    box-shadow:   0 0 10px  rgba(245,158,11,0.5),
+                  0 0 25px  rgba(245,158,11,0.3),
+                  0 0 50px  rgba(245,158,11,0.15);
+  }
+  50% {
+    border-color: rgba(245,158,11,1);
+    box-shadow:   0 0 20px  rgba(245,158,11,0.9),
+                  0 0 50px  rgba(245,158,11,0.6),
+                  0 0 80px  rgba(245,158,11,0.4),
+                  0 0 120px rgba(245,158,11,0.2);
+  }
 }
 
 .learning-card:hover {
-  border-color: rgba(245,158,11,0.4);
-  background:   rgba(245,158,11,0.08);
+  background: rgba(245,158,11,0.1);
 }
 
 .learning-title {
   font-family: var(--font-pixel);
   font-size:   var(--text-md);
   font-weight: 700;
-  color:       var(--color-yellow);
+  color:       rgba(245,158,11,1);
   margin:      0;
   line-height: 1.4;
 }
@@ -327,13 +344,14 @@
 .lang-row {
   display:     flex;
   align-items: center;
-  gap:         0.7rem;
+  gap:         1rem;
+  padding:     0.3rem 0;
 }
 
 .lang-flag { font-size: 1.3rem; flex-shrink: 0; }
 
 .lang-name {
-  width:       70px;
+  width:       80px;
   flex-shrink: 0;
   font-family: var(--font-pixel);
   font-size:   var(--text-md);
@@ -357,10 +375,11 @@
 }
 
 .lang-level {
-  width:       90px;
+  width:       110px;
   text-align:  right;
   font-family: var(--font-pixel);
   font-size:   var(--text-sm);
   font-weight: 700;
   flex-shrink: 0;
+  white-space: nowrap;
 }

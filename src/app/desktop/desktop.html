@@ -41,7 +41,7 @@
         @case ('skills')     { <app-skills /> }
         @case ('education')  { <app-education /> }
         @case ('projects')   { <app-projects /> }
-        @case ('contact')    { <app-contact /> }
+        @case ('contact') { <app-contact [isLight]="!isDark()" /> }
         @case ('github')     { <app-github /> }
         @default             { <p>{{ win.title }}</p> }
       }

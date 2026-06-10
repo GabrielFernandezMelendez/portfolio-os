@@ -31,7 +31,6 @@
   <h3 class="section-title" style="margin-top: 1.2rem">// CERTIFICACIONES</h3>
 
   <div class="certs-grid">
-
     @for (cert of certificates; track cert.title) {
       <div class="cert-card">
         <div class="cert-header">
@@ -42,44 +41,47 @@
         <p class="cert-meta">{{ cert.hours }} · {{ cert.date }}</p>
         <div class="cert-actions">
           <button class="cert-btn verify" (click)="openLink(cert.url)">
-            🔗 Verificar
+            Verificar
           </button>
           <button class="cert-btn pdf" (click)="openPdf(cert.pdf)">
-            📄 PDF
+            PDF
           </button>
         </div>
       </div>
     }
-<div class="learning-full">
-    <!-- Card especial -->
-    <div class="cert-card learning-card">
-  <p class="learning-title">El conocimiento real no viene de los certificados</p>
-  <p class="learning-text">
-    Las certificaciones validan conceptos, pero el verdadero
-    crecimiento viene de saber dónde buscar y cómo aprender
-    de forma autónoma. La documentación oficial de Angular,
-    MDN Web Docs, Stack Overflow, GitHub Issues, YouTube,
-    Reddit, foros técnicos y la propia IA son herramientas
-    que uso a diario para resolver problemas reales.
-    Un buen programador no sabe todo, sabe dónde encontrarlo.
-  </p>
-</div>
-  <div class="learning-pixel-note">
-    <img src="pixel-programmer.gif" alt="pixel dev" class="learning-pixel-char" />
-    <div class="learning-speech">
-      <p class="speech-main">
-        Solo un 10% de lo que usé en este proyecto
-        vino de estas certificaciones.
-      </p>
-      <p class="speech-secondary">
-        El otro 90% fue curiosidad, documentación oficial,
-        errores, Stack Overflow a las 2am... y ganas de
-        entender cómo funcionan las cosas de verdad.
-      </p>
-    </div>
   </div>
 
-</div>
+  <!-- CARD APRENDIZAJE + PERSONAJE — FUERA del grid -->
+  <div class="learning-full">
+
+    <div class="learning-card">
+      <p class="learning-title">El conocimiento real no viene de los certificados</p>
+      <p class="learning-text">
+        Las certificaciones validan conceptos, pero el verdadero
+        crecimiento viene de saber dónde buscar y cómo aprender
+        de forma autónoma. La documentación oficial de Angular,
+        MDN Web Docs, Stack Overflow, GitHub Issues, YouTube,
+        Reddit, foros técnicos y la propia IA son herramientas
+        que uso a diario para resolver problemas reales.
+        Un buen programador no sabe todo, sabe dónde encontrarlo.
+      </p>
+    </div>
+
+    <div class="learning-pixel-note">
+      <img src="pixel-programmer.gif" alt="pixel dev" class="learning-pixel-char" />
+      <div class="learning-speech">
+        <p class="speech-main">
+          Solo un 10% de lo que usé en este proyecto
+          vino de estas certificaciones.
+        </p>
+        <p class="speech-secondary">
+          El otro 90% fue curiosidad, documentación oficial,
+          errores, Stack Overflow a las 2am... y ganas de
+          entender cómo funcionan las cosas de verdad.
+        </p>
+      </div>
+    </div>
+
   </div>
 
   <!-- IDIOMAS -->

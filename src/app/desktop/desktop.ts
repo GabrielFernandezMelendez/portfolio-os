@@ -22,13 +22,13 @@ import { ContactComponent } from '../apps/contact/contact';
 export class DesktopComponent implements OnInit, OnDestroy {
 
 windows = signal<OsWindow[]>([
-  { id: 'about',      title: 'Sobre mí',    icon: '👤', filename: 'aboutme.txt',    isOpen: false, isMinimized: false, x: 100, y: 80,  zIndex: 1, width: 520, height: 420, onDesktop: true, desktopX: 20, desktopY: 20  },
-  { id: 'experience', title: 'Experiencia', icon: '💼', filename: 'experience.exe', isOpen: false, isMinimized: false, x: 150, y: 100, zIndex: 1, width: 580, height: 460, onDesktop: true, desktopX: 20, desktopY: 110 },
-  { id: 'skills',     title: 'Habilidades', icon: '🛠', filename: 'skills.ini',     isOpen: false, isMinimized: false, x: 200, y: 90,  zIndex: 1, width: 520, height: 480, onDesktop: true, desktopX: 20, desktopY: 200 },
-  { id: 'education',  title: 'Formación',   icon: '🎓', filename: 'education.log',  isOpen: false, isMinimized: false, x: 120, y: 110, zIndex: 1, width: 500, height: 420, onDesktop: true, desktopX: 20, desktopY: 290 },
-  { id: 'projects',   title: 'Proyectos',   icon: '📁', filename: 'projects.exe',   isOpen: false, isMinimized: false, x: 180, y: 95,  zIndex: 1, width: 620, height: 500, onDesktop: true, desktopX: 20, desktopY: 380 },
-  { id: 'contact',    title: 'Contacto',    icon: '📬', filename: 'contact.bat',    isOpen: false, isMinimized: false, x: 160, y: 120, zIndex: 1, width: 460, height: 380, onDesktop: true, desktopX: 20, desktopY: 470 },
-  { id: 'github',     title: 'GitHub',      icon: '🐙', filename: 'github.url',     isOpen: false, isMinimized: false, x: 140, y: 85,  zIndex: 1, width: 900, height: 600, onDesktop: true, desktopX: 20, desktopY: 560 },
+  { id: 'about',      title: 'Sobre mí',    icon: '👤', filename: 'aboutme.txt',    isOpen: false, isMinimized: false, x: 100, y: 50,  zIndex: 1, width: 650,  height: 800, minWidth: 593,  minHeight: 763, onDesktop: true, desktopX: 10, desktopY: 20  },
+  { id: 'experience', title: 'Experiencia', icon: '💼', filename: 'experience.exe', isOpen: false, isMinimized: false, x: 150, y: 60,  zIndex: 1, width: 780,  height: 560, minWidth: 737,  minHeight: 532, onDesktop: true, desktopX: 10, desktopY: 110 },
+  { id: 'skills',     title: 'Habilidades', icon: '🛠', filename: 'skills.ini',     isOpen: false, isMinimized: false, x: 120, y: 55,  zIndex: 1, width: 620,  height: 450, minWidth: 568,  minHeight: 410, onDesktop: true, desktopX: 10, desktopY: 200 },
+  { id: 'education',  title: 'Formación',   icon: '🎓', filename: 'education.log',  isOpen: false, isMinimized: false, x: 100, y: 50,  zIndex: 1, width: 920,  height: 800, minWidth: 879,  minHeight: 763, onDesktop: true, desktopX: 10, desktopY: 290 },
+  { id: 'projects',   title: 'Proyectos',   icon: '📁', filename: 'projects.exe',   isOpen: false, isMinimized: false, x: 130, y: 60,  zIndex: 1, width: 820,  height: 560, minWidth: 756,  minHeight: 515, onDesktop: true, desktopX: 10, desktopY: 380 },
+  { id: 'contact',    title: 'Contacto',    icon: '📬', filename: 'contact.bat',    isOpen: false, isMinimized: false, x: 100, y: 55,  zIndex: 1, width: 1050, height: 530, minWidth: 995,  minHeight: 490, onDesktop: true, desktopX: 10, desktopY: 470 },
+  { id: 'github',     title: 'GitHub',      icon: '🐙', filename: 'github.url',     isOpen: false, isMinimized: false, x: 100, y: 50,  zIndex: 1, width: 1000, height: 620, minWidth: 956,  minHeight: 574, onDesktop: true, desktopX: 10, desktopY: 560 },
 ]);
 
   topZIndex  = 10;
@@ -254,7 +254,10 @@ for (let c = 0; c <= cols; c++) {
   }
 
   resizeWindow(event: { id: string; x: number; y: number; width: number; height: number }) {
-  this.windows.update(wins => wins.map(w =>
+   //para debugear en tamaño de la pantalla minimo  
+   console.log(`[RESIZE] ${event.id} → width: ${event.width}px | height: ${event.height}px`);
+  
+    this.windows.update(wins => wins.map(w =>
     w.id === event.id
       ? { ...w, x: event.x, y: event.y, width: event.width, height: event.height }
       : w

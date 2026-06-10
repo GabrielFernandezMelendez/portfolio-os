@@ -1,5 +1,28 @@
 <div class="terminal-window" (click)="focusInput()">
-
+@if (isLight()) {
+  <div class="light-overlay">
+    <div class="light-character-wrapper">
+      <img
+        src="pixel-programmer.gif"
+        alt="pixel dev"
+        class="contact-pixel-char"
+      />
+      <div class="dark-speech-bubble">
+        <p class="dark-speech-text">
+          Te das cuenta del crimen que has cometido?
+        </p>
+        <p class="dark-speech-sub">
+          Ahora no se ve el globo de texto...
+          igual que yo no me veo en esta consola blanca.
+        </p>
+        <p class="dark-speech-sub">
+          Yo no programo el tema claro.
+          Me voy corriendo de aqui.
+        </p>
+      </div>
+    </div>
+  </div>
+}
   <div class="terminal-body" #terminalBody>
     @for (line of history(); track $index) {
       <div class="terminal-line" [class]="line.type">
@@ -7,7 +30,6 @@
       </div>
     }
   </div>
-
   <div class="terminal-input-row" [class.error-mode]="isError()">
     <span class="prompt">C:\Recruiters\Contact&gt;</span>
     <input
