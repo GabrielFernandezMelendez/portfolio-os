@@ -14,7 +14,7 @@
         class="taskbar-btn"
         [class.active]="win.isOpen"
         (click)="openWindow(win.id)"
-        (mouseenter)="showTooltip(win.filename, $any($event).target.getBoundingClientRect().left)"
+        (mouseenter)="showTooltip(win.title, $any($event).target.getBoundingClientRect().left)"
         (mouseleave)="hideTooltip()">
         <span class="taskbar-btn-icon">{{ win.icon }}</span>
       </button>
