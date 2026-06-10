@@ -1,0 +1,25 @@
+<div class="terminal-window" (click)="focusInput()">
+
+  <div class="terminal-body" #terminalBody>
+    @for (line of history(); track $index) {
+      <div class="terminal-line" [class]="line.type">
+        {{ line.text }}
+      </div>
+    }
+  </div>
+
+  <div class="terminal-input-row" [class.error-mode]="isError()">
+    <span class="prompt">C:\Recruiters\Contact&gt;</span>
+    <input
+      #terminalInput
+      type="text"
+      class="terminal-input"
+      [(ngModel)]="currentCommand"
+      (keydown)="onKeydown($event)"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <span class="cursor">_</span>
+  </div>
+
+</div>

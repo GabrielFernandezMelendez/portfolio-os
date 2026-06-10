@@ -1,0 +1,107 @@
+<div class="education-container" (mouseenter)="onMouseEnter()">
+
+  <!-- FORMACIÓN -->
+  <h3 class="section-title">// FORMACIÓN ACADÉMICA</h3>
+
+  <div class="education-list">
+    @for (entry of education; track entry.title) {
+      <div class="edu-card" [class.current]="entry.current">
+
+        <div class="edu-header">
+          <span class="edu-icon">{{ entry.icon }}</span>
+          <div class="edu-info">
+            <span class="edu-title">{{ entry.title }}</span>
+            <span class="edu-subtitle">{{ entry.subtitle }}</span>
+          </div>
+          @if (entry.current) {
+            <span class="current-badge">● EN CURSO</span>
+          }
+        </div>
+
+        <div class="edu-meta">
+          <span class="edu-center">🏛 {{ entry.center }}</span>
+          <span class="edu-period">📅 {{ entry.period }}</span>
+        </div>
+
+      </div>
+    }
+  </div>
+
+  <!-- CERTIFICACIONES -->
+  <h3 class="section-title" style="margin-top: 1.2rem">// CERTIFICACIONES</h3>
+
+  <div class="certs-grid">
+
+    @for (cert of certificates; track cert.title) {
+      <div class="cert-card">
+        <div class="cert-header">
+          <span class="cert-icon">{{ cert.icon }}</span>
+          <div class="cert-badge">OpenWebinars</div>
+        </div>
+        <p class="cert-title">{{ cert.title }}</p>
+        <p class="cert-meta">{{ cert.hours }} · {{ cert.date }}</p>
+        <div class="cert-actions">
+          <button class="cert-btn verify" (click)="openLink(cert.url)">
+            🔗 Verificar
+          </button>
+          <button class="cert-btn pdf" (click)="openPdf(cert.pdf)">
+            📄 PDF
+          </button>
+        </div>
+      </div>
+    }
+<div class="learning-full">
+    <!-- Card especial -->
+    <div class="cert-card learning-card">
+  <p class="learning-title">El conocimiento real no viene de los certificados</p>
+  <p class="learning-text">
+    Las certificaciones validan conceptos, pero el verdadero
+    crecimiento viene de saber dónde buscar y cómo aprender
+    de forma autónoma. La documentación oficial de Angular,
+    MDN Web Docs, Stack Overflow, GitHub Issues, YouTube,
+    Reddit, foros técnicos y la propia IA son herramientas
+    que uso a diario para resolver problemas reales.
+    Un buen programador no sabe todo, sabe dónde encontrarlo.
+  </p>
+</div>
+  <div class="learning-pixel-note">
+    <img src="pixel-programmer.gif" alt="pixel dev" class="learning-pixel-char" />
+    <div class="learning-speech">
+      <p class="speech-main">
+        Solo un 10% de lo que usé en este proyecto
+        vino de estas certificaciones.
+      </p>
+      <p class="speech-secondary">
+        El otro 90% fue curiosidad, documentación oficial,
+        errores, Stack Overflow a las 2am... y ganas de
+        entender cómo funcionan las cosas de verdad.
+      </p>
+    </div>
+  </div>
+
+</div>
+  </div>
+
+  <!-- IDIOMAS -->
+  <h3 class="section-title" style="margin-top: 1.2rem">// IDIOMAS</h3>
+
+  <div class="languages-list">
+    @for (lang of languages; track lang.name) {
+      <div class="lang-row">
+        <span class="lang-flag">{{ lang.flag }}</span>
+        <span class="lang-name">{{ lang.name }}</span>
+        <div class="lang-bar-wrapper">
+          <div
+            class="lang-bar"
+            [style.width.%]="lang.current"
+            [style.background]="lang.color">
+          </div>
+        </div>
+        <span class="lang-level" [style.color]="lang.color">
+          {{ lang.level }}
+        </span>
+      </div>
+    }
+  </div>
+
+</div>

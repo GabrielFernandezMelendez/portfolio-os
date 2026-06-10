@@ -36,10 +36,14 @@
       (onMinimize)="minimizeWindow($event)">
 
       @switch (win.id) {
-        @case ('github') { <app-github /> }
-        @case ('about') { <app-about /> }
-        @case ('skills') { <app-skills /> }
-        @default { <p>Contenido de {{ win.title }}</p> }
+        @case ('about')      { <app-about /> }
+        @case ('experience') { <app-experience /> }
+        @case ('skills')     { <app-skills /> }
+        @case ('education')  { <app-education /> }
+        @case ('projects')   { <app-projects /> }
+        @case ('contact')    { <app-contact /> }
+        @case ('github')     { <app-github /> }
+        @default             { <p>{{ win.title }}</p> }
       }
 
     </app-window>

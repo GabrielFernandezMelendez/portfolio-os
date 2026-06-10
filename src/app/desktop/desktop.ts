@@ -6,12 +6,17 @@ import { TaskbarComponent } from '../taskbar/taskbar';
 import { GithubComponent } from '../apps/github/github';
 import { AboutComponent } from '../apps/about/about';
 import { SkillsComponent } from '../apps/skills/skills';
+import { ExperienceComponent } from '../apps/experience/experience';
+import { ProjectsComponent } from '../apps/projects/projects';
+import { EducationComponent } from '../apps/education/education';
+import { ContactComponent } from '../apps/contact/contact';
+
 @Component({
   selector: 'app-desktop',
   standalone: true,
   templateUrl: './desktop.html',
   styleUrl: './desktop.css',
-  imports: [WindowComponent,DesktopIconComponent,TaskbarComponent,GithubComponent,AboutComponent,SkillsComponent],
+  imports: [WindowComponent,DesktopIconComponent,TaskbarComponent,GithubComponent,AboutComponent,SkillsComponent,ExperienceComponent,ProjectsComponent,EducationComponent,ContactComponent],
 
 })
 export class DesktopComponent implements OnInit, OnDestroy {

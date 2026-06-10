@@ -1,0 +1,58 @@
+<div class="experience-container">
+
+  <div class="timeline">
+
+    @for (entry of entries; track entry.company; let last = $last) {
+
+      <div class="timeline-entry" [class.current]="entry.current">
+
+        <!-- Punto del timeline -->
+        <div class="timeline-dot" [class.current]="entry.current"></div>
+
+        <!-- Línea vertical (no en el último) -->
+        @if (!last) {
+          <div class="timeline-line"></div>
+        }
+
+        <!-- Contenido -->
+        <div class="entry-content">
+
+          <!-- Cabecera -->
+          <div class="entry-header">
+            <div class="entry-main">
+              <h3 class="entry-company">{{ entry.company }}</h3>
+              <p class="entry-role">{{ entry.role }}</p>
+            </div>
+            @if (entry.current) {
+              <span class="current-badge">● EN CURSO</span>
+            }
+          </div>
+
+          <!-- Meta -->
+          <div class="entry-meta">
+            <span class="meta-period">📅 {{ entry.period }}</span>
+            <span class="meta-duration">{{ entry.duration }}</span>
+            <span class="meta-location">📍 {{ entry.location }}</span>
+          </div>
+
+          <!-- Tareas -->
+          <ul class="entry-tasks">
+            @for (task of entry.tasks; track task) {
+              <li class="task-item">{{ task }}</li>
+            }
+          </ul>
+
+          <!-- Badges -->
+          <div class="entry-badges">
+            @for (badge of entry.badges; track badge) {
+              <span class="tech-badge">{{ badge }}</span>
+            }
+          </div>
+
+        </div>
+      </div>
+
+    }
+
+  </div>
+</div>
