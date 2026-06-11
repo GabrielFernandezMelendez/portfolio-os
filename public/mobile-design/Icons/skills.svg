@@ -1,0 +1,27 @@
+<!-- Icono Smooth Pastel: skills -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad-skills" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <linearGradient id="grad-skills-cog" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="54" r="38" fill="#000000" opacity="0.1" />
+  <circle cx="50" cy="50" r="38" fill="url(#grad-skills)" />
+  <g transform="translate(50,50)">
+    <circle cx="0" cy="0" r="18" fill="url(#grad-skills-cog)" />
+    <rect x="-6" y="-24" width="12" height="12" rx="5" fill="url(#grad-skills-cog)" transform="rotate(0)" />
+    <rect x="-6" y="-24" width="12" height="12" rx="5" fill="url(#grad-skills-cog)" transform="rotate(45)" />
+    <rect x="-6" y="-24" width="12" height="12" rx="5" fill="url(#grad-skills-cog)" transform="rotate(90)" />
+    <rect x="-6" y="-24" width="12" height="12" rx="5" fill="url(#grad-skills-cog)" transform="rotate(135)" />
+    <rect x="-6" y="-24" width="12" height="12" rx="5" fill="url(#grad-skills-cog)" transform="rotate(180)" />
+    <rect x="-6" y="-24" width="12" height="12" rx="5" fill="url(#grad-skills-cog)" transform="rotate(225)" />
+    <rect x="-6" y="-24" width="12" height="12" rx="5" fill="url(#grad-skills-cog)" transform="rotate(270)" />
+    <rect x="-6" y="-24" width="12" height="12" rx="5" fill="url(#grad-skills-cog)" transform="rotate(315)" />
+    <circle cx="0" cy="0" r="8" fill="#06b6d4" />
+  </g>
+</svg>

@@ -1,0 +1,19 @@
+<!-- Icono Smooth Pastel: education -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad-edu" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <linearGradient id="grad-tassel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+  </defs>
+  <path d="M12 43 L50 61 L88 43 L50 25 Z" fill="#000000" opacity="0.15" transform="translate(0, 4)" />
+  <path d="M30 52 C30 64, 70 64, 70 52" fill="none" stroke="url(#grad-edu)" stroke-width="12" stroke-linecap="round" />
+  <path d="M12 40 L50 58 L88 40 L50 22 Z" fill="url(#grad-edu)" />
+  <ellipse cx="50" cy="40" rx="5" ry="3" fill="#ffffff" opacity="0.8" />
+  <path d="M50 40 Q75 44, 75 58" fill="none" stroke="url(#grad-tassel)" stroke-width="3.5" stroke-linecap="round" />
+  <rect x="72" y="58" width="6" height="12" rx="2" fill="url(#grad-tassel)" />
+</svg>

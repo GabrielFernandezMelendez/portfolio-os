@@ -1,12 +1,16 @@
 <div class="home-container" [class.light]="!isDark()">
   <div class="apps-grid">
     @for (app of apps(); track app.id) {
-      <div class="app-icon" (click)="onOpenApp.emit(app)">
-        <div class="app-bubble">
-          <span class="app-emoji">{{ app.icon }}</span>
-        </div>
-        <span class="app-label">{{ app.title }}</span>
+    <div class="app-icon" (click)="onOpenApp.emit(app)">
+      <div class="app-bubble">
+        @if (app.iconSvg) {
+        <img [src]="app.iconSvg" [alt]="app.title" class="app-svg-icon" />
+        } @else {
+        <span class="app-emoji">{{ app.icon }}</span>
+        }
       </div>
+      <span class="app-label">{{ app.title }}</span>
+    </div>
     }
   </div>
 </div>

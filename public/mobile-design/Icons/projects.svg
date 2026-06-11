@@ -1,0 +1,20 @@
+<!-- Icono Smooth Pastel: projects -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad-folder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <linearGradient id="grad-doc" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f1f5f9" />
+    </linearGradient>
+  </defs>
+  <rect x="10" y="32" width="80" height="52" rx="16" fill="#000000" opacity="0.12" />
+  <path d="M14 30 L35 30 C39 30, 44 35, 48 35 L86 35 C90 35, 90 40, 90 45 L90 55 L10 55 L10 36 C10 30, 10 30, 14 30 Z" fill="#d97706" />
+  <rect x="24" y="20" width="48" height="40" rx="8" fill="url(#grad-doc)" />
+  <rect x="32" y="28" width="32" height="4" rx="2" fill="#93c5fd" />
+  <rect x="32" y="36" width="20" height="4" rx="2" fill="#cbd5e1" />
+  <rect x="10" y="36" width="80" height="48" rx="16" fill="url(#grad-folder)" />
+  <rect x="22" y="46" width="18" height="6" rx="3" fill="#ffffff" opacity="0.3" />
+</svg>

@@ -78,3 +78,9 @@
   padding:         2rem 1.5rem 1rem;
   overflow-y:      auto;
 }
+
+.app-svg-icon {
+  width:      44px;
+  height:     44px;
+  object-fit: contain;
+}

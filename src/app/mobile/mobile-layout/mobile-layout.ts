@@ -33,15 +33,15 @@ export class MobileLayoutComponent {
   openedApps = signal<MobileApp[]>([]);
 
   // ── Apps disponibles ──────────────────────────
-  apps: MobileApp[] = [
-    { id: 'about',      title: 'Sobre mí',    icon: '👤' },
-    { id: 'experience', title: 'Experiencia', icon: '💼' },
-    { id: 'skills',     title: 'Habilidades', icon: '🛠' },
-    { id: 'education',  title: 'Formación',   icon: '🎓' },
-    { id: 'projects',   title: 'Proyectos',   icon: '📁' },
-    { id: 'contact',    title: 'Contacto',    icon: '📬' },
-    { id: 'github',     title: 'GitHub',      icon: '🐙' },
-  ];
+apps: MobileApp[] = [
+  { id: 'about',      title: 'Sobre mí',    icon: '👤', iconSvg: 'mobile-design/Icons/Perfil.svg' },
+  { id: 'experience', title: 'Experiencia', icon: '💼', iconSvg: 'mobile-design/Icons/experiencia.svg' },
+  { id: 'skills',     title: 'Habilidades', icon: '🛠', iconSvg: 'mobile-design/Icons/skills.svg' },
+  { id: 'education',  title: 'Formación',   icon: '🎓', iconSvg: 'mobile-design/Icons/education.svg' },
+  { id: 'projects',   title: 'Proyectos',   icon: '📁', iconSvg: 'mobile-design/Icons/projects.svg' },
+  { id: 'contact',    title: 'Contacto',    icon: '📬', iconSvg: 'mobile-design/Icons/contact.svg' },
+  { id: 'github',     title: 'GitHub',      icon: '🐙', iconSvg: 'mobile-design/Icons/github.svg' },
+];
 
   // ── Tema y fondo ──────────────────────────────
   toggleTheme() { this.isDark.update((v: boolean) => !v); }

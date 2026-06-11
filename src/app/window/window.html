@@ -8,17 +8,17 @@
   (mousedown)="focus()">
 
   <!-- Resize handles -->
-  <div class="resize-handle n"  (mousedown)="startResize($event, 'n')"></div>
-  <div class="resize-handle s"  (mousedown)="startResize($event, 's')"></div>
-  <div class="resize-handle e"  (mousedown)="startResize($event, 'e')"></div>
-  <div class="resize-handle w"  (mousedown)="startResize($event, 'w')"></div>
-  <div class="resize-handle ne" (mousedown)="startResize($event, 'ne')"></div>
-  <div class="resize-handle nw" (mousedown)="startResize($event, 'nw')"></div>
-  <div class="resize-handle se" (mousedown)="startResize($event, 'se')"></div>
-  <div class="resize-handle sw" (mousedown)="startResize($event, 'sw')"></div>
+<div class="resize-handle n"  (mousedown)="startResize($event, 'n')"  (touchstart)="startResize($event, 'n')"></div>
+<div class="resize-handle s"  (mousedown)="startResize($event, 's')"  (touchstart)="startResize($event, 's')"></div>
+<div class="resize-handle e"  (mousedown)="startResize($event, 'e')"  (touchstart)="startResize($event, 'e')"></div>
+<div class="resize-handle w"  (mousedown)="startResize($event, 'w')"  (touchstart)="startResize($event, 'w')"></div>
+<div class="resize-handle ne" (mousedown)="startResize($event, 'ne')" (touchstart)="startResize($event, 'ne')"></div>
+<div class="resize-handle nw" (mousedown)="startResize($event, 'nw')" (touchstart)="startResize($event, 'nw')"></div>
+<div class="resize-handle se" (mousedown)="startResize($event, 'se')" (touchstart)="startResize($event, 'se')"></div>
+<div class="resize-handle sw" (mousedown)="startResize($event, 'sw')" (touchstart)="startResize($event, 'sw')"></div>
 
   <!-- Barra de título estilo Win2k -->
-  <div class="titlebar" (mousedown)="startDrag($event)">
+<div class="titlebar" (mousedown)="startDrag($event)" (touchstart)="startDrag($event)">
     <span class="titlebar-icon">{{ win().icon }}</span>
     <span class="titlebar-title">{{ win().title }}</span>
 

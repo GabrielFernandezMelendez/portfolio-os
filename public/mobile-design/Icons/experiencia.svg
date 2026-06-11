@@ -1,0 +1,19 @@
+<!-- Icono Smooth Pastel: experience -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad-exp" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f97316" />
+      <stop offset="100%" stop-color="#f43f5e" />
+    </linearGradient>
+    <linearGradient id="grad-exp-handle" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffedd5" />
+      <stop offset="100%" stop-color="#fed7aa" />
+    </linearGradient>
+  </defs>
+  <rect x="15" y="33" width="70" height="50" rx="16" fill="#000000" opacity="0.15" />
+  <path d="M38 30 C38 18, 62 18, 62 30" stroke="url(#grad-exp-handle)" stroke-width="8" stroke-linecap="round" fill="none" />
+  <rect x="15" y="30" width="70" height="50" rx="16" fill="url(#grad-exp)" />
+  <path d="M15 46 C35 52, 65 52, 85 46" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.25" />
+  <rect x="44" y="44" width="12" height="12" rx="4" fill="#fef08a" />
+  <circle cx="50" cy="50" r="2" fill="#d97706" />
+</svg>
