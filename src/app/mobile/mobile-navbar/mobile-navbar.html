@@ -1,0 +1,15 @@
+<nav class="navbar" [class.light]="!isDark()">
+
+  <button class="nav-btn" (click)="onBack.emit()">
+    <div class="nav-icon back-icon"></div>
+  </button>
+
+  <button class="nav-btn" (click)="onHome.emit()">
+    <div class="nav-icon home-icon"></div>
+  </button>
+
+  <button class="nav-btn" (click)="onRecents.emit()">
+    <div class="nav-icon recents-icon"></div>
+  </button>
+
+</nav>

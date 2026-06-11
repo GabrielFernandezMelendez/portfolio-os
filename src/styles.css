@@ -60,3 +60,22 @@ html, body {
   --bg-card:        rgba(55,48,163,0.04);
   --bg-card-hover:  rgba(55,48,163,0.1);
 }
+
+/* ════════════════════════════════════════
+   VARIABLES MÓVIL
+════════════════════════════════════════ */
+:root {
+  --mobile-status-height:  36px;
+  --mobile-navbar-height:  56px;
+/* Texto — móvil */
+  --mobile-text-xs:    0.85rem;
+  --mobile-text-sm:    0.95rem;
+  --mobile-text-base:  1.05rem;
+  --mobile-text-md:    1.15rem;
+  --mobile-text-lg:    1.3rem;
+  --mobile-text-xl:    1.5rem;
+  --mobile-bg:             rgba(6,6,15,0.75);
+  --mobile-bg-light:       rgba(240,240,248,0.75);
+  --mobile-border:         rgba(99,102,241,0.2);
+  --mobile-border-light:   rgba(55,48,163,0.2);
+}

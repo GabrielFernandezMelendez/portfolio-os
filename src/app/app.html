@@ -1,1 +1,5 @@
-<app-desktop />
+@if (isMobile()) {
+  <app-mobile-layout />
+} @else {
+  <app-desktop />
+}

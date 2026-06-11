@@ -1,0 +1,23 @@
+<div class="status-bar" [class.light]="!isDark()">
+  <span class="status-time">{{ currentTime() }}</span>
+  <div class="status-icons">
+    <div class="icon-wifi">
+      <div class="wifi-bar w3"></div>
+      <div class="wifi-bar w2"></div>
+      <div class="wifi-bar w1"></div>
+      <div class="wifi-dot"></div>
+    </div>
+    <div class="icon-signal">
+      <div class="signal-bar s1"></div>
+      <div class="signal-bar s2"></div>
+      <div class="signal-bar s3"></div>
+      <div class="signal-bar s4"></div>
+    </div>
+    <div class="icon-battery">
+      <div class="battery-body">
+        <div class="battery-fill"></div>
+      </div>
+      <div class="battery-tip"></div>
+    </div>
+  </div>
+</div>

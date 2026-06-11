@@ -1,0 +1,19 @@
+<div
+  class="app-view"
+  [class.visible]="visible()"
+  [class.closing]="closing()"
+  [class.light]="!isDark()">
+
+  <div class="app-content">
+    @switch (appId()) {
+      @case ('about')      { <app-about /> }
+      @case ('experience') { <app-experience /> }
+      @case ('skills')     { <app-skills /> }
+      @case ('education')  { <app-education /> }
+      @case ('projects')   { <app-projects /> }
+      @case ('contact')    { <app-contact [isLight]="!isDark()" /> }
+      @case ('github')     { <app-github /> }
+    }
+  </div>
+
+</div>

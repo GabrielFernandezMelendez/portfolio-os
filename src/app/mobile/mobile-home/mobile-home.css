@@ -1,0 +1,80 @@
+.home-container {
+  flex:            1;
+  display:         flex;
+  flex-direction:  column;
+  justify-content: flex-start;
+  padding:         2rem 1.5rem 1rem;
+  overflow-y:      auto;
+}
+
+.apps-grid {
+  display:               grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:                   1.8rem 1rem;
+}
+
+/* ── Icono individual ── */
+.app-icon {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  gap:             0.5rem;
+  cursor:          pointer;
+  transition:      transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-icon:active {
+  transform: scale(0.9);
+}
+
+.app-bubble {
+  width:           72px;
+  height:          72px;
+  border-radius:   18px;
+  background:      rgba(99,102,241,0.15);
+  border:          1px solid rgba(99,102,241,0.3);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  transition:      all 0.2s;
+  box-shadow:      0 4px 15px rgba(99,102,241,0.15);
+}
+
+.app-icon:active .app-bubble {
+  background: rgba(99,102,241,0.3);
+  box-shadow: 0 2px 8px rgba(99,102,241,0.2);
+}
+
+.app-emoji {
+  font-size: 2rem;
+}
+
+.app-label {
+  font-family:  var(--font-pixel);
+  font-size:    var(--mobile-text-xs);
+  color:        var(--text-primary);
+  text-align:   center;
+  line-height:  1.3;
+  text-shadow:  0 1px 4px rgba(0,0,0,0.5);
+}
+
+/* ── Tema claro ── */
+.home-container.light .app-bubble {
+  background:  rgba(99,102,241,0.1);
+  border-color:rgba(99,102,241,0.25);
+}
+
+.home-container.light .app-label {
+  text-shadow: none;
+}
+
+.home-container {
+  flex:            1;
+  width:           100%;
+  display:         flex;
+  flex-direction:  column;
+  justify-content: flex-start;
+  padding:         2rem 1.5rem 1rem;
+  overflow-y:      auto;
+}

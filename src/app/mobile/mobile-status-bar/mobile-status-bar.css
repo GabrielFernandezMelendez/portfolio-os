@@ -1,0 +1,118 @@
+.status-bar {
+  position:        relative;
+  z-index:         10;
+  width:           100%;
+  height:          var(--mobile-status-height);
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         0 1.2rem;
+  background:      var(--mobile-bg);
+  backdrop-filter: blur(8px);
+  flex-shrink:     0;
+}
+
+.status-bar.light { background: var(--mobile-bg-light); }
+
+.status-time {
+  font-family: var(--font-pixel);
+  font-size:   var(--mobile-text-md);
+  font-weight: 700;
+  color:       var(--text-primary);
+}
+
+.status-bar.light .status-time { color: rgba(30,27,75,0.9); }
+
+/* ── Iconos ── */
+.status-icons {
+  display:     flex;
+  align-items: center;
+  gap:         1rem;
+}
+
+/* ── Wifi redondeado estilo moderno ── */
+.icon-wifi {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: flex-end;
+  gap:             2px;
+  width:           20px;
+  height:          16px;
+}
+
+.wifi-bar {
+  border-radius:  50% 50% 0 0;
+  border:         2.5px solid rgba(255,255,255,0.85);
+  border-bottom:  none;
+  background:     transparent;
+  box-sizing:     border-box;
+}
+
+.wifi-bar.w3 { width: 20px; height: 12px; border-radius: 60% 60% 0 0; }
+.wifi-bar.w2 { width: 13px; height:  8px; border-radius: 60% 60% 0 0; }
+.wifi-bar.w1 { width:  7px; height:  5px; border-radius: 60% 60% 0 0; }
+
+.wifi-dot {
+  width:         4px;
+  height:        4px;
+  border-radius: 50%;
+  background:    rgba(255,255,255,0.85);
+  margin-top:    1px;
+}
+
+/* ── Señal ── */
+.icon-signal {
+  display:     flex;
+  align-items: flex-end;
+  gap:         2.5px;
+  height:      16px;
+}
+
+.signal-bar {
+  width:         3.5px;
+  background:    rgba(255,255,255,0.85);
+  border-radius: 1px;
+}
+
+.signal-bar.s1 { height:  4px; }
+.signal-bar.s2 { height:  8px; }
+.signal-bar.s3 { height: 12px; }
+.signal-bar.s4 { height: 16px; }
+
+/* ── Batería ── */
+.icon-battery {
+  display:     flex;
+  align-items: center;
+  gap:         1px;
+}
+
+.battery-body {
+  width:         22px;
+  height:        11px;
+  border:        1.5px solid rgba(255,255,255,0.85);
+  border-radius: 3px;
+  padding:       2px;
+}
+
+.battery-fill {
+  width:         100%;
+  height:        100%;
+  background:    rgba(255,255,255,0.85);
+  border-radius: 1.5px;
+}
+
+.battery-tip {
+  width:         3px;
+  height:        5px;
+  background:    rgba(255,255,255,0.85);
+  border-radius: 0 1px 1px 0;
+}
+
+/* ── Tema claro ── */
+.status-bar.light .wifi-bar   { border-color: rgba(30,27,75,0.75); }
+.status-bar.light .wifi-dot   { background:   rgba(30,27,75,0.75); }
+.status-bar.light .signal-bar { background:   rgba(30,27,75,0.75); }
+.status-bar.light .battery-body  { border-color: rgba(30,27,75,0.75); }
+.status-bar.light .battery-fill  { background:   rgba(30,27,75,0.75); }
+.status-bar.light .battery-tip   { background:   rgba(30,27,75,0.75); }

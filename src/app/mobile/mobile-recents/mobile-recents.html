@@ -1,0 +1,51 @@
+<div class="recents-container" [class.light]="!isDark()">
+
+  @if (openedApps().length === 0) {
+    <div class="recents-empty">
+      <span class="empty-icon">📭</span>
+      <span class="empty-text">No hay apps abiertas</span>
+    </div>
+  } @else {
+
+    <div class="recents-scroll">
+      @for (app of openedApps(); track app.id) {
+        <div
+          class="recent-card-wrapper"
+          (touchstart)="onTouchStart($event, app.id)"
+          (touchmove)="onTouchMove($event, app.id)"
+          (touchend)="onTouchEnd($event, app.id)"
+          [style]="getCardStyle(app.id)">
+
+          <span class="card-app-name">{{ app.title }}</span>
+
+          <div class="recent-card" (click)="onResume.emit(app)">
+            <div class="card-preview" [class.light]="!isDark()">
+              @switch (app.id) {
+                @case ('about')      { <app-about /> }
+                @case ('experience') { <app-experience /> }
+                @case ('skills')     { <app-skills /> }
+                @case ('education')  { <app-education /> }
+                @case ('projects')   { <app-projects /> }
+                @case ('contact')    { <app-contact [isLight]="!isDark()" /> }
+                @case ('github')     { <app-github /> }
+              }
+            </div>
+            <div class="card-overlay"></div>
+          </div>
+
+          <button class="card-close-btn"
+            (click)="$event.stopPropagation(); onClose.emit(app.id)">
+            ✕
+          </button>
+
+        </div>
+      }
+    </div>
+
+    <button class="close-all-btn" (click)="onCloseAll.emit()">
+      Cerrar todo
+    </button>
+
+  }
+
+</div>

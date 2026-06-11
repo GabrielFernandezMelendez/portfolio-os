@@ -1,0 +1,41 @@
+<div class="panel-backdrop" (click)="closePanel()">
+  <div class="panel"
+    [class.light]="!isDark()"
+    [class.closing]="closing()"
+    (click)="$event.stopPropagation()">
+
+    <div class="panel-header">
+      <span class="panel-date">{{ currentDate() }}</span>
+      <span class="panel-time">{{ currentTime() }}</span>
+    </div>
+
+    <div class="panel-notifications">
+      @for (notif of notifications; track notif.id) {
+        <div class="notif-card">
+          <span class="notif-icon">{{ notif.icon }}</span>
+          <div class="notif-body">
+            <span class="notif-title">{{ notif.title }}</span>
+            <span class="notif-message">{{ notif.message }}</span>
+          </div>
+          <span class="notif-time">{{ notif.time }}</span>
+        </div>
+      }
+    </div>
+
+    <div class="panel-controls">
+      <button class="ctrl-btn" (click)="onToggleTheme.emit()">
+        <span class="ctrl-icon">{{ isDark() ? '☀️' : '🌙' }}</span>
+        <span class="ctrl-label">{{ isDark() ? 'Claro' : 'Oscuro' }}</span>
+      </button>
+      <button class="ctrl-btn" (click)="onToggleGol.emit()">
+        <span class="ctrl-icon">{{ golPaused() ? '▶' : '⏸' }}</span>
+        <span class="ctrl-label">{{ golPaused() ? 'Reanudar' : 'Pausar' }}</span>
+      </button>
+    </div>
+
+    <div class="panel-handle" (click)="closePanel()">
+      <div class="handle-bar"></div>
+    </div>
+
+  </div>
+</div>
