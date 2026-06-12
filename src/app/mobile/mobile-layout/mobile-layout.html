@@ -1,19 +1,12 @@
 <div class="mobile-shell" [class.light]="!isDark()">
+  <app-mobile-background [isDark]="isDark()" [paused]="golPaused()" />
 
-  <app-mobile-background
-    [isDark]="isDark()"
-    [paused]="golPaused()" />
-
-  <app-mobile-status-bar
-    [isDark]="isDark()"
-    (onSwipeDown)="openNotifications()">
+  <app-mobile-status-bar [isDark]="isDark()" (onSwipeDown)="openNotifications()">
   </app-mobile-status-bar>
 
-  <div class="mobile-viewport">
-
+  <div class="mobile-viewport" (touchstart)="onSwipeStart($event)" (touchend)="onSwipeEnd($event)">
     @if (mobileView() === 'home') {
-      <app-mobile-home [apps]="apps" [isDark]="isDark()"
-        (onOpenApp)="openApp($event)">
+      <app-mobile-home [apps]="apps" [isDark]="isDark()" (onOpenApp)="openApp($event)">
       </app-mobile-home>
     }
 
@@ -21,15 +14,19 @@
       <app-mobile-app-view
         [appId]="activeApp()!"
         [isDark]="isDark()"
-        [class.hidden-view]="mobileView() !== 'app'">
+        [class.hidden-view]="mobileView() !== 'app'"
+      >
       </app-mobile-app-view>
     }
 
     @if (mobileView() === 'recents') {
-      <app-mobile-recents [openedApps]="openedApps()" [isDark]="isDark()"
+      <app-mobile-recents
+        [openedApps]="openedApps()"
+        [isDark]="isDark()"
         (onResume)="resumeApp($event)"
         (onClose)="closeApp($event)"
-        (onCloseAll)="openedApps.set([]); mobileView.set('home')">
+        (onCloseAll)="openedApps.set([]); mobileView.set('home')"
+      >
       </app-mobile-recents>
     }
 
@@ -39,16 +36,18 @@
         [golPaused]="golPaused()"
         (onClose)="closeNotifications()"
         (onToggleTheme)="toggleTheme()"
-        (onToggleGol)="toggleGol()">
+        (onToggleGol)="toggleGol()"
+      >
       </app-notification-panel>
     }
-
   </div>
 
-  <app-mobile-navbar [isDark]="isDark()" [activeView]="mobileView()"
+  <app-mobile-navbar
+    [isDark]="isDark()"
+    [activeView]="mobileView()"
     (onBack)="goBack()"
     (onHome)="goHome()"
-    (onRecents)="goRecents()">
+    (onRecents)="goRecents()"
+  >
   </app-mobile-navbar>
-
 </div>

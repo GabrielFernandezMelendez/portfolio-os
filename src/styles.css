@@ -6,82 +6,83 @@
 :root {
   /* Fuentes */
   --font-pixel: 'Pixelify Sans', 'Courier New', monospace;
-  --font-mono:  'Courier New', Courier, monospace;
-  --font-ui:    'Segoe UI', sans-serif;
+  --font-mono: 'Courier New', Courier, monospace;
+  --font-ui: 'Segoe UI', sans-serif;
 
   /* Tamaños de texto */
---text-xs:    1rem;
---text-sm:    1.05rem;
---text-base:  1.1rem;
---text-md:    1.2rem;
---text-lg:    1.3rem;
---text-xl:    1.45rem;
+  --text-xs: 1rem;
+  --text-sm: 1.05rem;
+  --text-base: 1.1rem;
+  --text-md: 1.2rem;
+  --text-lg: 1.3rem;
+  --text-xl: 1.45rem;
 
   /* Colores principales */
-  --color-accent:       #6366f1;
-  --color-accent-hover: rgba(99,102,241,0.3);
-  --color-accent-bg:    rgba(99,102,241,0.08);
-  --color-accent-border:rgba(99,102,241,0.2);
-  --color-green:        #10b981;
-  --color-purple:       #8b5cf6;
-  --color-yellow:       #f59e0b;
-  --color-red:          #ef4444;
-  --color-cyan:         #06b6d4;
-  --color-pink:         #ec4899;
+  --color-accent: #6366f1;
+  --color-accent-hover: rgba(99, 102, 241, 0.3);
+  --color-accent-bg: rgba(99, 102, 241, 0.08);
+  --color-accent-border: rgba(99, 102, 241, 0.2);
+  --color-green: #10b981;
+  --color-purple: #8b5cf6;
+  --color-yellow: #f59e0b;
+  --color-red: #ef4444;
+  --color-cyan: #06b6d4;
+  --color-pink: #ec4899;
 
   /* Textos */
-  --text-primary:   rgba(255,255,255,0.9);
-  --text-secondary: rgba(255,255,255,0.65);
-  --text-muted:     rgba(255,255,255,0.45);
+  --text-primary: rgba(255, 255, 255, 0.9);
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  --text-muted: rgba(255, 255, 255, 0.45);
 
   /* Bordes y fondos */
-  --border-subtle:  rgba(255,255,255,0.07);
-  --bg-card:        rgba(99,102,241,0.06);
-  --bg-card-hover:  rgba(99,102,241,0.12);
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --bg-card: rgba(99, 102, 241, 0.06);
+  --bg-card-hover: rgba(99, 102, 241, 0.12);
 }
 
 /* ════════════════════════════════════════
    BASE
 ════════════════════════════════════════ */
-html, body {
-  background:  #06060f;
+html,
+body {
+  background: #06060f;
   font-family: var(--font-pixel);
-  font-size:   var(--text-base);
+  font-size: var(--text-base);
 }
 
 /* ════════════════════════════════════════
    TEMA CLARO — variables override
 ════════════════════════════════════════ */
 .light {
-  --text-primary:   rgba(30,27,75,0.9);
-  --text-secondary: rgba(30,27,75,0.65);
-  --text-muted:     rgba(30,27,75,0.45);
-  --border-subtle:  rgba(55,48,163,0.1);
-  --bg-card:        rgba(55,48,163,0.04);
-  --bg-card-hover:  rgba(55,48,163,0.1);
+  --text-primary: rgba(30, 27, 75, 0.9);
+  --text-secondary: rgba(30, 27, 75, 0.65);
+  --text-muted: rgba(30, 27, 75, 0.45);
+  --border-subtle: rgba(55, 48, 163, 0.1);
+  --bg-card: rgba(55, 48, 163, 0.04);
+  --bg-card-hover: rgba(55, 48, 163, 0.1);
 }
 
 /* ════════════════════════════════════════
    VARIABLES MÓVIL
 ════════════════════════════════════════ */
 :root {
-  --mobile-status-height:  36px;
-  --mobile-navbar-height:  56px;
-/* Texto — móvil */
-  --mobile-text-xs:    0.85rem;
-  --mobile-text-sm:    0.95rem;
-  --mobile-text-base:  1.05rem;
-  --mobile-text-md:    1.15rem;
-  --mobile-text-lg:    1.3rem;
-  --mobile-text-xl:    1.5rem;
-  --mobile-bg:             rgba(6,6,15,0.75);
-  --mobile-bg-light:       rgba(240,240,248,0.75);
-  --mobile-border:         rgba(99,102,241,0.2);
-  --mobile-border-light:   rgba(55,48,163,0.2);
+  --mobile-status-height: 36px;
+  --mobile-navbar-height: 56px;
+  /* Texto — móvil */
+  --mobile-text-xs: 0.85rem;
+  --mobile-text-sm: 0.95rem;
+  --mobile-text-base: 1.05rem;
+  --mobile-text-md: 1.15rem;
+  --mobile-text-lg: 1.3rem;
+  --mobile-text-xl: 1.5rem;
+  --mobile-bg: rgba(6, 6, 15, 0.75);
+  --mobile-bg-light: rgba(240, 240, 248, 0.75);
+  --mobile-border: rgba(99, 102, 241, 0.2);
+  --mobile-border-light: rgba(55, 48, 163, 0.2);
   /* Fuentes móvil */
---font-mobile-body:    'Roboto', sans-serif;
---font-mobile-title-1: 'Bebas Neue', sans-serif;
---font-mobile-title-2: 'Nabla', sans-serif;
---font-mobile-title-3: 'Iceberg', sans-serif;
---font-mobile-title-4: 'Syncopate', sans-serif;
+  --font-mobile-body: 'Roboto', sans-serif;
+  --font-mobile-title-1: 'Bebas Neue', sans-serif;
+  --font-mobile-title-2: 'Nabla', sans-serif;
+  --font-mobile-title-3: 'Iceberg', sans-serif;
+  --font-mobile-title-4: 'Syncopate', sans-serif;
 }

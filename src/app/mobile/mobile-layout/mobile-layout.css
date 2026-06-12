@@ -1,7 +1,6 @@
 .mobile-shell {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
+  position: fixed;
+  inset: 0;
   overflow: hidden;
   font-family: var(--font-pixel);
   background: #06060f;
@@ -18,6 +17,7 @@
   flex: 1;
   overflow: hidden;
   z-index: 1;
+  min-height: 0;
 }
 
 app-mobile-home {
@@ -36,4 +36,23 @@ app-mobile-recents {
 
 app-mobile-app-view.hidden-view {
   display: none;
+}
+
+app-mobile-status-bar {
+  position: relative;
+  z-index: 30;
+  flex-shrink: 0;
+}
+
+app-mobile-navbar {
+  position: relative;
+  z-index: 30;
+  flex-shrink: 0;
+}
+
+app-mobile-app-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  z-index: 20;
 }

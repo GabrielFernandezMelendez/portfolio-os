@@ -1,14 +1,17 @@
 <div class="panel-backdrop" (click)="closePanel()">
-  <div class="panel"
+  <div
+    class="panel"
     [class.light]="!isDark()"
     [class.closing]="closing()"
-    (click)="$event.stopPropagation()">
-
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Cabecera -->
     <div class="panel-header">
       <span class="panel-date">{{ currentDate() }}</span>
       <span class="panel-time">{{ currentTime() }}</span>
     </div>
 
+    <!-- Notificaciones fijas -->
     <div class="panel-notifications">
       @for (notif of notifications; track notif.id) {
         <div class="notif-card">
@@ -22,6 +25,7 @@
       }
     </div>
 
+    <!-- Controles -->
     <div class="panel-controls">
       <button class="ctrl-btn" (click)="onToggleTheme.emit()">
         <span class="ctrl-icon">{{ isDark() ? '☀️' : '🌙' }}</span>
@@ -33,9 +37,52 @@
       </button>
     </div>
 
+    <!-- Seccion notificaciones dismissables -->
+    @if (!tipDismissed()) {
+      <div class="notif-section">
+        <div class="section-divider">
+          <span class="section-label">Notificaciones</span>
+        </div>
+
+        <div class="tip-wrapper" [class.dismissing]="dismissing()">
+          <!-- Boton izquierda: Future Implementation -->
+          <div class="tip-action tip-action-left" [class.visible]="swipeOffset() > 30">
+            <span class="future-text">Future Implementation</span>
+          </div>
+
+          <!-- Boton derecha: Eliminar -->
+          <div
+            class="tip-action tip-action-right"
+            [class.visible]="swipeOffset() < -30"
+            (click)="deleteTip()"
+          >
+            <span class="trash-icon">🗑</span>
+          </div>
+
+          <!-- Card swipeable -->
+          <div
+            class="tip-card"
+            [style.transform]="'translateX(' + swipeOffset() + 'px)'"
+            [style.transition]="isSwiping() ? 'none' : 'transform 0.2s ease'"
+            (touchstart)="onTipTouchStart($event)"
+            (touchmove)="onTipTouchMove($event)"
+            (touchend)="onTipTouchEnd($event)"
+          >
+            <img src="pixel-programmer.gif" class="tip-gif" alt="tip" />
+            <div class="tip-body">
+              <span class="tip-title">💡 Consejo</span>
+              <span class="tip-message">
+                Desliza en diagonal ↘ desde cualquier parte de la pantalla para abrir este panel
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Handle -->
     <div class="panel-handle" (click)="closePanel()">
       <div class="handle-bar"></div>
     </div>
-
   </div>
 </div>

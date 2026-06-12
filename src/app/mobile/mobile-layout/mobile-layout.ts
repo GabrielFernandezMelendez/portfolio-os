@@ -113,4 +113,23 @@ export class MobileLayoutComponent {
   goRecents() {
     this.mobileView.set('recents');
   }
+
+  private swipeStartX = 0;
+  private swipeStartY = 0;
+
+  onSwipeStart(e: TouchEvent) {
+    this.swipeStartX = e.touches[0].clientX;
+    this.swipeStartY = e.touches[0].clientY;
+  }
+
+  onSwipeEnd(e: TouchEvent) {
+    const deltaX = e.changedTouches[0].clientX - this.swipeStartX;
+    const deltaY = e.changedTouches[0].clientY - this.swipeStartY;
+
+    // Solo diagonal de arriba-izquierda hacia abajo-derecha
+    // deltaX positivo (derecha) Y deltaY positivo (abajo)
+    if (deltaX > 40 && deltaY > 40 && this.mobileView() !== 'notifications') {
+      this.openNotifications();
+    }
+  }
 }
