@@ -1,0 +1,134 @@
+.skills-mobile {
+  display:        flex;
+  flex-direction: column;
+  min-height:     100%;
+  color:          var(--text-primary);
+}
+
+.skills-mobile * {
+  font-family: var(--font-mobile-body);
+}
+
+/* ── Top Bar ── */
+.top-bar {
+  position:        sticky;
+  top:             0;
+  z-index:         10;
+  height:          56px;
+  display:         flex;
+  align-items:     center;
+  padding:         0 1.2rem;
+  background:      rgba(6,6,15,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom:   1px solid var(--mobile-border);
+  flex-shrink:     0;
+}
+
+.top-bar.light {
+  background:   rgba(240,240,248,0.85);
+  border-color: var(--mobile-border-light);
+}
+
+.top-bar-title {
+  font-family:    var(--font-mobile-title-3);
+  font-size:      1.6rem;
+  color:          var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+.top-bar.light .top-bar-title {
+  color: rgba(30,27,75,0.9);
+}
+
+/* ── Contenido ── */
+.content {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.8rem;
+  padding:        1rem;
+  padding-bottom: 2rem;
+}
+
+/* ── Card de categoría ── */
+.category-card {
+  background:    var(--bg-card);
+  border:        1px solid var(--mobile-border);
+  border-radius: 16px;
+  overflow:      hidden;
+  padding:       1rem;
+}
+
+/* ── Header categoría ── */
+.category-header {
+  display:     flex;
+  align-items: center;
+  gap:         0.6rem;
+  margin-bottom: 1rem;
+}
+
+.category-accent {
+  width:         4px;
+  height:        20px;
+  border-radius: 2px;
+  flex-shrink:   0;
+}
+
+.category-title {
+  font-size:      var(--mobile-text-base);
+  font-weight:    700;
+  margin:         0;
+  flex:           1;
+  letter-spacing: 0.03em;
+}
+
+.skill-count {
+  padding:       0.2rem 0.5rem;
+  background:    var(--border-subtle);
+  border-radius: 20px;
+  font-size:     var(--mobile-text-xs);
+  color:         var(--text-muted);
+}
+
+/* ── Skills ── */
+.skill-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.7rem;
+}
+
+.skill-row {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.3rem;
+}
+
+.skill-info {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+}
+
+.skill-name {
+  font-size: var(--mobile-text-xs);
+  color:     var(--text-secondary);
+}
+
+.skill-percent {
+  font-size:   var(--mobile-text-xs);
+  font-weight: 700;
+}
+
+/* ── Barra de progreso ── */
+.skill-bar-track {
+  height:        10px;
+  background:    var(--border-subtle);
+  border-radius: 5px;
+  overflow:      hidden;
+}
+
+.skill-bar-fill {
+  height:        100%;
+  border-radius: 5px;
+  width:         0%;
+  transition:    width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}

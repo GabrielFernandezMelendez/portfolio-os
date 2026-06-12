@@ -1,0 +1,43 @@
+<div class="skills-mobile">
+
+  <div class="top-bar" [class.light]="!isDark()">
+    <span class="top-bar-title">Habilidades</span>
+  </div>
+
+  <div class="content">
+    @for (category of categories; track category.title) {
+      <div class="category-card">
+
+        <div class="category-header">
+          <div class="category-accent" [style.background]="category.color"></div>
+          <h3 class="category-title" [style.color]="category.color">
+            {{ category.title }}
+          </h3>
+          <span class="skill-count">{{ category.skills.length }}</span>
+        </div>
+
+        <div class="skill-list">
+          @for (skill of category.skills; track skill.name) {
+            <div class="skill-row">
+              <div class="skill-info">
+                <span class="skill-name">{{ skill.name }}</span>
+                <span class="skill-percent" [style.color]="category.color">
+                  {{ skill.current }}%
+                </span>
+              </div>
+              <div class="skill-bar-track">
+                <div
+                  class="skill-bar-fill"
+                  [style.width.%]="skill.current"
+                  [style.background]="category.color">
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+      </div>
+    }
+  </div>
+
+</div>

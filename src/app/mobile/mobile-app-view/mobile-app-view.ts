@@ -1,23 +1,23 @@
 import { Component, input, output, signal, OnInit } from '@angular/core';
-import { ExperienceComponent } from '../../apps/experience/experience';
-import { SkillsComponent } from '../../apps/skills/skills';
 import { EducationComponent } from '../../apps/education/education';
 import { ProjectsComponent } from '../../apps/projects/projects';
 import { ContactComponent } from '../../apps/contact/contact';
 import { GithubComponent } from '../../apps/github/github';
 import { AboutMobileComponent } from '../mobile-apps/cv/about-mobile/about-mobile';
+import { ExperienceMobileComponent } from '../mobile-apps/cv/experience-mobile/experience-mobile';
+import { SkillsMobileComponent } from '../mobile-apps/cv/skills-mobile/skills-mobile';
 
 @Component({
   selector: 'app-mobile-app-view',
   standalone: true,
   imports: [
-    ExperienceComponent,
-    SkillsComponent,
     EducationComponent,
     ProjectsComponent,
     ContactComponent,
     GithubComponent,
     AboutMobileComponent,
+    ExperienceMobileComponent,
+    SkillsMobileComponent
   ],
   templateUrl: './mobile-app-view.html',
   styleUrl: './mobile-app-view.css',

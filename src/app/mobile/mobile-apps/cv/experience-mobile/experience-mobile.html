@@ -1,0 +1,65 @@
+<div class="experience-mobile">
+  <!-- Top Bar -->
+  <div class="top-bar" [class.light]="!isDark()">
+    <span class="top-bar-title">Experiencia</span>
+  </div>
+
+  <div class="content">
+    @for (entry of entries; track entry.company; let last = $last) {
+      <div class="entry-card" [class.current]="entry.current">
+        <!-- Indicador current -->
+        @if (entry.current) {
+          <div class="current-banner">
+            <span class="current-dot"></span>
+            <span class="current-text">EN CURSO</span>
+          </div>
+        }
+
+        <!-- Cabecera -->
+        <div class="entry-header">
+          <div class="company-accent" [class.current]="entry.current"></div>
+          <div class="entry-main">
+            <h3 class="entry-company">{{ entry.company }}</h3>
+            <p class="entry-role">{{ entry.role }}</p>
+          </div>
+        </div>
+
+        <!-- Meta -->
+        <div class="entry-meta">
+          <span class="meta-item">📅 {{ entry.period }}</span>
+          <span class="meta-badge">{{ entry.duration }}</span>
+          <span class="meta-item">📍 {{ entry.location }}</span>
+        </div>
+
+        <!-- Separador -->
+        <div class="entry-divider"></div>
+
+        <!-- Tareas -->
+        <ul class="entry-tasks">
+          @for (task of entry.tasks; track task) {
+            <li class="task-item">
+              <span class="task-dot"></span>
+              {{ task }}
+            </li>
+          }
+        </ul>
+
+        <!-- Badges -->
+        <div class="entry-badges">
+          @for (badge of entry.badges; track badge) {
+            <span class="tech-badge">{{ badge }}</span>
+          }
+        </div>
+      </div>
+
+      <!-- Conector entre cards -->
+      @if (!last) {
+        <div class="card-connector">
+          <div class="connector-line"></div>
+          <div class="connector-dot"></div>
+          <div class="connector-line"></div>
+        </div>
+      }
+    }
+  </div>
+</div>

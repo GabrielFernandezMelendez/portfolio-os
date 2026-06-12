@@ -25,16 +25,17 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
   currentTime = signal('');
   currentDate = signal('');
   closing = signal(false);
-
-  // ── Estado swipe notificacion ─────────────────
+  dismissing = signal(false);
   swipeOffset = signal(0);
   isSwiping = signal(false);
-  tipDismissed = signal(false);
+
+  // ── Persistencia de sesion ────────────────────
+  tipDismissed = signal(sessionStorage.getItem('tip-dismissed') === 'true');
 
   private touchStartX = 0;
   private touchStartY = 0;
-  private clockInterval: any;
   private panelTouchStartY = 0;
+  private clockInterval: any;
 
   notifications: MobileNotification[] = [
     {
@@ -129,21 +130,19 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
     if (Math.abs(deltaX) < 30) {
       this.swipeOffset.set(0);
     } else if (deltaX < 0) {
-      // Swipe izquierda → boton rojo eliminar a la derecha
       this.swipeOffset.set(-80);
     } else {
-      // Swipe derecha → future implementation a la izquierda
       this.swipeOffset.set(80);
     }
   }
-  dismissing = signal(false);
 
   deleteTip() {
     this.dismissing.set(true);
     setTimeout(() => {
+      sessionStorage.setItem('tip-dismissed', 'true');
       this.tipDismissed.set(true);
       this.dismissing.set(false);
       this.swipeOffset.set(0);
-    }, 300);
+    }, 500);
   }
 }
