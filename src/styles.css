@@ -78,4 +78,10 @@ html, body {
   --mobile-bg-light:       rgba(240,240,248,0.75);
   --mobile-border:         rgba(99,102,241,0.2);
   --mobile-border-light:   rgba(55,48,163,0.2);
+  /* Fuentes móvil */
+--font-mobile-body:    'Roboto', sans-serif;
+--font-mobile-title-1: 'Bebas Neue', sans-serif;
+--font-mobile-title-2: 'Nabla', sans-serif;
+--font-mobile-title-3: 'Iceberg', sans-serif;
+--font-mobile-title-4: 'Syncopate', sans-serif;
 }

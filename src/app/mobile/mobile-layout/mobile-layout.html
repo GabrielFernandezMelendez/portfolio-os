@@ -1,27 +1,27 @@
 <div class="mobile-shell" [class.light]="!isDark()">
 
-  <app-mobile-background [isDark]="isDark()" [paused]="golPaused()" />
+  <app-mobile-background
+    [isDark]="isDark()"
+    [paused]="golPaused()" />
 
-  <app-mobile-status-bar [isDark]="isDark()" (onSwipeDown)="openNotifications()">
+  <app-mobile-status-bar
+    [isDark]="isDark()"
+    (onSwipeDown)="openNotifications()">
   </app-mobile-status-bar>
 
   <div class="mobile-viewport">
 
-    @if (mobileView() === 'notifications') {
-      <app-notification-panel [isDark]="isDark()" [golPaused]="golPaused()"
-        (onClose)="closeNotifications()"
-        (onToggleTheme)="toggleTheme()"
-        (onToggleGol)="toggleGol()">
-      </app-notification-panel>
-    }
-
     @if (mobileView() === 'home') {
-      <app-mobile-home [apps]="apps" [isDark]="isDark()" (onOpenApp)="openApp($event)">
+      <app-mobile-home [apps]="apps" [isDark]="isDark()"
+        (onOpenApp)="openApp($event)">
       </app-mobile-home>
     }
 
-    @if (mobileView() === 'app' && activeApp()) {
-      <app-mobile-app-view [appId]="activeApp()!" [isDark]="isDark()">
+    @if (activeApp()) {
+      <app-mobile-app-view
+        [appId]="activeApp()!"
+        [isDark]="isDark()"
+        [class.hidden-view]="mobileView() !== 'app'">
       </app-mobile-app-view>
     }
 
@@ -31,6 +31,16 @@
         (onClose)="closeApp($event)"
         (onCloseAll)="openedApps.set([]); mobileView.set('home')">
       </app-mobile-recents>
+    }
+
+    @if (mobileView() === 'notifications') {
+      <app-notification-panel
+        [isDark]="isDark()"
+        [golPaused]="golPaused()"
+        (onClose)="closeNotifications()"
+        (onToggleTheme)="toggleTheme()"
+        (onToggleGol)="toggleGol()">
+      </app-notification-panel>
     }
 
   </div>

@@ -1,18 +1,16 @@
-import { Component, input, output, signal,
-         OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, input, output, signal, OnInit, OnDestroy, HostListener } from '@angular/core';
 
 @Component({
-  selector:    'app-mobile-status-bar',
-  standalone:  true,
+  selector: 'app-mobile-status-bar',
+  standalone: true,
   templateUrl: './mobile-status-bar.html',
-  styleUrl:    './mobile-status-bar.css'
+  styleUrl: './mobile-status-bar.css',
 })
 export class MobileStatusBarComponent implements OnInit, OnDestroy {
+  isDark = input<boolean>(true);
+  onSwipeDown = output<void>();
 
-  isDark          = input<boolean>(true);
-  onSwipeDown     = output<void>();
-
-  currentTime     = signal('00:00');
+  currentTime = signal('00:00');
   private clockInterval: any;
   private touchStartY = 0;
 
@@ -27,8 +25,8 @@ export class MobileStatusBarComponent implements OnInit, OnDestroy {
 
   updateClock() {
     const now = new Date();
-    const h   = String(now.getHours()).padStart(2, '0');
-    const m   = String(now.getMinutes()).padStart(2, '0');
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
     this.currentTime.set(`${h}:${m}`);
   }
 
@@ -37,11 +35,11 @@ export class MobileStatusBarComponent implements OnInit, OnDestroy {
     this.touchStartY = e.touches[0].clientY;
   }
 
-@HostListener('touchend', ['$event'])
-onTouchEnd(e: TouchEvent) {
-  const deltaY = e.changedTouches[0].clientY - this.touchStartY;
-  if (this.touchStartY < 120 && deltaY > 40) {
-    this.onSwipeDown.emit();
+  @HostListener('touchend', ['$event'])
+  onTouchEnd(e: TouchEvent) {
+    const deltaY = e.changedTouches[0].clientY - this.touchStartY;
+    if (this.touchStartY < window.innerHeight / 2 && deltaY > 40) {
+      this.onSwipeDown.emit();
+    }
   }
-}
 }

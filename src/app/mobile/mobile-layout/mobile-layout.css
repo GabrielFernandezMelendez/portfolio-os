@@ -1,33 +1,39 @@
 .mobile-shell {
-  position:       relative;
-  width:          100vw;
-  height:         100vh;
-  overflow:       hidden;
-  font-family:    var(--font-pixel);
-  background:     #06060f;
-  display:        flex;
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-family: var(--font-pixel);
+  background: #06060f;
+  display: flex;
   flex-direction: column;
 }
 
-.mobile-shell.light { background: #f0f0f8; }
+.mobile-shell.light {
+  background: #f0f0f8;
+}
 
 .mobile-viewport {
   position: relative;
-  flex:     1;
+  flex: 1;
   overflow: hidden;
-  z-index:  1;
+  z-index: 1;
 }
 
 app-mobile-home {
   position: absolute;
-  inset:    0;
-  display:  flex;
+  inset: 0;
+  display: flex;
   overflow: hidden;
 }
 
 app-mobile-recents {
   position: absolute;
-  inset:    0;
-  display:  flex;
-  z-index:  20;
+  inset: 0;
+  display: flex;
+  z-index: 20;
+}
+
+app-mobile-app-view.hidden-view {
+  display: none;
 }

@@ -6,7 +6,7 @@
 
   <div class="app-content">
     @switch (appId()) {
-      @case ('about')      { <app-about /> }
+      @case ('about') { <app-about-mobile [isDark]="isDark()" /> }
       @case ('experience') { <app-experience /> }
       @case ('skills')     { <app-skills /> }
       @case ('education')  { <app-education /> }

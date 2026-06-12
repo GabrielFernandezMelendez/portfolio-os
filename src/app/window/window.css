@@ -1,110 +1,210 @@
 .os-window {
-  position:        absolute;
-  display:         flex;
-  flex-direction:  column;
-  background:      rgba(15,15,30,0.85);
-  border:          2px solid #ffffff;
-  border-right:    2px solid #808080;
-  border-bottom:   2px solid #808080;
-  border-radius:   0;
-  box-shadow:      2px 2px 0 #000000;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 15, 30, 0.85);
+  border: 2px solid #ffffff;
+  border-right: 2px solid #808080;
+  border-bottom: 2px solid #808080;
+  border-radius: 0;
+  box-shadow: 2px 2px 0 #000000;
   backdrop-filter: blur(16px);
-  overflow:        hidden;
-  min-width:       300px;
-  min-height:      200px;
+  overflow: hidden;
+  min-width: 300px;
+  min-height: 200px;
 }
 
 /* ── Barra de título Win2k ── */
 .titlebar {
-  display:       flex;
-  align-items:   center;
-  gap:           0.4rem;
-  padding:       3px 4px 3px 6px;
-  background:    linear-gradient(90deg, #000080, #1084d0);
-  cursor:        grab;
-  user-select:   none;
-  flex-shrink:   0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 3px 4px 3px 6px;
+  background: linear-gradient(90deg, #000080, #1084d0);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  flex-shrink: 0;
   border-bottom: 1px solid #000040;
 }
 
-.titlebar:active  { cursor: grabbing; }
-.titlebar-icon    { font-size: 0.9rem; flex-shrink: 0; }
+.titlebar:active {
+  cursor: grabbing;
+}
+.titlebar-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
 
 .titlebar-title {
-  font-family:    'Tahoma', 'Segoe UI', sans-serif;
-  font-size:      0.8rem;
-  font-weight:    700;
-  color:          #ffffff;
+  font-family: 'Tahoma', 'Segoe UI', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
   letter-spacing: 0.02em;
-  flex:           1;
+  flex: 1;
 }
 
 .titlebar-controls {
-  display:     flex;
-  gap:         2px;
+  display: flex;
+  gap: 2px;
   flex-shrink: 0;
 }
 
 /* ── Botones Win2k ── */
 .win-btn {
-  width:           16px;
-  height:          14px;
-  display:         flex;
-  align-items:     center;
+  width: 16px;
+  height: 14px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  font-size:       0.6rem;
-  font-weight:     700;
-  cursor:          pointer;
-  border:          none;
-  line-height:     1;
-  font-family:     'Tahoma', sans-serif;
-  background:      #c0c0c0;
-  border-top:      1px solid #ffffff;
-  border-left:     1px solid #ffffff;
-  border-right:    1px solid #808080;
-  border-bottom:   1px solid #808080;
-  color:           #000000;
+  font-size: 0.6rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  line-height: 1;
+  font-family: 'Tahoma', sans-serif;
+  background: #c0c0c0;
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #ffffff;
+  border-right: 1px solid #808080;
+  border-bottom: 1px solid #808080;
+  color: #000000;
 }
 
-.win-btn:hover  { background: #d4d4d4; }
+.win-btn:hover {
+  background: #d4d4d4;
+}
 
 .win-btn:active {
-  border-top:    1px solid #808080;
-  border-left:   1px solid #808080;
-  border-right:  1px solid #ffffff;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #ffffff;
   border-bottom: 1px solid #ffffff;
 }
 
-.btn-close:hover { background: #e06060; color: #ffffff; }
+.btn-close:hover {
+  background: #e06060;
+  color: #ffffff;
+}
 
 /* ── Cuerpo ── */
 .window-body {
-  flex:        1;
-  overflow-y:  auto;
-  padding:     1.25rem;
-  color:       var(--text-primary);
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
+  color: var(--text-primary);
   font-family: var(--font-pixel);
-  font-size:   var(--text-base);
+  font-size: var(--text-base);
   line-height: 1.6;
 }
 
-.window-body::-webkit-scrollbar       { width: 6px; }
-.window-body::-webkit-scrollbar-track { background: transparent; }
-.window-body::-webkit-scrollbar-thumb { background: var(--color-accent-hover); border-radius: 3px; }
+.window-body::-webkit-scrollbar {
+  width: 6px;
+}
+.window-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.window-body::-webkit-scrollbar-thumb {
+  background: var(--color-accent-hover);
+  border-radius: 3px;
+}
 
 /* ── Tema claro ── */
 :host-context(.light) .os-window {
-  background:   rgba(240,240,248,0.95);
+  background: rgba(240, 240, 248, 0.95);
   border-color: #ffffff;
 }
 
 /* ── Resize handles ── */
-.resize-handle          { position: absolute; z-index: 10; }
-.resize-handle.n        { top: 0;    left: 6px;  right: 6px;  height: 5px; cursor: n-resize;  }
-.resize-handle.s        { bottom: 0; left: 6px;  right: 6px;  height: 5px; cursor: s-resize;  }
-.resize-handle.e        { top: 6px;  right: 0;   bottom: 6px; width:  5px; cursor: e-resize;  }
-.resize-handle.w        { top: 6px;  left: 0;    bottom: 6px; width:  5px; cursor: w-resize;  }
-.resize-handle.ne       { top: 0;    right: 0;   width: 10px; height: 10px; cursor: ne-resize; }
-.resize-handle.nw       { top: 0;    left: 0;    width: 10px; height: 10px; cursor: nw-resize; }
-.resize-handle.se       { bottom: 0; right: 0;   width: 10px; height: 10px; cursor: se-resize; }
-.resize-handle.sw       { bottom: 0; left: 0;    width: 10px; height: 10px; cursor: sw-resize; }
+.resize-handle {
+  position: absolute;
+  z-index: 10;
+  touch-action: none;
+}
+.resize-handle.n {
+  top: 0;
+  left: 6px;
+  right: 6px;
+  height: 5px;
+  cursor: n-resize;
+}
+.resize-handle.s {
+  bottom: 0;
+  left: 6px;
+  right: 6px;
+  height: 5px;
+  cursor: s-resize;
+}
+.resize-handle.e {
+  top: 6px;
+  right: 0;
+  bottom: 6px;
+  width: 5px;
+  cursor: e-resize;
+}
+.resize-handle.w {
+  top: 6px;
+  left: 0;
+  bottom: 6px;
+  width: 5px;
+  cursor: w-resize;
+}
+.resize-handle.ne {
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  cursor: ne-resize;
+}
+.resize-handle.nw {
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  cursor: nw-resize;
+}
+.resize-handle.se {
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  cursor: se-resize;
+}
+.resize-handle.sw {
+  bottom: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  cursor: sw-resize;
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .win-btn {
+    width: 28px;
+    height: 24px;
+    font-size: 0.8rem;
+  }
+
+  .titlebar {
+    padding: 5px 6px 5px 8px;
+  }
+
+  .resize-handle.ne,
+  .resize-handle.nw,
+  .resize-handle.se,
+  .resize-handle.sw {
+    width: 18px;
+    height: 18px;
+  }
+
+  .resize-handle.n,
+  .resize-handle.s {
+    height: 8px;
+  }
+
+  .resize-handle.e,
+  .resize-handle.w {
+    width: 8px;
+  }
+}
