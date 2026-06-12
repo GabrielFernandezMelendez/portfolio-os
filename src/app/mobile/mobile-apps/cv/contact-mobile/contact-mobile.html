@@ -1,0 +1,43 @@
+<div class="contact-mobile">
+
+  <div class="top-bar" [class.light]="!isDark()">
+    <span class="top-bar-title">Artemis21</span>
+  </div>
+
+  <div class="chat-body" #chatBody>
+
+    @for (msg of messages(); track msg.id) {
+      <div class="message" [class.ai]="msg.sender === 'ai'"
+           [class.user]="msg.sender === 'user'">
+        <div class="bubble" [class.ai-bubble]="msg.sender === 'ai'"
+             [class.user-bubble]="msg.sender === 'user'">
+          {{ msg.text }}
+        </div>
+      </div>
+    }
+
+    @if (isTyping()) {
+      <div class="message ai">
+        <div class="bubble ai-bubble typing-bubble">
+          <span class="star-typing">✦</span>
+        </div>
+      </div>
+    }
+
+  </div>
+
+  <div class="chat-input-area" [class.light]="!isDark()">
+    <input
+      #chatInput
+      type="text"
+      class="chat-input"
+      [class.light]="!isDark()"
+      [(ngModel)]="currentMsg"
+      (keydown)="onKeydown($event)"
+      placeholder="Escribe linkedin, email, teléfono..."
+      autocomplete="off"
+    />
+    <button class="send-btn" (click)="sendMessage()">➤</button>
+  </div>
+
+</div>

@@ -1,0 +1,91 @@
+<div class="projects-mobile">
+  <div class="top-bar" [class.light]="!isDark()">
+    <span class="top-bar-title">Proyectos</span>
+  </div>
+
+  <div class="content">
+    <!-- Frontend -->
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2 class="section-title">Frontend</h2>
+    </div>
+
+    @for (project of frontendProjects; track project.id) {
+      <div class="project-card" [class.wip]="project.status === 'wip'">
+        <div class="card-top">
+          <div class="card-title-row">
+            <span class="card-icon">{{ project.icon }}</span>
+            <span class="card-name">{{ project.name }}</span>
+            @if (project.status === 'done') {
+              <img src="Diamond.gif" class="done-gif" alt="done" />
+            }
+            @if (project.status === 'wip') {
+              <span class="wip-badge">🚧 En curso</span>
+            }
+          </div>
+          <p class="card-desc">{{ project.description }}</p>
+        </div>
+
+        <div class="card-stack">
+          @for (tech of project.stack; track tech) {
+            <span class="tech-tag" [class.backend]="project.type === 'backend'">
+              {{ tech }}
+            </span>
+          }
+        </div>
+
+        <div class="card-divider"></div>
+
+        <div class="card-actions">
+          <button class="btn-github" (click)="openLink(project.github)">🐙 GitHub</button>
+          @if (project.live) {
+            <button class="btn-live" (click)="openLink(project.live!)">🌐 Live</button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Backend -->
+    <div class="section-header" style="margin-top: 0.4rem">
+      <div class="section-accent" style="background: var(--color-purple)"></div>
+      <h2 class="section-title">Backend & Multiplataforma</h2>
+    </div>
+
+    @for (project of backendProjects; track project.id) {
+      <div class="project-card backend-card">
+        <div class="card-top">
+          <div class="card-title-row">
+            <span class="card-icon">{{ project.icon }}</span>
+            <span class="card-name">{{ project.name }}</span>
+            <img src="Diamond.gif" class="done-gif" alt="done" />
+          </div>
+          <p class="card-desc">{{ project.description }}</p>
+        </div>
+
+        <div class="card-stack">
+          @for (tech of project.stack; track tech) {
+            <span class="tech-tag backend">{{ tech }}</span>
+          }
+        </div>
+
+        <div class="card-divider"></div>
+
+        <div class="card-actions">
+          <button class="btn-github" (click)="openLink(project.github)">🐙 GitHub</button>
+        </div>
+      </div>
+    }
+
+    <!-- Nota pixel -->
+    <div class="pixel-note">
+      <img src="pixel-programmer.gif" class="pixel-char" alt="pixel dev" />
+      <div class="note-bubble">
+        <p class="note-main">Los proyectos backend necesitan su propio entorno para ejecutarse.</p>
+        <p class="note-sub">
+          ...y las instrucciones que no encuentres, seguro que encuentras una solución. Para algo
+          somos programadores.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

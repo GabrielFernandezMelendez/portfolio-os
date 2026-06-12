@@ -1,0 +1,110 @@
+<p>education-mobile works!</p>
+<div class="education-mobile">
+
+  <div class="top-bar" [class.light]="!isDark()">
+    <span class="top-bar-title">Formación</span>
+  </div>
+
+  <div class="content">
+
+    <!-- Formación académica -->
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2 class="section-title">Formación académica</h2>
+    </div>
+
+    <div class="edu-list">
+      @for (entry of education; track entry.title) {
+        <div class="edu-card" [class.current]="entry.current">
+
+          @if (entry.current) {
+            <div class="current-banner">
+              <span class="current-dot"></span>
+              <span class="current-text">EN CURSO</span>
+            </div>
+          }
+
+          <div class="edu-header">
+            <span class="edu-icon">{{ entry.icon }}</span>
+            <div class="edu-info">
+              <span class="edu-title">{{ entry.title }}</span>
+              <span class="edu-subtitle">{{ entry.subtitle }}</span>
+            </div>
+          </div>
+
+          <div class="edu-meta">
+            <span class="meta-item">🏛 {{ entry.center }}</span>
+            <span class="meta-item">📅 {{ entry.period }}</span>
+          </div>
+
+        </div>
+      }
+    </div>
+
+    <!-- Certificaciones -->
+    <div class="section-header">
+      <div class="section-accent" style="background: var(--color-cyan)"></div>
+      <h2 class="section-title">Certificaciones</h2>
+    </div>
+
+    <div class="certs-list">
+      @for (cert of certificates; track cert.title) {
+        <div class="cert-card">
+          <div class="cert-left">
+            <span class="cert-icon">{{ cert.icon }}</span>
+            <div class="cert-info">
+              <span class="cert-title">{{ cert.title }}</span>
+              <span class="cert-meta">{{ cert.hours }} · {{ cert.date }}</span>
+              <span class="cert-provider">OpenWebinars</span>
+            </div>
+          </div>
+          <div class="cert-actions">
+            <button class="cert-btn" (click)="openLink(cert.url)">🔗</button>
+            <button class="cert-btn" (click)="openPdf(cert.pdf)">📄</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Nota del personaje -->
+    <div class="pixel-note">
+      <img src="pixel-programmer.gif" class="pixel-char" alt="pixel dev" />
+      <div class="note-bubble">
+        <p class="note-main">
+          Solo un 10% de lo que usé en este proyecto
+          vino de estas certificaciones.
+        </p>
+        <p class="note-sub">
+          El otro 90% fue documentación oficial,
+          Stack Overflow a las 2am y ganas de
+          entender cómo funcionan las cosas.
+        </p>
+      </div>
+    </div>
+
+    <!-- Idiomas -->
+    <div class="section-header">
+      <div class="section-accent" style="background: var(--color-green)"></div>
+      <h2 class="section-title">Idiomas</h2>
+    </div>
+
+    <div class="lang-list">
+      @for (lang of languages; track lang.name) {
+        <div class="lang-card">
+          <div class="lang-header">
+            <span class="lang-flag">{{ lang.flag }}</span>
+            <span class="lang-name">{{ lang.name }}</span>
+            <span class="lang-level" [style.color]="lang.color">{{ lang.level }}</span>
+          </div>
+          <div class="lang-bar-track">
+            <div class="lang-bar-fill"
+              [style.width.%]="lang.current"
+              [style.background]="lang.color">
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+  </div>
+</div>

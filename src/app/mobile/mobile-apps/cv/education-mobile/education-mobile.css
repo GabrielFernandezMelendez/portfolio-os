@@ -1,0 +1,324 @@
+.education-mobile {
+  display:        flex;
+  flex-direction: column;
+  min-height:     100%;
+  color:          var(--text-primary);
+}
+
+.education-mobile * {
+  font-family: var(--font-mobile-body);
+}
+
+/* ── Top Bar ── */
+.top-bar {
+  position:        sticky;
+  top:             0;
+  z-index:         10;
+  height:          56px;
+  display:         flex;
+  align-items:     center;
+  padding:         0 1.2rem;
+  background:      rgba(6,6,15,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom:   1px solid var(--mobile-border);
+  flex-shrink:     0;
+}
+
+.top-bar.light {
+  background:   rgba(240,240,248,0.85);
+  border-color: var(--mobile-border-light);
+}
+
+.top-bar-title {
+  font-family:    var(--font-mobile-title-4);
+  font-size:      1.4rem;
+  color:          var(--text-primary);
+  letter-spacing: 0.08em;
+}
+
+.top-bar.light .top-bar-title { color: rgba(30,27,75,0.9); }
+
+/* ── Contenido ── */
+.content {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.8rem;
+  padding:        1rem;
+  padding-bottom: 2rem;
+}
+
+/* ── Section header ── */
+.section-header {
+  display:     flex;
+  align-items: center;
+  gap:         0.6rem;
+  margin-top:  0.4rem;
+}
+
+.section-accent {
+  width:         4px;
+  height:        20px;
+  background:    var(--color-accent);
+  border-radius: 2px;
+  flex-shrink:   0;
+}
+
+.section-title {
+  font-size:   var(--mobile-text-base);
+  font-weight: 700;
+  color:       var(--text-primary);
+  margin:      0;
+}
+
+/* ── Educación ── */
+.edu-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.7rem;
+}
+
+.edu-card {
+  background:    var(--bg-card);
+  border:        1px solid var(--mobile-border);
+  border-radius: 16px;
+  padding:       1rem;
+  display:       flex;
+  flex-direction: column;
+  gap:           0.6rem;
+}
+
+.edu-card.current {
+  border-color: var(--color-accent);
+  background:   rgba(99,102,241,0.08);
+}
+
+.current-banner {
+  display:      flex;
+  align-items:  center;
+  gap:          0.4rem;
+  padding:      0.3rem 0.7rem;
+  background:   rgba(99,102,241,0.2);
+  border-radius: 20px;
+  align-self:   flex-start;
+}
+
+.current-dot {
+  width:         8px;
+  height:        8px;
+  border-radius: 50%;
+  background:    var(--color-accent);
+  animation:     pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.3); }
+}
+
+.current-text {
+  font-size:      var(--mobile-text-xs);
+  font-weight:    700;
+  color:          var(--color-accent);
+  letter-spacing: 0.08em;
+}
+
+.edu-header {
+  display:     flex;
+  align-items: flex-start;
+  gap:         0.7rem;
+}
+
+.edu-icon    { font-size: 1.3rem; flex-shrink: 0; }
+
+.edu-info {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+}
+
+.edu-title {
+  font-size:   var(--mobile-text-sm);
+  font-weight: 700;
+  color:       var(--text-primary);
+}
+
+.edu-subtitle {
+  font-size: var(--mobile-text-xs);
+  color:     var(--text-secondary);
+}
+
+.edu-meta {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       0.5rem;
+}
+
+.meta-item {
+  font-size: var(--mobile-text-xs);
+  color:     var(--text-muted);
+}
+
+/* ── Certificados ── */
+.certs-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            0;
+  background:     var(--bg-card);
+  border:         1px solid var(--mobile-border);
+  border-radius:  16px;
+  overflow:       hidden;
+}
+
+.cert-card {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         0.8rem 1rem;
+  border-bottom:   1px solid var(--border-subtle);
+  gap:             0.8rem;
+}
+
+.cert-card:last-child { border-bottom: none; }
+
+.cert-left {
+  display:     flex;
+  align-items: center;
+  gap:         0.7rem;
+  flex:        1;
+}
+
+.cert-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+.cert-info {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+}
+
+.cert-title {
+  font-size:   var(--mobile-text-xs);
+  font-weight: 700;
+  color:       var(--text-primary);
+}
+
+.cert-meta {
+  font-size: 0.75rem;
+  color:     var(--text-muted);
+}
+
+.cert-provider {
+  font-size: 0.7rem;
+  color:     var(--color-cyan);
+}
+
+.cert-actions {
+  display: flex;
+  gap:     0.4rem;
+}
+
+.cert-btn {
+  width:         34px;
+  height:        34px;
+  border-radius: 8px;
+  background:    var(--bg-card);
+  border:        1px solid var(--mobile-border);
+  cursor:        pointer;
+  font-size:     1rem;
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  transition:    all 0.2s;
+}
+
+.cert-btn:active { background: var(--bg-card-hover); }
+
+/* ── Nota pixel ── */
+.pixel-note {
+  display:       flex;
+  align-items:   flex-start;
+  gap:           0.8rem;
+  padding:       1rem;
+  background:    var(--bg-card);
+  border:        1px solid var(--mobile-border);
+  border-radius: 16px;
+}
+
+.pixel-char {
+  width:           72px;
+  height:          72px;
+  object-fit:      contain;
+  image-rendering: pixelated;
+  flex-shrink:     0;
+}
+
+.note-bubble {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.4rem;
+  flex:           1;
+}
+
+.note-main {
+  font-size:   var(--mobile-text-xs);
+  font-weight: 700;
+  color:       var(--text-primary);
+  margin:      0;
+}
+
+.note-sub {
+  font-size:   0.75rem;
+  color:       var(--text-secondary);
+  line-height: 1.6;
+  margin:      0;
+}
+
+/* ── Idiomas ── */
+.lang-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.7rem;
+}
+
+.lang-card {
+  background:    var(--bg-card);
+  border:        1px solid var(--mobile-border);
+  border-radius: 12px;
+  padding:       0.8rem;
+  display:       flex;
+  flex-direction: column;
+  gap:           0.5rem;
+}
+
+.lang-header {
+  display:     flex;
+  align-items: center;
+  gap:         0.6rem;
+}
+
+.lang-flag  { font-size: 1.3rem; }
+
+.lang-name {
+  font-size:   var(--mobile-text-sm);
+  font-weight: 700;
+  color:       var(--text-primary);
+  flex:        1;
+}
+
+.lang-level {
+  font-size:   var(--mobile-text-xs);
+  font-weight: 700;
+}
+
+.lang-bar-track {
+  height:        8px;
+  background:    var(--border-subtle);
+  border-radius: 4px;
+  overflow:      hidden;
+}
+
+.lang-bar-fill {
+  height:        100%;
+  border-radius: 4px;
+  width:         0%;
+  transition:    width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -1,0 +1,247 @@
+.projects-mobile {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  color: var(--text-primary);
+}
+
+.projects-mobile * {
+  font-family: var(--font-mobile-body);
+}
+
+/* ── Top Bar ── */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 1.2rem;
+  background: rgba(6, 6, 15, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--mobile-border);
+  flex-shrink: 0;
+}
+
+.top-bar.light {
+  background: rgba(240, 240, 248, 0.85);
+  border-color: var(--mobile-border-light);
+}
+
+.top-bar-title {
+  font-family: var(--font-mobile-title-1);
+  font-size: 2rem;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+.top-bar.light .top-bar-title {
+  color: rgba(30, 27, 75, 0.9);
+}
+
+/* ── Contenido ── */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1rem;
+  padding-bottom: 2rem;
+}
+
+/* ── Section header ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.section-accent {
+  width: 4px;
+  height: 20px;
+  background: var(--color-accent);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-size: var(--mobile-text-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ── Project card ── */
+.project-card {
+  background: var(--bg-card);
+  border: 1px solid var(--mobile-border);
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.project-card.wip {
+  border-color: var(--color-yellow);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.project-card.backend-card {
+  border-color: rgba(139, 92, 246, 0.3);
+  background: rgba(139, 92, 246, 0.05);
+}
+
+/* ── Card top ── */
+.card-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.card-name {
+  font-size: var(--mobile-text-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.done-gif {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.wip-badge {
+  padding: 0.2rem 0.5rem;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 20px;
+  font-size: 0.7rem;
+  color: var(--color-yellow);
+}
+
+.card-desc {
+  font-size: var(--mobile-text-xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Stack ── */
+.card-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tech-tag {
+  padding: 0.2rem 0.6rem;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid var(--mobile-border);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.tech-tag.backend {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+/* ── Divider ── */
+.card-divider {
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* ── Actions ── */
+.card-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.btn-github,
+.btn-live {
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: var(--mobile-text-xs);
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.btn-github {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid var(--mobile-border);
+  color: var(--text-secondary);
+}
+
+.btn-live {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--color-green);
+}
+
+.btn-github:active {
+  background: rgba(99, 102, 241, 0.3);
+}
+.btn-live:active {
+  background: rgba(16, 185, 129, 0.3);
+}
+
+/* ── Pixel note ── */
+.pixel-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--mobile-border);
+  border-radius: 16px;
+  margin-top: 0.4rem;
+}
+
+.pixel-char {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.note-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.note-main {
+  font-size: var(--mobile-text-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.note-sub {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}

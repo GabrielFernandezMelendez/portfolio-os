@@ -9,9 +9,9 @@
       @case ('about') { <app-about-mobile [isDark]="isDark()" /> }
       @case ('experience') { <app-experience-mobile [isDark]="isDark()" /> }
       @case ('skills') { <app-skills-mobile [isDark]="isDark()" /> }
-      @case ('education')  { <app-education /> }
-      @case ('projects')   { <app-projects /> }
-      @case ('contact')    { <app-contact [isLight]="!isDark()" /> }
+      @case ('education') { <app-education-mobile [isDark]="isDark()" /> }
+      @case ('projects') { <app-projects-mobile [isDark]="isDark()" /> }
+      @case ('contact') { <app-contact-mobile [isDark]="isDark()" /> }
       @case ('github')     { <app-github /> }
     }
   </div>
