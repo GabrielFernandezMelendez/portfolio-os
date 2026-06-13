@@ -1,0 +1,107 @@
+<p>github-mobile works!</p>
+<div class="github-mobile">
+  <div class="top-bar" [class.light]="!isDark()">
+    <span class="top-bar-title">GitHub</span>
+  </div>
+
+  <div class="content">
+    @if (loading()) {
+      <div class="loading-state">
+        <span class="loading-dot"></span>
+        <span class="loading-dot"></span>
+        <span class="loading-dot"></span>
+        <span class="loading-text">Conectando con GitHub...</span>
+      </div>
+    }
+
+    @if (error()) {
+      <div class="error-card">
+        <span class="error-icon">⚠</span>
+        <p class="error-text">{{ error() }}</p>
+        <button class="gh-btn" (click)="openGithub()">Abrir GitHub</button>
+      </div>
+    }
+
+    @if (!loading() && !error() && user()) {
+      <!-- Avatar + stats -->
+      <div class="profile-card">
+        <div class="profile-top">
+          <img [src]="user()!.avatar_url" [alt]="user()!.login" class="gh-avatar" />
+          <div class="profile-info">
+            <h2 class="gh-name">{{ user()!.name }}</h2>
+            <p class="gh-login">&#64;{{ user()!.login }}</p>
+            @if (user()!.bio) {
+              <p class="gh-bio">{{ user()!.bio }}</p>
+            }
+          </div>
+        </div>
+
+        <div class="gh-stats">
+          <div class="stat-item">
+            <span class="stat-value">{{ user()!.public_repos }}</span>
+            <span class="stat-label">Repos</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-value">{{ user()!.followers }}</span>
+            <span class="stat-label">Seguidores</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-value">{{ user()!.following }}</span>
+            <span class="stat-label">Siguiendo</span>
+          </div>
+        </div>
+
+        <button class="gh-btn" (click)="openGithub()">🐙 Ver perfil completo</button>
+      </div>
+
+      <!-- Repos -->
+      <div class="section-header">
+        <div class="section-accent"></div>
+        <h2 class="section-title">Repositorios recientes</h2>
+      </div>
+
+      @for (repo of repos(); track repo.id) {
+        <div class="repo-card" (click)="openGithub()">
+          <div class="repo-header">
+            <span class="repo-icon">📁</span>
+            <span class="repo-name">{{ repo.name }}</span>
+          </div>
+
+          @if (repo.description) {
+            <p class="repo-desc">{{ repo.description }}</p>
+          }
+
+          <div class="repo-stats">
+            <span class="repo-stat stars">
+              ⭐ {{ formatNumber(generateFakeStats(repo.id).stars) }}
+            </span>
+            <span class="repo-stat forks">
+              ⑂ {{ formatNumber(generateFakeStats(repo.id).forks) }}
+            </span>
+            <span class="repo-stat watchers">
+              👁 {{ formatNumber(generateFakeStats(repo.id).watchers) }}
+            </span>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- Globo pixel -->
+    <div class="pixel-note">
+      <img src="pixel-programmer.gif" class="pixel-char" alt="pixel dev" />
+      <div class="speech-bubble">
+        <p class="speech-main">
+          Intenté cargar GitHub directamente aquí dentro... pero me bloquearon con:
+        </p>
+        <code class="speech-code">X-Frame-Options: deny</code>
+        <p class="speech-sub">
+          Al final puedo mostrar todos mis proyectos actualizados en tiempo real con la API
+          pública... pero puede que algún que otro ⭐ me inventara.
+        </p>
+        <button class="gh-btn" (click)="openGithub()">Ver el GitHub de verdad →</button>
+      </div>
+    </div>
+  </div>
+</div>

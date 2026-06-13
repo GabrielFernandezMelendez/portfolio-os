@@ -1,5 +1,7 @@
-import { Component, signal, ViewChild, ElementRef, AfterViewInit, input } from '@angular/core';
+import { Component, signal, ViewChild, ElementRef,
+         AfterViewInit, input, inject, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { I18nService } from '../../i18n/i18n.service';
 
 interface TerminalLine {
   text: string;
@@ -7,56 +9,51 @@ interface TerminalLine {
 }
 
 @Component({
-  selector: 'app-contact',
-  standalone: true,
-  imports: [FormsModule],
+  selector:    'app-contact',
+  standalone:  true,
+  imports:     [FormsModule],
   templateUrl: './contact.html',
-  styleUrl: './contact.css',
+  styleUrl:    './contact.css',
 })
 export class ContactComponent implements AfterViewInit {
+
   @ViewChild('terminalInput') inputRef!: ElementRef;
-  @ViewChild('terminalBody') bodyRef!: ElementRef;
+  @ViewChild('terminalBody')  bodyRef!:  ElementRef;
 
+  i18n           = inject(I18nService);
+  isLight        = input<boolean>(false);
   currentCommand = '';
-  isError = signal(false);
+  isError        = signal(false);
+  history        = signal<TerminalLine[]>([]);
 
-  history = signal<TerminalLine[]>([
-    { text: 'Microsoft Windows [Version 11.0.0]', type: 'system' },
-    {
-      text: '(c) Gabriel Fernandez Corp. 2026. Todos los derechos reservados... o casi.',
-      type: 'system',
-    },
-    { text: '', type: 'system' },
-    { text: 'C:\\Recruiters\\Contact> contact --info', type: 'command' },
-    { text: '', type: 'system' },
-    {
-      text: 'C:\\Recruiters\\Contact\\Gmail>    gabriel.fernandezdeveloper@gmail.com',
-      type: 'info',
-    },
-    {
-      text: 'C:\\Recruiters\\Contact\\LinkedIn> linkedin.com/in/gabriel-fernandez-melendez',
-      type: 'info',
-    },
-    {
-      text: 'C:\\Recruiters\\Contact\\GitHub>   github.com/GabrielFernandezMelendez',
-      type: 'info',
-    },
-    { text: 'C:\\Recruiters\\Contact\\Tlf>      +34 648446865', type: 'info' },
-    { text: '', type: 'system' },
-    { text: '─────────────────────────────────────────────────────', type: 'system' },
-    {
-      text: 'Escribe un comando para contactar. Escribe "help" para ver los disponibles.',
-      type: 'system',
-    },
-    { text: '─────────────────────────────────────────────────────', type: 'system' },
-    { text: '', type: 'system' },
-  ]);
-
-  ngAfterViewInit() {
-    this.focusInput();
+  constructor() {
+    effect(() => {
+      // Reinicia el historial cuando cambia el idioma
+      this.i18n.currentLang();
+      this.history.set(this.buildInitialHistory());
+    });
   }
 
-  isLight = input<boolean>(false);
+  buildInitialHistory(): TerminalLine[] {
+    return [
+      { text: this.i18n.t('contact.terminal_intro_1'), type: 'system' },
+      { text: this.i18n.t('contact.terminal_intro_2'), type: 'system' },
+      { text: '', type: 'system' },
+      { text: 'C:\\Recruiters\\Contact> contact --info', type: 'command' },
+      { text: '', type: 'system' },
+      { text: 'C:\\Recruiters\\Contact\\Gmail>    gabriel.fernandezdeveloper@gmail.com', type: 'info' },
+      { text: 'C:\\Recruiters\\Contact\\LinkedIn> linkedin.com/in/gabriel-fernandez-melendez', type: 'info' },
+      { text: 'C:\\Recruiters\\Contact\\GitHub>   github.com/GabrielFernandezMelendez', type: 'info' },
+      { text: 'C:\\Recruiters\\Contact\\Tlf>      +34 648446865', type: 'info' },
+      { text: '', type: 'system' },
+      { text: '─────────────────────────────────────────────────────', type: 'system' },
+      { text: this.i18n.t('contact.terminal_hint'), type: 'system' },
+      { text: '─────────────────────────────────────────────────────', type: 'system' },
+      { text: '', type: 'system' },
+    ];
+  }
+
+  ngAfterViewInit() { this.focusInput(); }
 
   focusInput() {
     setTimeout(() => this.inputRef?.nativeElement?.focus(), 100);
@@ -71,7 +68,7 @@ export class ContactComponent implements AfterViewInit {
   }
 
   addLine(text: string, type: TerminalLine['type']) {
-    this.history.update((h) => [...h, { text, type }]);
+    this.history.update(h => [...h, { text, type }]);
   }
 
   executeCommand() {
@@ -83,46 +80,40 @@ export class ContactComponent implements AfterViewInit {
 
     switch (cmd) {
       case 'gmail':
-        this.addLine('Abriendo Gmail...', 'success');
-        this.addLine('Destinatario: gabriel.fernandezdeveloper@gmail.com', 'success');
+        this.addLine(this.i18n.t('contact.terminal_gmail_ok'), 'success');
+        this.addLine(this.i18n.t('contact.terminal_gmail_to'), 'success');
         window.open(
           'https://mail.google.com/mail/?view=cm&to=gabriel.fernandezdeveloper@gmail.com&su=Contacto desde Portfolio',
-          '_blank',
+          '_blank'
         );
         break;
 
       case 'linkedin':
-        this.addLine('Abriendo LinkedIn...', 'success');
+        this.addLine(this.i18n.t('contact.terminal_linkedin_ok'), 'success');
         window.open(
           'https://www.linkedin.com/in/gabriel-fern%C3%A1ndez-mel%C3%A9ndez-336640238',
-          '_blank',
+          '_blank'
         );
         break;
 
       case 'github':
-        this.addLine('Abriendo GitHub...', 'success');
+        this.addLine(this.i18n.t('contact.terminal_github_ok'), 'success');
         window.open('https://github.com/GabrielFernandezMelendez', '_blank');
         break;
 
       case 'tlf':
-        this.addLine('ERROR FATAL: Este comando requiere hardware externo.', 'warning');
-        this.addLine(
-          'Por favor, saca el telefono, desbloquéalo, abre la app de llamadas...',
-          'warning',
-        );
-        this.addLine('Numero: +34 648446865. Ya sabes como va esto.', 'warning');
+        this.addLine(this.i18n.t('contact.terminal_tlf_error'),  'warning');
+        this.addLine(this.i18n.t('contact.terminal_tlf_manual'), 'warning');
+        this.addLine(this.i18n.t('contact.terminal_tlf_number'), 'warning');
         break;
 
       case 'help':
-        this.addLine('Comandos disponibles:', 'system');
-        this.addLine(
-          '  gmail    -> Abrir Gmail con mi direccion lista para recibir tu mensaje',
-          'info',
-        );
-        this.addLine('  linkedin -> Abrir perfil de LinkedIn', 'info');
-        this.addLine('  github   -> Abrir perfil de GitHub', 'info');
-        this.addLine('  tlf      -> Informacion de contacto telefonico', 'info');
-        this.addLine('  clear    -> Limpiar el historial de la terminal', 'info');
+        this.addLine(this.i18n.t('contact.terminal_help_header'),   'system');
+        this.addLine(this.i18n.t('contact.terminal_help_gmail'),    'info');
+        this.addLine(this.i18n.t('contact.terminal_help_linkedin'), 'info');
+        this.addLine(this.i18n.t('contact.terminal_help_github'),   'info');
+        this.addLine(this.i18n.t('contact.terminal_help_tlf'),      'info');
+        this.addLine(this.i18n.t('contact.terminal_help_clear'),    'info');
         break;
 
       case 'clear':
@@ -131,11 +122,8 @@ export class ContactComponent implements AfterViewInit {
 
       default:
         this.isError.set(true);
-        this.addLine(`ERROR: '${cmd}' no se reconoce como comando interno.`, 'error');
-        this.addLine(
-          'Asi no podras contratarme. Escribe "help" para ver los comandos disponibles.',
-          'error',
-        );
+        this.addLine(`ERROR: '${cmd}' ${this.i18n.t('contact.terminal_unknown_1')}`, 'error');
+        this.addLine(this.i18n.t('contact.terminal_unknown_2'), 'error');
         break;
     }
 
@@ -144,8 +132,6 @@ export class ContactComponent implements AfterViewInit {
   }
 
   onKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      this.executeCommand();
-    }
+    if (event.key === 'Enter') this.executeCommand();
   }
 }

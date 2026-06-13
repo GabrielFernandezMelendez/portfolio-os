@@ -1,16 +1,15 @@
 <div class="projects-container">
 
   <div class="section-header">
-    <h3 class="section-title frontend">// FRONTEND</h3>
+    <h3 class="section-title frontend">// {{ i18n.t('projects.section_frontend') }}</h3>
   </div>
 
   <div class="projects-grid">
     @for (project of frontendProjects; track project.id) {
       <div class="project-card" [class.wip]="project.status === 'wip'">
-
         <div class="card-inner">
-
           <div class="card-content">
+
             <div class="card-header">
               <span class="card-icon">{{ project.icon }}</span>
               <span class="card-name">{{ project.name }}</span>
@@ -18,7 +17,7 @@
 
             @if (project.status === 'wip') {
               <div class="wip-bar"></div>
-              <span class="status-badge wip">🚧 En curso</span>
+              <span class="status-badge wip">{{ i18n.t('projects.wip') }}</span>
             }
 
             <p class="card-desc">{{ project.description }}</p>
@@ -31,14 +30,15 @@
 
             <div class="card-actions">
               <button class="btn-action github" (click)="openLink(project.github)">
-                🐙 GitHub
+                {{ i18n.t('projects.btn_github') }}
               </button>
               @if (project.live) {
                 <button class="btn-action live" (click)="openLink(project.live!)">
-                  🌐 Live
+                  {{ i18n.t('projects.btn_live') }}
                 </button>
               }
             </div>
+
           </div>
 
           @if (project.status === 'done') {
@@ -54,16 +54,15 @@
   </div>
 
   <div class="section-header" style="margin-top: 1.5rem">
-    <h3 class="section-title backend">// BACKEND & MULTIPLATAFORMA</h3>
+    <h3 class="section-title backend">// {{ i18n.t('projects.section_backend') }}</h3>
   </div>
 
   <div class="projects-grid">
     @for (project of backendProjects; track project.id) {
       <div class="project-card backend-card">
-
         <div class="card-inner">
-
           <div class="card-content">
+
             <div class="card-header">
               <span class="card-icon">{{ project.icon }}</span>
               <span class="card-name">{{ project.name }}</span>
@@ -79,9 +78,10 @@
 
             <div class="card-actions">
               <button class="btn-action github" (click)="openLink(project.github)">
-                🐙 GitHub
+                {{ i18n.t('projects.btn_github') }}
               </button>
             </div>
+
           </div>
 
           <div class="card-done-side">
@@ -97,15 +97,8 @@
   <div class="backend-note">
     <img src="pixel-programmer.gif" alt="pixel dev" class="pixel-char" />
     <div class="speech-bubble">
-      <p class="speech-main">
-        Los proyectos backend necesitan su propio entorno para ejecutarse.
-        No puedo mostrártelos aquí directamente, pero puedes ver el código
-        y las instrucciones de instalación en cada repositorio.
-      </p>
-      <p class="speech-secondary">
-        ...y las instrucciones que no encuentres, seguro que encuentras
-        una solución. Para algo somos programadores 
-      </p>
+      <p class="speech-main">{{ i18n.t('projects.note_main') }}</p>
+      <p class="speech-secondary">{{ i18n.t('projects.note_sub') }}</p>
     </div>
   </div>
 

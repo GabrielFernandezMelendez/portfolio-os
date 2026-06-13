@@ -44,6 +44,7 @@
         @case ('contact') { <app-contact [isLight]="!isDark()" /> }
         @case ('github')     { <app-github /> }
         @default             { <p>{{ win.title }}</p> }
+        @case ('settings') { <app-settings-panel /> }
       }
 
     </app-window>
@@ -57,6 +58,7 @@
   (onOpenWindow)="openWindow($event)"
   (onToggleTheme)="toggleTheme()"
   (onToggleGol)="toggleGol()"
-  (onSetSpeed)="setGolSpeed($event)">
+  (onSetSpeed)="setGolSpeed($event)"
+  (onOpenSettings)="openWindow('settings')">
 </app-taskbar>
 </div>

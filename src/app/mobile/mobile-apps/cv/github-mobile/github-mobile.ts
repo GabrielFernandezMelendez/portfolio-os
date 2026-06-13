@@ -1,44 +1,42 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
-import { I18nService } from '../../i18n/i18n.service';
+import { Component, OnInit, signal, input } from '@angular/core';
 
 interface GithubUser {
-  login:        string;
-  name:         string;
-  bio:          string;
-  avatar_url:   string;
+  login: string;
+  name: string;
+  bio: string;
+  avatar_url: string;
   public_repos: number;
-  followers:    number;
-  following:    number;
-  html_url:     string;
+  followers: number;
+  following: number;
+  html_url: string;
 }
 
 interface GithubRepo {
-  id:               number;
-  name:             string;
-  description:      string;
-  html_url:         string;
+  id: number;
+  name: string;
+  description: string;
+  html_url: string;
   stargazers_count: number;
-  language:         string;
-  updated_at:       string;
+  language: string;
+  updated_at: string;
 }
 
 @Component({
-  selector:    'app-github',
-  standalone:  true,
-  templateUrl: './github.html',
-  styleUrl:    './github.css'
+  selector: 'app-github-mobile',
+  standalone: true,
+  templateUrl: './github-mobile.html',
+  styleUrl: './github-mobile.css',
 })
-export class GithubComponent implements OnInit {
-
-  i18n = inject(I18nService);
+export class GithubMobileComponent implements OnInit {
+  isDark = input<boolean>(true);
 
   readonly USERNAME = 'GabrielFernandezMelendez';
   readonly API_BASE = 'https://api.github.com';
 
-  user    = signal<GithubUser | null>(null);
-  repos   = signal<GithubRepo[]>([]);
+  user = signal<GithubUser | null>(null);
+  repos = signal<GithubRepo[]>([]);
   loading = signal(true);
-  error   = signal('');
+  error = signal('');
 
   fakeStats = new Map<number, { stars: number; forks: number; watchers: number }>();
 
@@ -46,7 +44,7 @@ export class GithubComponent implements OnInit {
     try {
       const [userRes, reposRes] = await Promise.all([
         fetch(`${this.API_BASE}/users/${this.USERNAME}`),
-        fetch(`${this.API_BASE}/users/${this.USERNAME}/repos?sort=updated&per_page=6`)
+        fetch(`${this.API_BASE}/users/${this.USERNAME}/repos?sort=updated&per_page=6`),
       ]);
 
       if (!userRes.ok || !reposRes.ok) throw new Error();
@@ -54,9 +52,8 @@ export class GithubComponent implements OnInit {
       this.user.set(await userRes.json());
       this.repos.set(await reposRes.json());
       this.loading.set(false);
-
     } catch {
-      this.error.set(this.i18n.t('github.error'));
+      this.error.set('No se pudo cargar el perfil de GitHub.');
       this.loading.set(false);
     }
   }
@@ -64,8 +61,8 @@ export class GithubComponent implements OnInit {
   generateFakeStats(repoId: number) {
     if (!this.fakeStats.has(repoId)) {
       this.fakeStats.set(repoId, {
-        stars:    Math.floor(Math.random() * 9900) + 100,
-        forks:    Math.floor(Math.random() * 9900) + 100,
+        stars: Math.floor(Math.random() * 9900) + 100,
+        forks: Math.floor(Math.random() * 9900) + 100,
         watchers: Math.floor(Math.random() * 9900) + 100,
       });
     }

@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component,inject  } from '@angular/core';
+import { I18nService } from '../../i18n/i18n.service';
 
 @Component({
   selector:    'app-about',
@@ -6,4 +7,7 @@ import { Component } from '@angular/core';
   templateUrl: './about.html',
   styleUrl:    './about.css'
 })
-export class AboutComponent {}
+export class AboutComponent {
+  i18n = inject(I18nService);
+
+}

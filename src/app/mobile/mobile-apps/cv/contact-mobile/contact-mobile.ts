@@ -98,23 +98,26 @@ export class ContactMobileComponent implements OnInit, AfterViewInit {
   }
 
   processMessage(msg: string) {
-if (this.matchesKeyword(msg, this.KEYWORDS['linkedin'])) {
-  this.addAiMessage(
-    'Perfecto, te redirigirá al perfil de LinkedIn de Gabriel en un momento... 🔗'
-  );
-  setTimeout(() => {
-    // Intenta abrir la app primero
-    window.location.href = 'linkedin://profile/gabriel-fernandez-melendez-336640238';
-    // Si la app no está instalada, abre el navegador como fallback
-    setTimeout(() => {
-      window.open(
-        'https://www.linkedin.com/in/gabriel-fern%C3%A1ndez-mel%C3%A9ndez-336640238',
-        '_blank'
+    if (this.matchesKeyword(msg, this.KEYWORDS['linkedin'])) {
+      this.addAiMessage(
+        'Perfecto, te redirigirá al perfil de LinkedIn de Gabriel en un momento... 🔗',
       );
-    }, 1500);
-  }, 2000);
-  return;
-}
+      setTimeout(() => {
+        const profileUrl =
+          'https://www.linkedin.com/in/gabriel-fern%C3%A1ndez-mel%C3%A9ndez-336640238';
+
+        // Intent de Android — abre el perfil directamente en la app
+        const intentUrl = `intent://${profileUrl.replace('https://', '')}#Intent;package=com.linkedin.android;scheme=https;end`;
+
+        window.location.href = intentUrl;
+
+        // Fallback para iOS y navegador
+        setTimeout(() => {
+          window.open(profileUrl, '_blank');
+        }, 1500);
+      }, 2000);
+      return;
+    }
 
     if (this.matchesKeyword(msg, this.KEYWORDS['email'])) {
       this.addAiMessage(

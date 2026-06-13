@@ -6,19 +6,21 @@ import { SkillsMobileComponent } from '../mobile-apps/cv/skills-mobile/skills-mo
 import { EducationMobileComponent } from '../mobile-apps/cv/education-mobile/education-mobile';
 import { ProjectsMobileComponent } from '../mobile-apps/cv/projects-mobile/projects-mobile';
 import { ContactMobileComponent } from '../mobile-apps/cv/contact-mobile/contact-mobile';
+import { GithubMobileComponent } from '../mobile-apps/cv/github-mobile/github-mobile';
+
 
 @Component({
   selector: 'app-mobile-app-view',
   standalone: true,
   imports: [
-    
-    GithubComponent,
+
     AboutMobileComponent,
     ExperienceMobileComponent,
     SkillsMobileComponent,
     EducationMobileComponent,
     ProjectsMobileComponent,
-    ContactMobileComponent
+    ContactMobileComponent,
+    GithubMobileComponent
   ],
   templateUrl: './mobile-app-view.html',
   styleUrl: './mobile-app-view.css',

@@ -1,6 +1,5 @@
 <div class="taskbar">
 
-  <!-- Tooltip global -->
   @if (tooltip()) {
     <div class="taskbar-tooltip" [style.left.px]="tooltipX()">
       {{ tooltip() }}
@@ -10,48 +9,54 @@
   <!-- Iconos de aplicaciones -->
   <div class="taskbar-icons">
     @for (win of windows(); track win.id) {
-      <button
-        class="taskbar-btn"
-        [class.active]="win.isOpen"
-        (click)="openWindow(win.id)"
-        (mouseenter)="showTooltip(win.title, $any($event).target.getBoundingClientRect().left)"
-        (mouseleave)="hideTooltip()">
-        <span class="taskbar-btn-icon">{{ win.icon }}</span>
-      </button>
+      @if (win.id !== 'settings') {
+        <button
+          class="taskbar-btn"
+          [class.active]="win.isOpen"
+          (click)="openWindow(win.id)"
+          (mouseenter)="showTooltip(win.title, $any($event).target.getBoundingClientRect().left)"
+          (mouseleave)="hideTooltip()">
+          <span class="taskbar-btn-icon">{{ win.icon }}</span>
+        </button>
+      }
     }
   </div>
 
-  <!-- Separador -->
   <div class="taskbar-sep"></div>
 
-  <!-- Controles -->
+  <!-- Controles GoL y tema -->
   <div class="taskbar-controls">
     <button
       class="taskbar-ctrl-btn"
       (click)="onToggleGol.emit()"
-      (mouseenter)="showTooltip(golRunning() ? 'Pausar Game of Life' : 'Reanudar Game of Life', $any($event).target.getBoundingClientRect().left)"
+      (mouseenter)="showTooltip(
+        golRunning() ? i18n.t('taskbar.speed') : i18n.t('taskbar.speed'),
+        $any($event).target.getBoundingClientRect().left)"
       (mouseleave)="hideTooltip()">
       {{ golRunning() ? '⏸' : '▶' }}
     </button>
 
     <button
-  class="taskbar-ctrl-btn speed-btn"
-  (click)="cycleSpeed()"
-  (mouseenter)="showTooltip('Velocidad: x' + golSpeed(), $any($event).target.getBoundingClientRect().left)"
-  (mouseleave)="hideTooltip()">
-  x{{ golSpeed() }}
-</button>
+      class="taskbar-ctrl-btn speed-btn"
+      (click)="cycleSpeed()"
+      (mouseenter)="showTooltip(
+        i18n.t('taskbar.speed') + ': x' + golSpeed(),
+        $any($event).target.getBoundingClientRect().left)"
+      (mouseleave)="hideTooltip()">
+      x{{ golSpeed() }}
+    </button>
 
     <button
       class="taskbar-ctrl-btn"
       (click)="onToggleTheme.emit()"
-      (mouseenter)="showTooltip(isDark() ? 'Tema claro' : 'Tema oscuro', $any($event).target.getBoundingClientRect().left)"
+      (mouseenter)="showTooltip(
+        isDark() ? i18n.t('taskbar.theme_light') : i18n.t('taskbar.theme_dark'),
+        $any($event).target.getBoundingClientRect().left)"
       (mouseleave)="hideTooltip()">
       {{ isDark() ? '☀️' : '🌙' }}
     </button>
   </div>
 
-  <!-- Separador -->
   <div class="taskbar-sep"></div>
 
   <!-- Reloj -->
@@ -59,5 +64,17 @@
     <span class="clock-time">{{ currentTime() }}</span>
     <span class="clock-date">{{ currentDate() }}</span>
   </div>
+
+  <div class="taskbar-sep"></div>
+
+  <!-- Settings — mismo estilo que taskbar-btn -->
+  <button
+    class="taskbar-btn"
+    [class.active]="false"
+    (click)="onOpenSettings.emit()"
+    (mouseenter)="showTooltip(i18n.t('nav.settings'), $any($event).target.getBoundingClientRect().left)"
+    (mouseleave)="hideTooltip()">
+    <span class="taskbar-btn-icon">⚙️</span>
+  </button>
 
 </div>

@@ -1,0 +1,263 @@
+{
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languages": {
+      "es": "Español",
+      "en": "English"
+    }
+  },
+
+  "taskbar": {
+    "open": "Open",
+    "speed": "GoL Speed",
+    "theme_dark": "Dark theme",
+    "theme_light": "Light theme"
+  },
+
+  "nav": {
+    "about": "About me",
+    "experience": "Experience",
+    "skills": "Skills",
+    "education": "Education",
+    "projects": "Projects",
+    "contact": "Contact",
+    "github": "GitHub",
+    "settings": "Settings"
+  },
+
+  "about": {
+    "title": "About me",
+    "role": "Software Developer",
+    "stack": ".NET · Java · Frontend · Backend · FullStack",
+    "location": "Asturias, Spain",
+    "section_contact": "Contact",
+    "section_profile": "Profile",
+    "section_skills": "Competencies",
+    "section_languages": "Languages",
+    "profile_text": "Software Developer specialized in cross-platform applications and logistics systems (WMS). Expert in integrating robust Backend solutions with dynamic and adaptable Frontend interfaces, under usability and accessibility standards (W3C), Clean Code principles and agile methodologies. My focus is on optimizing the client experience through data analysis, intuitive design and efficient deployment of digital assets in international technical environments.",
+    "badge_communication": "💬 Communication",
+    "badge_problem": "🧩 Problem solving",
+    "badge_goals": "🎯 Goal oriented",
+    "badge_creativity": "💡 Creativity",
+    "badge_adaptability": "🔄 Adaptability",
+    "lang_english": "English",
+    "lang_english_level": "Native / Bilingual",
+    "lang_spanish": "Spanish",
+    "lang_spanish_level": "Native"
+  },
+
+  "experience": {
+    "title": "Experience",
+    "current": "CURRENT",
+    "entries": [
+      {
+        "company": "Jakala / Factoría F5",
+        "role": "Frontend Developer — Internship",
+        "period": "May 2026 – Present",
+        "duration": "1 month",
+        "location": "Gijón, Spain",
+        "tasks": [
+          "Development of modern web interfaces with Astro and JavaScript",
+          "Implementation of styles with TailwindCSS and responsive design",
+          "Testing with Vitest in agile development environment",
+          "Team collaboration under agile methodologies"
+        ]
+      },
+      {
+        "company": "Mecalux",
+        "role": "Junior Developer",
+        "period": "February 2025 – November 2025",
+        "duration": "10 months",
+        "location": "Spain",
+        "tasks": [
+          "Development and maintenance of critical WMS modules with .NET and C#",
+          "Code quality optimization, automated testing and continuous improvement",
+          "Collaboration in technical teams under agile methodologies and code reviews"
+        ]
+      },
+      {
+        "company": "Revolution Land",
+        "role": "Webmaster & Community Manager",
+        "period": "2015 – 2016",
+        "duration": "1 year",
+        "location": "Venezuela",
+        "tasks": [
+          "Design, updating and comprehensive maintenance of the community web portal",
+          "Social media content management and digital presence optimization"
+        ]
+      }
+    ]
+  },
+
+  "skills": {
+    "title": "Skills",
+    "categories": {
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "databases": "Databases",
+      "testing": "Testing",
+      "tools": "Tools",
+      "integration": "Integration"
+    }
+  },
+
+  "education": {
+    "title": "Education",
+    "section_academic": "Academic background",
+    "section_certs": "Certifications",
+    "section_languages": "Languages",
+    "current": "CURRENT",
+    "verify": "Verify",
+    "note_main": "Only 10% of what I used in this project came from these certifications.",
+    "note_sub": "The other 90% was official documentation, Stack Overflow at 2am and the drive to understand how things really work.",
+    "learning_title": "Real knowledge doesn't come from certificates",
+    "learning_text": "Certifications validate concepts, but real growth comes from knowing where to look and how to learn independently. Angular's official documentation, MDN Web Docs, Stack Overflow, GitHub Issues, YouTube, Reddit, technical forums and AI itself are tools I use daily to solve real problems. A good programmer doesn't know everything, they know where to find it.",
+    "speech_main": "Only 10% of what I used in this project came from these certifications.",
+    "speech_sub": "The other 90% was curiosity, official documentation, errors, Stack Overflow at 2am... and the drive to understand how things really work.",
+    "entries": [
+      {
+        "title": "Professional Certificate",
+        "subtitle": "Web Page Design and Publishing",
+        "center": "Factoría F5",
+        "period": "2026 · Present"
+      },
+      {
+        "title": "Higher Technician in DAM",
+        "subtitle": "Cross-Platform Application Development",
+        "center": "CIPF La Laboral",
+        "period": "2021 – 2025"
+      },
+      {
+        "title": "Degree in Commerce and Marketing",
+        "subtitle": "Faculty of Commerce, Tourism and Social Sciences",
+        "center": "University of Oviedo",
+        "period": "2017 – 2021"
+      }
+    ],
+    "certificates": [
+      {
+        "title": "Introduction to Testing",
+        "hours": "6 hours",
+        "date": "Mar 2025"
+      },
+      {
+        "title": "Testing in Java with JUnit 5",
+        "hours": "5 hours",
+        "date": "Mar 2025"
+      },
+      {
+        "title": "Persistence with Spring Boot",
+        "hours": "1 hour",
+        "date": "Mar 2025"
+      }
+    ]
+  },
+
+  "projects": {
+    "title": "Projects",
+    "section_frontend": "Frontend",
+    "section_backend": "Backend & Cross-Platform",
+    "wip": "🚧 In progress",
+    "done_text": "Development\nFinish!",
+    "btn_github": "🐙 GitHub",
+    "btn_live": "🌐 Live",
+    "note_main": "Backend projects need their own environment to run.",
+    "note_sub": "...and the instructions you can't find, you'll surely find a solution. That's what programmers are for.",
+    "items": [
+      {
+        "name": "Movie App",
+        "description": "Movie catalogue with real-time data from TMDB API, dynamic routes and Firebase deployment."
+      },
+      {
+        "name": "Kamakura Food",
+        "description": "Interactive Japanese restaurant menu with shopping cart, category filters and unit tests."
+      },
+      {
+        "name": "Spotify Clone",
+        "description": "Faithful replica of Spotify's landing page with responsive design and attention to visual detail."
+      },
+      {
+        "name": "Portfolio OS",
+        "description": "This very portfolio simulating an operating system with interactive Game of Life as background."
+      },
+      {
+        "name": "Spring Boot Peregrinos",
+        "description": "Full app with Spring Boot, JavaFX, object-relational database DB4O and ObjectDB built from scratch."
+      },
+      {
+        "name": "TrackYourMoney",
+        "description": "Android financial management app (TFC). Expenses, income, custom categories and tips. 26 commits."
+      },
+      {
+        "name": "JDBC BD Application",
+        "description": "Management application with direct SQL database connection using pure JDBC without ORM."
+      },
+      {
+        "name": "IMC Calculator",
+        "description": "Desktop window with JavaFX to calculate body mass index with graphical interface."
+      }
+    ]
+  },
+
+  "contact": {
+    "title": "Contact",
+    "ai_sub": "Contact AI",
+    "ai_welcome": "Hello! I'm Gabriel's assistant. I can help you contact him directly. Try: linkedin, email, phone, github or help 👋",
+    "ai_placeholder": "Type linkedin, email, phone...",
+    "ai_linkedin_response": "Perfect, you'll be redirected to Gabriel's LinkedIn profile in a moment... 🔗",
+    "ai_email_response": "Opening your mail app with Gabriel's email ready to send... ✉️",
+    "ai_phone_confirm": "Are you sure you want to call Gabriel? Type confirm to proceed or cancel to go back. 📞",
+    "ai_phone_calling": "Dialing +34 648446865... Good luck! 🤙",
+    "ai_phone_cancelled": "Understood, call cancelled. How else can I help you? 😊",
+    "ai_github_response": "Taking you to Gabriel's GitHub right now... 🐙",
+    "ai_help_response": "You can tell me:\n\n• linkedin → professional profile\n• email → send him an email\n• phone → call him directly\n• github → see his code\n• about gabriel → get to know him better",
+    "ai_about_response": "Gabriel is a Software Developer specialized in Frontend and cross-platform systems. Currently interning at Jakala/Factoría F5. Would you like to contact him via linkedin, email or phone? 🚀",
+    "ai_unknown": "I didn't quite understand that... Try: linkedin, email, phone, github or help 🤔",
+    "light_crime": "You realize the crime you've committed?",
+"light_bubble": "Now you can't see the text bubble... just like I can't see myself in this white console.",
+"light_run":   "I don't code light themes. I'm running away from here.",
+"terminal_help_header":   "Available commands:",
+"terminal_help_gmail":    "  gmail    -> Open Gmail with my address ready to receive your message",
+"terminal_help_linkedin": "  linkedin -> Open LinkedIn profile",
+"terminal_help_github":   "  github   -> Open GitHub profile",
+"terminal_help_tlf":      "  tlf      -> Phone contact information",
+"terminal_help_clear":    "  clear    -> Clear terminal history",
+"terminal_gmail_ok":      "Opening Gmail...",
+"terminal_gmail_to":      "Recipient: gabriel.fernandezdeveloper@gmail.com",
+"terminal_linkedin_ok":   "Opening LinkedIn...",
+"terminal_github_ok":     "Opening GitHub...",
+"terminal_tlf_error":     "FATAL ERROR: This command requires external hardware.",
+"terminal_tlf_manual":    "Please take out your phone, unlock it, open the dialer app...",
+"terminal_tlf_number":    "Number: +34 648446865. You know how this works.",
+"terminal_unknown_1":     "is not recognized as an internal command.",
+"terminal_unknown_2":     "You won't be able to hire me like this. Type \"help\" to see available commands.",
+"terminal_intro_1":       "Microsoft Windows [Version 11.0.0]",
+"terminal_intro_2":       "(c) Gabriel Fernandez Corp. 2026. All rights reserved... mostly.",
+"terminal_hint":          "Type a command to get in touch. Type \"help\" to see available commands."
+  },
+
+  "github": {
+    "title": "GitHub",
+    "loading": "Connecting to GitHub...",
+    "error": "Could not load GitHub profile.",
+    "btn_open": "Open GitHub",
+    "btn_profile": "🐙 View full profile",
+    "repos_title": "Recent repositories",
+    "stat_repos": "Repos",
+    "stat_followers": "Followers",
+    "stat_following": "Following",
+    "speech_main": "I tried to load GitHub directly here... but they blocked me with:",
+    "speech_sub": "In the end I can show all my projects updated in real time with the public API... but I may have invented a ⭐ or two. 😄",
+    "btn_real": "See the real GitHub →"
+  },
+
+  "notification": {
+    "available_title": "Available for work",
+    "available_message": "Open to new opportunities",
+    "available_time": "Now",
+    "section_label": "Notifications",
+    "tip_title": "💡 Tip",
+    "tip_message": "Swipe diagonally ↘ from anywhere on the screen to open this panel"
+  }
+}

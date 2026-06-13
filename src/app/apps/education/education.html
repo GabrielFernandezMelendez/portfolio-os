@@ -1,7 +1,6 @@
 <div class="education-container" (mouseenter)="onMouseEnter()">
 
-  <!-- FORMACIÓN -->
-  <h3 class="section-title">// FORMACIÓN ACADÉMICA</h3>
+  <h3 class="section-title">// {{ i18n.t('education.section_academic') }}</h3>
 
   <div class="education-list">
     @for (entry of education; track entry.title) {
@@ -14,7 +13,7 @@
             <span class="edu-subtitle">{{ entry.subtitle }}</span>
           </div>
           @if (entry.current) {
-            <span class="current-badge">● EN CURSO</span>
+            <span class="current-badge">● {{ i18n.t('education.current') }}</span>
           }
         </div>
 
@@ -27,8 +26,7 @@
     }
   </div>
 
-  <!-- CERTIFICACIONES -->
-  <h3 class="section-title" style="margin-top: 1.2rem">// CERTIFICACIONES</h3>
+  <h3 class="section-title" style="margin-top: 1.2rem">// {{ i18n.t('education.section_certs') }}</h3>
 
   <div class="certs-grid">
     @for (cert of certificates; track cert.title) {
@@ -41,7 +39,7 @@
         <p class="cert-meta">{{ cert.hours }} · {{ cert.date }}</p>
         <div class="cert-actions">
           <button class="cert-btn verify" (click)="openLink(cert.url)">
-            Verificar
+            {{ i18n.t('education.verify') }}
           </button>
           <button class="cert-btn pdf" (click)="openPdf(cert.pdf)">
             PDF
@@ -51,47 +49,30 @@
     }
   </div>
 
-  <!-- CARD APRENDIZAJE + PERSONAJE — FUERA del grid -->
   <div class="learning-full">
 
     <div class="learning-card">
-      <p class="learning-title">El conocimiento real no viene de los certificados</p>
-      <p class="learning-text">
-        Las certificaciones validan conceptos, pero el verdadero
-        crecimiento viene de saber dónde buscar y cómo aprender
-        de forma autónoma. La documentación oficial de Angular,
-        MDN Web Docs, Stack Overflow, GitHub Issues, YouTube,
-        Reddit, foros técnicos y la propia IA son herramientas
-        que uso a diario para resolver problemas reales.
-        Un buen programador no sabe todo, sabe dónde encontrarlo.
-      </p>
+      <p class="learning-title">{{ i18n.t('education.learning_title') }}</p>
+      <p class="learning-text">{{ i18n.t('education.learning_text') }}</p>
     </div>
 
     <div class="learning-pixel-note">
       <img src="pixel-programmer.gif" alt="pixel dev" class="learning-pixel-char" />
       <div class="learning-speech">
-        <p class="speech-main">
-          Solo un 10% de lo que usé en este proyecto
-          vino de estas certificaciones.
-        </p>
-        <p class="speech-secondary">
-          El otro 90% fue curiosidad, documentación oficial,
-          errores, Stack Overflow a las 2am... y ganas de
-          entender cómo funcionan las cosas de verdad.
-        </p>
+        <p class="speech-main">{{ i18n.t('education.speech_main') }}</p>
+        <p class="speech-secondary">{{ i18n.t('education.speech_sub') }}</p>
       </div>
     </div>
 
   </div>
 
-  <!-- IDIOMAS -->
-  <h3 class="section-title" style="margin-top: 1.2rem">// IDIOMAS</h3>
+  <h3 class="section-title" style="margin-top: 1.2rem">// {{ i18n.t('education.section_languages') }}</h3>
 
   <div class="languages-list">
-    @for (lang of languages; track lang.name) {
+    @for (lang of languages; track lang.nameKey) {
       <div class="lang-row">
         <span class="lang-flag">{{ lang.flag }}</span>
-        <span class="lang-name">{{ lang.name }}</span>
+        <span class="lang-name">{{ i18n.t(lang.nameKey) }}</span>
         <div class="lang-bar-wrapper">
           <div
             class="lang-bar"
@@ -100,7 +81,7 @@
           </div>
         </div>
         <span class="lang-level" [style.color]="lang.color">
-          {{ lang.level }}
+          {{ i18n.t(lang.levelKey) }} (C2)
         </span>
       </div>
     }
