@@ -7,6 +7,7 @@ import { EducationMobileComponent } from '../mobile-apps/cv/education-mobile/edu
 import { ProjectsMobileComponent } from '../mobile-apps/cv/projects-mobile/projects-mobile';
 import { ContactMobileComponent } from '../mobile-apps/cv/contact-mobile/contact-mobile';
 import { GithubMobileComponent } from '../mobile-apps/cv/github-mobile/github-mobile';
+import { SettingsMobileComponent } from '../mobile-apps/settings/settings-mobile/settings-mobile';
 
 
 @Component({
@@ -20,7 +21,8 @@ import { GithubMobileComponent } from '../mobile-apps/cv/github-mobile/github-mo
     EducationMobileComponent,
     ProjectsMobileComponent,
     ContactMobileComponent,
-    GithubMobileComponent
+    GithubMobileComponent,
+    SettingsMobileComponent
   ],
   templateUrl: './mobile-app-view.html',
   styleUrl: './mobile-app-view.css',

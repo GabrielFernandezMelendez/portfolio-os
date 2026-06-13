@@ -1,0 +1,97 @@
+.settings-mobile {
+  display:        flex;
+  flex-direction: column;
+  min-height:     100%;
+  color:          var(--text-primary);
+}
+
+.settings-mobile * {
+  font-family: var(--font-mobile-body);
+}
+
+/* ── Top Bar ── */
+.top-bar {
+  position:        sticky;
+  top:             0;
+  z-index:         10;
+  height:          56px;
+  display:         flex;
+  align-items:     center;
+  padding:         0 1.2rem;
+  background:      rgba(6,6,15,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom:   1px solid var(--mobile-border);
+  flex-shrink:     0;
+}
+
+.top-bar.light {
+  background:   rgba(240,240,248,0.85);
+  border-color: var(--mobile-border-light);
+}
+
+.top-bar-title {
+  font-family:    var(--font-mobile-title-4);
+  font-size:      1.3rem;
+  color:          var(--text-primary);
+  letter-spacing: 0.08em;
+}
+
+.top-bar.light .top-bar-title { color: rgba(30,27,75,0.9); }
+
+/* ── Contenido ── */
+.content {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.8rem;
+  padding:        1rem;
+}
+
+/* ── Card ── */
+.settings-card {
+  background:    var(--bg-card);
+  border:        1px solid var(--mobile-border);
+  border-radius: 16px;
+  overflow:      hidden;
+}
+
+/* ── Fila ── */
+.settings-row {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         1rem;
+}
+
+.row-info {
+  display:     flex;
+  align-items: center;
+  gap:         0.7rem;
+}
+
+.row-icon  { font-size: 1.2rem; }
+
+.row-label {
+  font-size:   var(--mobile-text-base);
+  color:       var(--text-primary);
+}
+
+/* ── Dropdown ── */
+.lang-select {
+  appearance:    none;
+  padding:       0.5rem 2rem 0.5rem 0.8rem;
+  background:    rgba(99,102,241,0.1);
+  border:        1px solid var(--mobile-border);
+  border-radius: 10px;
+  color:         var(--text-primary);
+  font-size:     var(--mobile-text-sm);
+  cursor:        pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236366f1'/%3E%3C/svg%3E");
+  background-repeat:   no-repeat;
+  background-position: right 0.6rem center;
+  outline: none;
+}
+
+.lang-select option {
+  background: #06060f;
+  color:      var(--text-primary);
+}

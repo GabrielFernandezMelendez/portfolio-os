@@ -1,0 +1,23 @@
+<div class="settings-mobile">
+  <div class="top-bar" [class.light]="!isDark()">
+    <span class="top-bar-title">{{ i18n.t('settings.title') }}</span>
+  </div>
+
+  <div class="content">
+    <div class="settings-card">
+      <div class="settings-row">
+        <div class="row-info">
+          <span class="row-icon">🌍</span>
+          <span class="row-label">{{ i18n.t('settings.language') }}</span>
+        </div>
+        <select class="lang-select" (change)="setLang($any($event.target).value)">
+          @for (lang of languages; track lang.code) {
+            <option [value]="lang.code" [selected]="lang.code === i18n.currentLang()">
+              {{ lang.label }}
+            </option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+</div>

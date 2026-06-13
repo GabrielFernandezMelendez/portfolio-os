@@ -2,6 +2,7 @@ export interface OsWindow {
   id:          string;
   title:       string;
   icon:        string;
+  iconSvg?:    string;    // ← nuevo, opcional
   filename:    string;
   isOpen:      boolean;
   isMinimized: boolean;

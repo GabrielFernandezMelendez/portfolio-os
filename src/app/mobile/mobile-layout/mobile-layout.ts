@@ -50,6 +50,7 @@ export class MobileLayoutComponent {
     { id: 'projects', title: 'Proyectos', icon: '📁', iconSvg: 'mobile-design/Icons/projects.svg' },
     { id: 'contact', title: 'Contacto', icon: '📬', iconSvg: 'mobile-design/Icons/contact.svg' },
     { id: 'github', title: 'GitHub', icon: '🐙', iconSvg: 'mobile-design/Icons/github.svg' },
+    { id: 'settings', title: 'Ajustes', icon: '⚙️', iconSvg: 'mobile-design/Icons/settings.svg' },
   ];
 
   // ── Tema y fondo ──────────────────────────────
@@ -132,4 +133,10 @@ export class MobileLayoutComponent {
       this.openNotifications();
     }
   }
+
+  // ── Settings ──────────────────────────────────
+openSettings() {
+  this.closeNotifications();
+  this.openApp({ id: 'settings', title: 'Ajustes', icon: '⚙️' });
+}
 }

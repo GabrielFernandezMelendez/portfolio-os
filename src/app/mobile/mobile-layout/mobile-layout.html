@@ -5,6 +5,7 @@
   </app-mobile-status-bar>
 
   <div class="mobile-viewport" (touchstart)="onSwipeStart($event)" (touchend)="onSwipeEnd($event)">
+
     @if (mobileView() === 'home') {
       <app-mobile-home [apps]="apps" [isDark]="isDark()" (onOpenApp)="openApp($event)">
       </app-mobile-home>
@@ -14,8 +15,7 @@
       <app-mobile-app-view
         [appId]="activeApp()!"
         [isDark]="isDark()"
-        [class.hidden-view]="mobileView() !== 'app'"
-      >
+        [class.hidden-view]="mobileView() !== 'app'">
       </app-mobile-app-view>
     }
 
@@ -25,8 +25,7 @@
         [isDark]="isDark()"
         (onResume)="resumeApp($event)"
         (onClose)="closeApp($event)"
-        (onCloseAll)="openedApps.set([]); mobileView.set('home')"
-      >
+        (onCloseAll)="openedApps.set([]); mobileView.set('home')">
       </app-mobile-recents>
     }
 
@@ -37,9 +36,10 @@
         (onClose)="closeNotifications()"
         (onToggleTheme)="toggleTheme()"
         (onToggleGol)="toggleGol()"
-      >
+        (onOpenSettings)="openSettings()">
       </app-notification-panel>
     }
+
   </div>
 
   <app-mobile-navbar
@@ -47,7 +47,7 @@
     [activeView]="mobileView()"
     (onBack)="goBack()"
     (onHome)="goHome()"
-    (onRecents)="goRecents()"
-  >
+    (onRecents)="goRecents()">
   </app-mobile-navbar>
+
 </div>

@@ -164,3 +164,11 @@
   max-width:    120px;
   transform:    translateX(-80%);
 }
+
+.taskbar-svg-icon {
+  width:           22px;
+  height:          22px;
+  object-fit:      contain;
+  image-rendering: pixelated;
+  filter:          brightness(0);
+}

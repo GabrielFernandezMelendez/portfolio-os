@@ -34,7 +34,7 @@
       [class.light]="!isDark()"
       [(ngModel)]="currentMsg"
       (keydown)="onKeydown($event)"
-      placeholder="Escribe linkedin, email, teléfono..."
+      [placeholder]="i18n.t('contact.ai_placeholder')"
       autocomplete="off"
     />
     <button class="send-btn" (click)="sendMessage()">➤</button>

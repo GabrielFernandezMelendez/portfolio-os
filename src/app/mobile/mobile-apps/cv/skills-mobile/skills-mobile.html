@@ -1,17 +1,17 @@
 <div class="skills-mobile">
 
   <div class="top-bar" [class.light]="!isDark()">
-    <span class="top-bar-title">Habilidades</span>
+    <span class="top-bar-title">{{ i18n.t('skills.title') }}</span>
   </div>
 
   <div class="content">
-    @for (category of categories; track category.title) {
+    @for (category of categories; track category.titleKey) {
       <div class="category-card">
 
         <div class="category-header">
           <div class="category-accent" [style.background]="category.color"></div>
           <h3 class="category-title" [style.color]="category.color">
-            {{ category.title }}
+            {{ i18n.t(category.titleKey) }}
           </h3>
           <span class="skill-count">{{ category.skills.length }}</span>
         </div>

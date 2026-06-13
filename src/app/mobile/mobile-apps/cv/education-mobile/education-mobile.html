@@ -1,16 +1,14 @@
-<p>education-mobile works!</p>
 <div class="education-mobile">
 
   <div class="top-bar" [class.light]="!isDark()">
-    <span class="top-bar-title">Formación</span>
+    <span class="top-bar-title">{{ i18n.t('education.title') }}</span>
   </div>
 
   <div class="content">
 
-    <!-- Formación académica -->
     <div class="section-header">
       <div class="section-accent"></div>
-      <h2 class="section-title">Formación académica</h2>
+      <h2 class="section-title">{{ i18n.t('education.section_academic') }}</h2>
     </div>
 
     <div class="edu-list">
@@ -20,7 +18,7 @@
           @if (entry.current) {
             <div class="current-banner">
               <span class="current-dot"></span>
-              <span class="current-text">EN CURSO</span>
+              <span class="current-text">{{ i18n.t('education.current') }}</span>
             </div>
           }
 
@@ -41,10 +39,9 @@
       }
     </div>
 
-    <!-- Certificaciones -->
     <div class="section-header">
       <div class="section-accent" style="background: var(--color-cyan)"></div>
-      <h2 class="section-title">Certificaciones</h2>
+      <h2 class="section-title">{{ i18n.t('education.section_certs') }}</h2>
     </div>
 
     <div class="certs-list">
@@ -66,35 +63,28 @@
       }
     </div>
 
-    <!-- Nota del personaje -->
     <div class="pixel-note">
       <img src="pixel-programmer.gif" class="pixel-char" alt="pixel dev" />
       <div class="note-bubble">
-        <p class="note-main">
-          Solo un 10% de lo que usé en este proyecto
-          vino de estas certificaciones.
-        </p>
-        <p class="note-sub">
-          El otro 90% fue documentación oficial,
-          Stack Overflow a las 2am y ganas de
-          entender cómo funcionan las cosas.
-        </p>
+        <p class="note-main">{{ i18n.t('education.note_main') }}</p>
+        <p class="note-sub">{{ i18n.t('education.note_sub') }}</p>
       </div>
     </div>
 
-    <!-- Idiomas -->
     <div class="section-header">
       <div class="section-accent" style="background: var(--color-green)"></div>
-      <h2 class="section-title">Idiomas</h2>
+      <h2 class="section-title">{{ i18n.t('education.section_languages') }}</h2>
     </div>
 
     <div class="lang-list">
-      @for (lang of languages; track lang.name) {
+      @for (lang of languages; track lang.nameKey) {
         <div class="lang-card">
           <div class="lang-header">
             <span class="lang-flag">{{ lang.flag }}</span>
-            <span class="lang-name">{{ lang.name }}</span>
-            <span class="lang-level" [style.color]="lang.color">{{ lang.level }}</span>
+            <span class="lang-name">{{ i18n.t(lang.nameKey) }}</span>
+            <span class="lang-level" [style.color]="lang.color">
+              {{ i18n.t(lang.levelKey) }} · C2
+            </span>
           </div>
           <div class="lang-bar-track">
             <div class="lang-bar-fill"

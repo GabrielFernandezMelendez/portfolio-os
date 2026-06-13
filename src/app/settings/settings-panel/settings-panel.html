@@ -1,17 +1,14 @@
 <div class="settings-panel">
-
   <div class="settings-row">
     <span class="settings-label">{{ i18n.t('settings.language') }}</span>
     <div class="lang-dropdown">
-      <select
-        class="lang-select"
-        [value]="i18n.currentLang()"
-        (change)="setLang($any($event.target).value)">
+      <select class="lang-select" (change)="setLang($any($event.target).value)">
         @for (lang of languages; track lang.code) {
-          <option [value]="lang.code">{{ lang.label }}</option>
+          <option [value]="lang.code" [selected]="lang.code === i18n.currentLang()">
+            {{ lang.label }}
+          </option>
         }
       </select>
     </div>
   </div>
-
 </div>

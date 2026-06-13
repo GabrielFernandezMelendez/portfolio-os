@@ -68,13 +68,16 @@
   <div class="taskbar-sep"></div>
 
   <!-- Settings — mismo estilo que taskbar-btn -->
+<!-- Settings — mismo estilo que taskbar-btn -->
   <button
     class="taskbar-btn"
     [class.active]="false"
     (click)="onOpenSettings.emit()"
     (mouseenter)="showTooltip(i18n.t('nav.settings'), $any($event).target.getBoundingClientRect().left)"
     (mouseleave)="hideTooltip()">
-    <span class="taskbar-btn-icon">⚙️</span>
+    <span class="taskbar-btn-icon">
+      <img src="mobile-design/Icons/settings.svg" class="taskbar-svg-icon" alt="settings" />
+    </span>
   </button>
 
 </div>

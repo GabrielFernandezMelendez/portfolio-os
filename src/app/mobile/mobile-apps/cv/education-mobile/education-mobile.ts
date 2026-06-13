@@ -1,4 +1,5 @@
-import { Component, OnInit, input } from '@angular/core';
+import { Component, OnInit, input, inject, computed } from '@angular/core';
+import { I18nService } from '../../../../i18n/i18n.service';
 
 interface EducationEntry {
   icon:     string;
@@ -19,11 +20,11 @@ interface Certificate {
 }
 
 interface Language {
-  flag:    string;
-  name:    string;
-  level:   string;
-  color:   string;
-  current: number;
+  flag:     string;
+  nameKey:  string;
+  levelKey: string;
+  color:    string;
+  current:  number;
 }
 
 @Component({
@@ -35,65 +36,44 @@ interface Language {
 export class EducationMobileComponent implements OnInit {
 
   isDark = input<boolean>(true);
+  i18n   = inject(I18nService);
+  lang   = computed(() => this.i18n.currentLang());
 
-  education: EducationEntry[] = [
-    {
-      icon:     '🟢',
-      title:    'Certificado de Profesionalidad',
-      subtitle: 'Confección y Publicación de Páginas Web',
-      center:   'Factoría F5',
-      period:   '2026 · Actualidad',
-      current:  true
-    },
-    {
-      icon:     '🎓',
-      title:    'Técnico Superior en DAM',
-      subtitle: 'Desarrollo de Aplicaciones Multiplataforma',
-      center:   'CIPF La Laboral',
-      period:   '2021 – 2025',
-      current:  false
-    },
-    {
-      icon:     '🎓',
-      title:    'Grado en Comercio y Marketing',
-      subtitle: 'Facultad de Comercio, Turismo y Ciencias Sociales',
-      center:   'Universidad de Oviedo',
-      period:   '2017 – 2021',
-      current:  false
-    }
+  readonly ICONS_EDUCATION = ['🟢', '🎓', '🎓'];
+  readonly CURRENT         = [true, false, false];
+  readonly CERT_ICONS      = ['🧪', '☕', '🌱'];
+  readonly CERT_URLS       = [
+    'https://openwebinars.net/cert/GzRy',
+    'https://openwebinars.net/cert/NgXp',
+    'https://openwebinars.net/cert/VYn3'
   ];
-
-  certificates: Certificate[] = [
-    {
-      icon:  '🧪',
-      title: 'Introducción al Testing',
-      hours: '6 horas',
-      date:  'Mar 2025',
-      url:   'https://openwebinars.net/cert/GzRy',
-      pdf:   'cert-testing-intro.pdf'
-    },
-    {
-      icon:  '☕',
-      title: 'Testing en Java con JUnit 5',
-      hours: '5 horas',
-      date:  'Mar 2025',
-      url:   'https://openwebinars.net/cert/NgXp',
-      pdf:   'cert-junit5.pdf'
-    },
-    {
-      icon:  '🌱',
-      title: 'Persistencia con Spring Boot',
-      hours: '1 hora',
-      date:  'Mar 2025',
-      url:   'https://openwebinars.net/cert/VYn3',
-      pdf:   'cert-spring-persistence.pdf'
-    }
+  readonly CERT_PDFS = [
+    'cert-testing-intro.pdf',
+    'cert-junit5.pdf',
+    'cert-spring-persistence.pdf'
   ];
 
   languages: Language[] = [
-    { flag: '🇬🇧', name: 'Inglés',  level: 'Nativo · C2', color: '#6366f1', current: 0 },
-    { flag: '🇪🇸', name: 'Español', level: 'Nativo · C2', color: '#10b981', current: 0 },
+    { flag: '🇬🇧', nameKey: 'about.lang_english', levelKey: 'about.lang_english_level', color: '#6366f1', current: 0 },
+    { flag: '🇪🇸', nameKey: 'about.lang_spanish', levelKey: 'about.lang_spanish_level', color: '#10b981', current: 0 },
   ];
+
+  get education(): EducationEntry[] {
+    return this.i18n.tArray<any>('education.entries').map((e: any, i: number) => ({
+      ...e,
+      icon:    this.ICONS_EDUCATION[i],
+      current: this.CURRENT[i]
+    }));
+  }
+
+  get certificates(): Certificate[] {
+    return this.i18n.tArray<any>('education.certificates').map((c: any, i: number) => ({
+      ...c,
+      icon: this.CERT_ICONS[i],
+      url:  this.CERT_URLS[i],
+      pdf:  this.CERT_PDFS[i]
+    }));
+  }
 
   ngOnInit() {
     setTimeout(() => {

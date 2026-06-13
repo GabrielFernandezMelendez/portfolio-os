@@ -388,3 +388,16 @@
     transform: translateX(-120%);
   }
 }
+
+.settings-btn {
+  background:    transparent;
+  border:        none;
+  font-size:     1.1rem;
+  cursor:        pointer;
+  padding:       2px 4px;
+  border-radius: 6px;
+  transition:    background 0.15s;
+  flex-shrink:   0;
+}
+
+.settings-btn:active { background: var(--bg-card-hover); }

@@ -1,11 +1,9 @@
 <div class="about-mobile">
 
-  <!-- Top App Bar -->
-<div class="top-bar" [class.light]="!isDark()">
-  <span class="top-bar-title">Sobre mí</span>
-</div>
+  <div class="top-bar" [class.light]="!isDark()">
+    <span class="top-bar-title">{{ i18n.t('about.title') }}</span>
+  </div>
 
-  <!-- Hero -->
   <div class="hero">
     <div class="hero-bg"></div>
     <div class="avatar-wrapper">
@@ -13,7 +11,7 @@
       <img src="pixel-programmer.gif" class="avatar-pixel" alt="pixel" />
     </div>
     <h1 class="hero-name">Gabriel Fernández</h1>
-    <p class="hero-role">Software Developer</p>
+    <p class="hero-role">{{ i18n.t('about.role') }}</p>
     <div class="hero-chips">
       <span class="hero-chip">Frontend</span>
       <span class="hero-chip">Backend</span>
@@ -21,14 +19,12 @@
     </div>
   </div>
 
-  <!-- Contenido -->
   <div class="content">
 
-    <!-- Contacto rápido -->
     <div class="quick-contacts">
       <div class="quick-item">
         <span class="quick-icon">📍</span>
-        <span class="quick-text">Asturias, España</span>
+        <span class="quick-text">{{ i18n.t('about.location') }}</span>
       </div>
       <div class="quick-item">
         <span class="quick-icon">📞</span>
@@ -40,52 +36,39 @@
       </div>
     </div>
 
-    <!-- Perfil -->
     <div class="card">
       <div class="card-header">
         <div class="card-accent"></div>
-        <h2 class="card-title">Perfil</h2>
+        <h2 class="card-title">{{ i18n.t('about.section_profile') }}</h2>
       </div>
-      <p class="card-text">
-        Desarrollador de Software especializado en aplicaciones
-        multiplataforma y sistemas logísticos (WMS). Experto en
-        integrar soluciones Backend robustas con interfaces Frontend
-        dinámicas y adaptables, bajo estándares de usabilidad y
-        accesibilidad (W3C), principios de Clean Code y metodologías
-        ágiles. Mi enfoque se centra en optimizar la experiencia del
-        cliente mediante el análisis de datos, el diseño intuitivo y
-        el despliegue eficiente de activos digitales en entornos
-        técnicos internacionales.
-      </p>
+      <p class="card-text">{{ i18n.t('about.profile_text') }}</p>
     </div>
 
-    <!-- Competencias -->
     <div class="card">
       <div class="card-header">
         <div class="card-accent"></div>
-        <h2 class="card-title">Competencias</h2>
+        <h2 class="card-title">{{ i18n.t('about.section_skills') }}</h2>
       </div>
       <div class="chip-grid">
-        <span class="chip">💬 Comunicación</span>
-        <span class="chip">🧩 Resolver problemas</span>
-        <span class="chip">🎯 Enfocado en metas</span>
-        <span class="chip">💡 Creatividad</span>
-        <span class="chip">🔄 Adaptabilidad</span>
+        <span class="chip">{{ i18n.t('about.badge_communication') }}</span>
+        <span class="chip">{{ i18n.t('about.badge_problem') }}</span>
+        <span class="chip">{{ i18n.t('about.badge_goals') }}</span>
+        <span class="chip">{{ i18n.t('about.badge_creativity') }}</span>
+        <span class="chip">{{ i18n.t('about.badge_adaptability') }}</span>
       </div>
     </div>
 
-    <!-- Idiomas -->
     <div class="card">
       <div class="card-header">
         <div class="card-accent"></div>
-        <h2 class="card-title">Idiomas</h2>
+        <h2 class="card-title">{{ i18n.t('about.section_languages') }}</h2>
       </div>
       <div class="lang-list">
         <div class="lang-row">
           <span class="lang-flag">🇬🇧</span>
           <div class="lang-info">
-            <span class="lang-name">Inglés</span>
-            <span class="lang-level">Nativo / Bilingüe</span>
+            <span class="lang-name">{{ i18n.t('about.lang_english') }}</span>
+            <span class="lang-level">{{ i18n.t('about.lang_english_level') }}</span>
           </div>
           <span class="level-pill">C2</span>
         </div>
@@ -93,8 +76,8 @@
         <div class="lang-row">
           <span class="lang-flag">🇪🇸</span>
           <div class="lang-info">
-            <span class="lang-name">Español</span>
-            <span class="lang-level">Nativo</span>
+            <span class="lang-name">{{ i18n.t('about.lang_spanish') }}</span>
+            <span class="lang-level">{{ i18n.t('about.lang_spanish_level') }}</span>
           </div>
           <span class="level-pill">C2</span>
         </div>

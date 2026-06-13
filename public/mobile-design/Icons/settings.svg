@@ -1,0 +1,22 @@
+<!-- Icono Smooth Pastel: Ajustes del Panel de Notificaciones (Elegante) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad-notif-settings" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e2e8f0" />
+      <stop offset="100%" stop-color="#94a3b8" />
+    </linearGradient>
+    <mask id="mask-notif-settings">
+      <rect width="100" height="100" fill="white" />
+      <circle cx="50" cy="50" r="13" fill="black" />
+    </mask>
+  </defs>
+  <circle cx="50" cy="52" r="32" fill="#000000" opacity="0.08" filter="blur(1.5px)" />
+  <g mask="url(#mask-notif-settings)">
+    <circle cx="50" cy="50" r="24" fill="url(#grad-notif-settings)" />
+    <rect x="44" y="16" width="12" height="68" rx="4" fill="url(#grad-notif-settings)" />
+    <rect x="44" y="16" width="12" height="68" rx="4" fill="url(#grad-notif-settings)" transform="rotate(45, 50, 50)" />
+    <rect x="44" y="16" width="12" height="68" rx="4" fill="url(#grad-notif-settings)" transform="rotate(90, 50, 50)" />
+    <rect x="44" y="16" width="12" height="68" rx="4" fill="url(#grad-notif-settings)" transform="rotate(135, 50, 50)" />
+  </g>
+  <circle cx="50" cy="50" r="13" stroke="#ffffff" stroke-width="2.5" fill="none" opacity="0.5" />
+</svg>

@@ -29,7 +29,7 @@ windows = signal<OsWindow[]>([
   { id: 'projects',   title: 'Proyectos',   icon: '📁', filename: 'projects.exe',   isOpen: false, isMinimized: false, x: 130, y: 60,  zIndex: 1, width: 820,  height: 560, minWidth: 756,  minHeight: 515, onDesktop: true, desktopX: 10, desktopY: 380 },
   { id: 'contact',    title: 'Contacto',    icon: '📬', filename: 'contact.bat',    isOpen: false, isMinimized: false, x: 100, y: 55,  zIndex: 1, width: 1050, height: 530, minWidth: 995,  minHeight: 490, onDesktop: true, desktopX: 10, desktopY: 470 },
   { id: 'github',     title: 'GitHub',      icon: '🐙', filename: 'github.url',     isOpen: false, isMinimized: false, x: 100, y: 50,  zIndex: 1, width: 1000, height: 620, minWidth: 956,  minHeight: 574, onDesktop: true, desktopX: 10, desktopY: 560 },
-  {id: 'settings', title: 'settings.exe', icon: '⚙️',filename: 'settings.exe',isOpen: false, isMinimized: false,x: 400, y: 200, zIndex: 10,width: 320, height: 120,minWidth: 280, minHeight: 100,onDesktop: false, desktopX: 0, desktopY: 0}
+  {id: 'settings', title: 'settings.exe', icon: '⚙️',filename: 'settings.exe',iconSvg: 'mobile-design/Icons/settings.svg',isOpen: false, isMinimized: false,x: 400, y: 200, zIndex: 10,width: 320, height: 120,minWidth: 280, minHeight: 100,onDesktop: false, desktopX: 0, desktopY: 0}
 ]);
 
   topZIndex  = 10;
