@@ -135,4 +135,10 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
       this.swipeOffset.set(0);
     }, 500);
   }
+
+  resetSwipe() {
+  if (this.swipeOffset() !== 0) {
+    this.swipeOffset.set(0);
+  }
+}
 }

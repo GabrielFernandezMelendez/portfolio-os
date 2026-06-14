@@ -1,16 +1,16 @@
-import { Component, signal } from '@angular/core';
-import { MobileBackgroundComponent } from '../mobile-background/mobile-background';
-import { MobileStatusBarComponent } from '../mobile-status-bar/mobile-status-bar';
+import { Component, signal, ViewChild } from '@angular/core';
+import { MobileBackgroundComponent }  from '../mobile-background/mobile-background';
+import { MobileStatusBarComponent }   from '../mobile-status-bar/mobile-status-bar';
 import { NotificationPanelComponent } from '../notification-panel/notification-panel';
-import { MobileHomeComponent } from '../mobile-home/mobile-home';
-import { MobileAppViewComponent } from '../mobile-app-view/mobile-app-view';
-import { MobileRecentsComponent } from '../mobile-recents/mobile-recents';
-import { MobileNavbarComponent } from '../mobile-navbar/mobile-navbar';
-import { MobileApp, MobileView } from '../mobile.interfaces';
+import { MobileHomeComponent }        from '../mobile-home/mobile-home';
+import { MobileAppViewComponent }     from '../mobile-app-view/mobile-app-view';
+import { MobileRecentsComponent }     from '../mobile-recents/mobile-recents';
+import { MobileNavbarComponent }      from '../mobile-navbar/mobile-navbar';
+import { MobileApp, MobileView }      from '../mobile.interfaces';
 
 @Component({
-  selector: 'app-mobile-layout',
-  standalone: true,
+  selector:    'app-mobile-layout',
+  standalone:  true,
   imports: [
     MobileBackgroundComponent,
     MobileStatusBarComponent,
@@ -21,47 +21,32 @@ import { MobileApp, MobileView } from '../mobile.interfaces';
     MobileNavbarComponent,
   ],
   templateUrl: './mobile-layout.html',
-  styleUrl: './mobile-layout.css',
+  styleUrl:    './mobile-layout.css',
 })
 export class MobileLayoutComponent {
-  // ── Estado global ─────────────────────────────
-  isDark = signal(true);
-  golPaused = signal(false);
+
+  @ViewChild(MobileAppViewComponent) appView?: MobileAppViewComponent;
+
+  isDark     = signal(true);
+  golPaused  = signal(false);
   mobileView = signal<MobileView>('home');
-  activeApp = signal<string | null>(null);
+  activeApp  = signal<string | null>(null);
   openedApps = signal<MobileApp[]>([]);
 
-  // ── Apps disponibles ──────────────────────────
   apps: MobileApp[] = [
-    { id: 'about', title: 'Sobre mí', icon: '👤', iconSvg: 'mobile-design/Icons/Perfil.svg' },
-    {
-      id: 'experience',
-      title: 'Experiencia',
-      icon: '💼',
-      iconSvg: 'mobile-design/Icons/experiencia.svg',
-    },
-    { id: 'skills', title: 'Habilidades', icon: '🛠', iconSvg: 'mobile-design/Icons/skills.svg' },
-    {
-      id: 'education',
-      title: 'Formación',
-      icon: '🎓',
-      iconSvg: 'mobile-design/Icons/education.svg',
-    },
-    { id: 'projects', title: 'Proyectos', icon: '📁', iconSvg: 'mobile-design/Icons/projects.svg' },
-    { id: 'contact', title: 'Contacto', icon: '📬', iconSvg: 'mobile-design/Icons/contact.svg' },
-    { id: 'github', title: 'GitHub', icon: '🐙', iconSvg: 'mobile-design/Icons/github.svg' },
-    { id: 'settings', title: 'Ajustes', icon: '⚙️', iconSvg: 'mobile-design/Icons/settings.svg' },
+    { id: 'about',      title: 'Sobre mí',    icon: '👤', iconSvg: 'mobile-design/Icons/Perfil.svg' },
+    { id: 'experience', title: 'Experiencia', icon: '💼', iconSvg: 'mobile-design/Icons/experiencia.svg' },
+    { id: 'skills',     title: 'Habilidades', icon: '🛠', iconSvg: 'mobile-design/Icons/skills.svg' },
+    { id: 'education',  title: 'Formación',   icon: '🎓', iconSvg: 'mobile-design/Icons/education.svg' },
+    { id: 'projects',   title: 'Proyectos',   icon: '📁', iconSvg: 'mobile-design/Icons/projects.svg' },
+    { id: 'contact',    title: 'Contacto',    icon: '📬', iconSvg: 'mobile-design/Icons/contact.svg' },
+    { id: 'github',     title: 'GitHub',      icon: '🐙', iconSvg: 'mobile-design/Icons/github.svg' },
+    { id: 'settings',   title: 'Ajustes',     icon: '⚙️', iconSvg: 'mobile-design/Icons/settings.svg' },
   ];
 
-  // ── Tema y fondo ──────────────────────────────
-  toggleTheme() {
-    this.isDark.update((v: boolean) => !v);
-  }
-  toggleGol() {
-    this.golPaused.update((v: boolean) => !v);
-  }
+  toggleTheme() { this.isDark.update((v: boolean) => !v); }
+  toggleGol()   { this.golPaused.update((v: boolean) => !v); }
 
-  // ── Notificaciones ────────────────────────────
   private previousView: MobileView = 'home';
 
   openNotifications() {
@@ -73,7 +58,6 @@ export class MobileLayoutComponent {
     this.mobileView.set(this.previousView);
   }
 
-  // ── Gestión de apps ───────────────────────────
   openApp(app: MobileApp) {
     this.activeApp.set(app.id);
     this.mobileView.set('app');
@@ -97,15 +81,26 @@ export class MobileLayoutComponent {
     }
   }
 
-  // ── Navbar ────────────────────────────────────
   goHome() {
-    this.mobileView.set('home');
-    this.activeApp.set(null);
+    if (this.mobileView() === 'app' && this.appView) {
+      this.appView.dismiss();
+      setTimeout(() => {
+        this.mobileView.set('home');
+        this.activeApp.set(null);
+      }, 250);
+    } else {
+      this.mobileView.set('home');
+      this.activeApp.set(null);
+    }
   }
 
   goBack() {
-    if (this.mobileView() === 'app' || this.mobileView() === 'recents') {
-      this.mobileView.set('home');
+    if (this.mobileView() === 'app' && this.appView) {
+      this.appView.dismiss();
+      setTimeout(() => {
+        this.mobileView.set('home');
+        this.activeApp.set(null);
+      }, 250);
     } else {
       this.mobileView.set('home');
     }
@@ -126,17 +121,13 @@ export class MobileLayoutComponent {
   onSwipeEnd(e: TouchEvent) {
     const deltaX = e.changedTouches[0].clientX - this.swipeStartX;
     const deltaY = e.changedTouches[0].clientY - this.swipeStartY;
-
-    // Solo diagonal de arriba-izquierda hacia abajo-derecha
-    // deltaX positivo (derecha) Y deltaY positivo (abajo)
     if (deltaX > 40 && deltaY > 40 && this.mobileView() !== 'notifications') {
       this.openNotifications();
     }
   }
 
-  // ── Settings ──────────────────────────────────
-openSettings() {
-  this.closeNotifications();
-  this.openApp({ id: 'settings', title: 'Ajustes', icon: '⚙️' });
-}
+  openSettings() {
+    this.closeNotifications();
+    this.openApp({ id: 'settings', title: 'Ajustes', icon: '⚙️' });
+  }
 }
