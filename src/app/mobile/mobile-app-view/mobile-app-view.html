@@ -28,7 +28,14 @@
         <app-github-mobile [isDark]="isDark()" />
       }
       @case ('settings') { <app-settings-mobile [isDark]="isDark()" /> }
-      @case ('racing') { <app-racing /> }
+
+      <!-- Juegos: se descargan solo al abrirlos (no pesan en la carga inicial del portfolio) -->
+      @case ('racing') {
+        @defer (on immediate) { <app-racing /> }
+      }
+      @case ('sandworld') {
+        @defer (on immediate) { <app-sandworld /> }
+      }
     }
   </div>
 </div>

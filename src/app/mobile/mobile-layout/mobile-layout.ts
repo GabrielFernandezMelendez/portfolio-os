@@ -35,6 +35,9 @@ export class MobileLayoutComponent {
 
   private readonly PAGES_KEY = 'portfolio-pages-layout';
 
+  // Apps que van a la página de juegos
+  private readonly GAME_IDS = ['racing', 'sandworld'];
+
   readonly ALL_APPS: MobileApp[] = [
     { id: 'about', title: 'Sobre mí', icon: '👤', iconSvg: 'mobile-design/Icons/Perfil.svg' },
     {
@@ -55,11 +58,17 @@ export class MobileLayoutComponent {
     { id: 'github', title: 'GitHub', icon: '🐙', iconSvg: 'mobile-design/Icons/github.svg' },
     { id: 'settings', title: 'Ajustes', icon: '⚙️', iconSvg: 'mobile-design/Icons/settings.svg' },
     { id: 'racing', title: 'RaceTime', icon: '🏎️' },
+    {
+      id: 'sandworld',
+      title: 'Sandworld',
+      icon: '🏝️',
+      iconSvg: 'mobile-design/Icons/sandworld.svg',
+    },
   ];
 
   readonly DEFAULT_PAGES: MobilePage[] = [
-    { id: 'page-cv', apps: this.ALL_APPS.filter((a) => a.id !== 'racing') },
-    { id: 'page-games', apps: this.ALL_APPS.filter((a) => a.id === 'racing') },
+    { id: 'page-cv', apps: this.ALL_APPS.filter((a) => !this.GAME_IDS.includes(a.id)) },
+    { id: 'page-games', apps: this.ALL_APPS.filter((a) => this.GAME_IDS.includes(a.id)) },
   ];
 
   pages = signal<MobilePage[]>(this.loadPages());
@@ -71,10 +80,39 @@ export class MobileLayoutComponent {
       if (saved) {
         const parsed: MobilePage[] = JSON.parse(saved);
         const cleaned = parsed.filter((p, i) => i === 0 || p.apps.length > 0);
-        return cleaned.length > 0 ? cleaned : this.DEFAULT_PAGES;
+        return cleaned.length > 0 ? this.mergeNewApps(cleaned) : this.DEFAULT_PAGES;
       }
     } catch {}
     return this.DEFAULT_PAGES;
+  }
+
+  /**
+   * Añade a la distribución guardada las apps de ALL_APPS que aún no aparecen
+   * (por ejemplo, un juego nuevo). Respeta el orden y las carpetas del usuario.
+   * Los juegos van a la página de juegos; el resto, a la última página.
+   */
+  private mergeNewApps(pages: MobilePage[]): MobilePage[] {
+    const present = new Set<string>();
+    for (const page of pages) {
+      for (const app of page.apps) {
+        present.add(app.id);
+        app.apps?.forEach((inner) => present.add(inner.id)); // apps dentro de carpetas
+      }
+    }
+
+    const missing = this.ALL_APPS.filter((a) => !present.has(a.id));
+    if (missing.length === 0) return pages;
+
+    const merged = pages.map((p) => ({ ...p, apps: [...p.apps] }));
+    const gamesPage = merged.find((p) => p.id === 'page-games') ?? merged[merged.length - 1];
+
+    for (const app of missing) {
+      const target = this.GAME_IDS.includes(app.id) ? gamesPage : merged[merged.length - 1];
+      target.apps.push(app);
+    }
+
+    localStorage.setItem(this.PAGES_KEY, JSON.stringify(merged));
+    return merged;
   }
 
   private savePages() {

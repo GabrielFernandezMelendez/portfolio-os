@@ -1,11 +1,11 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   input,
   signal,
   effect,
   ElementRef,
   inject,
-  ChangeDetectionStrategy,
 } from '@angular/core';
 import { AboutMobileComponent } from '../mobile-apps/cv/about-mobile/about-mobile';
 import { ExperienceMobileComponent } from '../mobile-apps/cv/experience-mobile/experience-mobile';
@@ -15,7 +15,10 @@ import { ProjectsMobileComponent } from '../mobile-apps/cv/projects-mobile/proje
 import { ContactMobileComponent } from '../mobile-apps/cv/contact-mobile/contact-mobile';
 import { GithubMobileComponent } from '../mobile-apps/cv/github-mobile/github-mobile';
 import { SettingsMobileComponent } from '../mobile-apps/settings/settings-mobile/settings-mobile';
-import { RacingComponent } from '..//../games/racetime/racing/racing';
+// games (solo se usan dentro de @defer: Angular los separa en su propio chunk)
+import { RacingComponent } from '../../games/racetime/racing/racing';
+import { SandworldComponent } from '../../games/sandworld/ui/sandworld/sandworld';
+
 @Component({
   selector: 'app-mobile-app-view',
   standalone: true,
@@ -28,12 +31,13 @@ import { RacingComponent } from '..//../games/racetime/racing/racing';
     ContactMobileComponent,
     GithubMobileComponent,
     SettingsMobileComponent,
-    //games
+    // games
     RacingComponent,
+    SandworldComponent,
   ],
   templateUrl: './mobile-app-view.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mobile-app-view.css',
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class MobileAppViewComponent {
   appId = input.required<string>();

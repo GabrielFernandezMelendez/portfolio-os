@@ -1,0 +1,78 @@
+/*
+  Tokens propios del juego, definidos en su raíz.
+  No se usan las variables de styles.css del portfolio para que el juego sea extraíble.
+*/
+:host {
+  --sw-sky: #8fd0f0;
+  --sw-wood: #a8693a;
+  --sw-wood-hi: #cf8c4e;
+  --sw-wood-dk: #6e4021;
+  --sw-edge: #2e1a0d;
+  --sw-parch: #f7dfa8;
+  --sw-parch-dk: #e7c483;
+  --sw-ink: #4a2c17;
+  --sw-ink-wood: #fff0cf;
+  --sw-accent: #f2b33d;
+  --sw-font-ui: 'Silkscreen', 'Pixelify Sans', ui-monospace, monospace;
+  --sw-font-text: 'Pixelify Sans', ui-monospace, monospace;
+
+  /* Ocupa todo el frame de la app sin generar scroll en .app-content */
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  background: var(--sw-sky);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+}
+
+.stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* Cargando: tres bloques pixel que parpadean */
+.loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-auto-flow: column;
+  place-content: center;
+  gap: 6px;
+}
+
+.loading span {
+  width: 8px;
+  height: 8px;
+  background: var(--sw-wood);
+  border: 2px solid var(--sw-edge);
+  animation: sw-blink 0.9s steps(1) infinite;
+}
+
+.loading span:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.loading span:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes sw-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading span {
+    animation: none;
+  }
+}
