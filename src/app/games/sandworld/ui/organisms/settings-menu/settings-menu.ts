@@ -29,6 +29,7 @@ import { DEV_TOOLS } from '../../../config/dev.config';
         <!-- TEMPORAL: prueba de la aparición de chunks (fase 7: expansión real) -->
         <button swWood class="dev" (click)="devReveal.emit()">{{ 'settings.devReveal' | t }}</button>
         <button swWood class="dev" (click)="devSand.emit()">{{ 'settings.devSand' | t }}</button>
+        <button swWood class="dev" (click)="devSpring.emit()">{{ 'settings.devSpring' | t }}</button>
       }
     </sw-modal>
   `,
@@ -48,6 +49,7 @@ export class SettingsMenuComponent {
   readonly exit = output<void>();
   readonly devReveal = output<void>();
   readonly devSand = output<void>();
+  readonly devSpring = output<void>();
   protected readonly langs = SANDWORLD_LANGS;
   protected readonly devTools = DEV_TOOLS;
 }

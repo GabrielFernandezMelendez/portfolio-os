@@ -26,7 +26,8 @@
     "exit": "Exit Sandworld",
     "resume": "Back to the island",
     "devReveal": "Test: uncover land",
-    "devSand": "Test: sand pile"
+    "devSand": "Test: sand pile",
+    "devSpring": "Test: spring"
   },
   "lang": {
     "es": "Español",

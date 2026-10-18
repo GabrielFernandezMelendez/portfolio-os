@@ -6,6 +6,9 @@ import { CellRef, TerrainGrid } from './terrain-grid';
 
 const NEIGHBOURS: readonly [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
+/** Talud extra (en niveles) con el suelo empapado */
+const WET_REPOSE_BONUS = 0.3;
+
 /** Niveles que tienen que caer sobre una celda para que su capa de arriba pase a ser ese material */
 const MATERIAL_COVER = 0.04;
 
@@ -54,7 +57,8 @@ export class LandslideSystem {
       if (sediment <= 0) continue;
 
       const material = cell.chunk.material[cell.k] as MaterialId;
-      const repose = MATERIALS[material].repose;
+      // El material mojado aguanta más pendiente (arena de playa); el barro ya tiene su talud bajo
+      const repose = MATERIALS[material].repose + cell.chunk.moisture[cell.k] * WET_REPOSE_BONUS;
       if (!Number.isFinite(repose)) continue;
 
       const h = this.grid.ground(cell);

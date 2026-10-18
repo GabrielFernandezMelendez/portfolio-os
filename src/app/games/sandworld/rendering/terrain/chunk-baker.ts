@@ -1,6 +1,7 @@
 import { ChunkData, cellIndex, groundAt, tileIndex } from '../../domain/models/chunk.model';
 import { Biome, BiomeId } from '../../domain/models/biome.model';
 import { Material, MaterialId } from '../../domain/models/material.model';
+import { MATERIAL_DEFS } from '../../config/materials.config';
 import { WORLD } from '../../domain/models/world.model';
 import { TERRAIN_RAMPS, TERRAIN_WALLS, WATERFALL } from '../../config/palette.config';
 import { clamp, fbm, hash2, valueNoise } from '../../application/world/noise';
@@ -29,8 +30,18 @@ const DEPTH = WORLD.BASE_DEPTH;
 const S = 20;
 /** Muestras por lado del chunk */
 const M = N * S + 1;
-/** Agua mínima (en niveles) para considerarse lámina visible */
+/** Agua mínima (en niveles) para considerarse lámina visible (lago o charco) */
 const WET = 0.06;
+/** Agua mínima para dibujar un arroyo: lámina fina que corre sobre la terraza */
+const STREAM = 0.006;
+/** Agua caída por el borde (en el último minuto) a partir de la cual se dibuja la cascada al mar de nubes */
+const DRAIN = 0.0005;
+/** Profundidad mínima para dibujar un lago (por debajo es arroyo o charco fino) */
+const LAKE_MIN_DEPTH = 0.1;
+/** La lámina de un lago se dibuja este tanto por debajo de su terraza: queda una orilla de 1 px (se lee hundido) */
+const WATER_INSET = 0.2;
+/** Muestras de agua que oscurece la sombra de la orilla de atrás */
+const BANK_SHADOW = 3;
 
 /** Margen superior para que quepan las terrazas más altas */
 const TOP_MARGIN = (MAXL + 3) * STEP + 2;
@@ -71,25 +82,17 @@ const WALL: Record<BiomeId, readonly number[]> = {
   [Biome.WETLAND]: TERRAIN_WALLS.forest,
 };
 
-/**
- * Color de la cara superior según el material de la capa de arriba.
- * La tierra (SOIL) no tiene rampa propia: usa la del bioma, como el terreno generado.
- */
-const MATERIAL_RAMP: Partial<Record<MaterialId, Ramp>> = {
-  [Material.SAND]: TERRAIN_RAMPS.desert,   // arena de Duna: amarilla como su botella (la playa usa la rampa "sand")
-  [Material.HUMUS]: TERRAIN_RAMPS.humus,
-  [Material.ASH]: TERRAIN_RAMPS.ash,
-  [Material.MUD]: TERRAIN_RAMPS.wetsand,
-  [Material.SNOW]: TERRAIN_RAMPS.tundra,
-  [Material.ICE]: TERRAIN_RAMPS.ice,
-};
-
-/** Paredes según material (si no, las del bioma) */
-const MATERIAL_WALL: Partial<Record<MaterialId, readonly number[]>> = {
-  [Material.SAND]: TERRAIN_WALLS.desert,
-  [Material.SNOW]: TERRAIN_WALLS.tundra,
-  [Material.ICE]: TERRAIN_WALLS.tundra,
-};
+/** Rampa y paredes de cada material, leídas del registro (sin rampa: la del bioma) */
+const RAMPS = TERRAIN_RAMPS as unknown as Record<string, Ramp>;
+const WALLS = TERRAIN_WALLS as unknown as Record<string, readonly number[]>;
+const MATERIAL_RAMP: Partial<Record<MaterialId, Ramp>> = {};
+const MATERIAL_WALL: Partial<Record<MaterialId, readonly number[]>> = {};
+for (const [id, def] of Object.entries(MATERIAL_DEFS)) {
+  const m = Number(id) as MaterialId;
+  if (m === Material.ROCK) continue;               // la roca a la vista se decide aparte (sin sedimento)
+  if (def.ramp) MATERIAL_RAMP[m] = RAMPS[def.ramp];
+  if (def.wall) MATERIAL_WALL[m] = WALLS[def.wall];
+}
 
 /** Sedimento mínimo (en niveles) para que se vea el color del material */
 const MATERIAL_VISIBLE = 0.02;
@@ -113,6 +116,10 @@ export class ChunkBaker {
   private readonly sDepth = new Float32Array(M * M);
   private readonly sShore = new Float32Array(M * M);
   private readonly sWaterSurf = new Float32Array(M * M);
+  private readonly sStream = new Uint8Array(M * M);
+  private readonly sDrain = new Uint8Array(M * M);
+  private readonly streamArr = new Float32Array(C * C);
+  private readonly drainArr = new Float32Array(C * C);
   private readonly gArr = new Float32Array(C * C);
   private readonly wsArr = new Float32Array(C * C);
   private readonly wetArr = new Float32Array(C * C);
@@ -189,6 +196,8 @@ export class ChunkBaker {
       this.gArr[k] = g;
       this.wetArr[k] = wet ? 1 : 0;
       this.wsArr[k] = wet ? g + chunk.water[k] : 0;
+      this.streamArr[k] = chunk.water[k] > STREAM ? 1 : 0;
+      this.drainArr[k] = chunk.drain[k] > DRAIN ? 1 : 0;
     }
     this.computeShoreDistance();
   }
@@ -246,18 +255,42 @@ export class ChunkBaker {
         const wetFraction = this.bilinear(this.wetArr, u, v);
         const waterSurf = wetFraction > 0 ? this.bilinear(this.wsArr, u, v) / wetFraction : 0;
         this.sWaterSurf[q] = waterSurf;
-        // La superficie del agua se interpola solo entre celdas mojadas: lagos planos y ríos sin escalones
-        if (wetFraction > 0.5 && waterSurf > lvl + 0.05) {
+        // Lagos: la lámina se dibuja en el nivel de terraza que le corresponde (nunca a media altura)
+        // y un poco por debajo de él. Así un lago es plano, queda hundido entre sus orillas y solo hay
+        // escalones de agua donde el agua cae de verdad.
+        if (wetFraction > 0.5 && waterSurf - g > LAKE_MIN_DEPTH) {
+          const drawn = Math.max(lvl, Math.floor(waterSurf - 0.15));
           this.sWet[q] = 1;
-          this.sSurf[q] = waterSurf;
+          this.sSurf[q] = drawn - WATER_INSET;
           this.sDepth[q] = waterSurf - g;
         } else {
           this.sWet[q] = 0;
           this.sSurf[q] = lvl;
           this.sDepth[q] = 0;
         }
+        // Arroyo: agua fina sobre la terraza (no sube la superficie, solo cambia el color y cae por las paredes)
+        this.sStream[q] = this.sWet[q] === 0 && this.bilinear(this.streamArr, u, v) > 0.45 ? 1 : 0;
+        this.sDrain[q] = this.bilinear(this.drainArr, u, v) > 0.3 ? 1 : 0;
       }
     }
+  }
+
+  /**
+   * Distancia (en muestras, 1..BANK_SHADOW) a la orilla de atrás de un lago, o 0 si no hay orilla cerca.
+   * "Atrás" en isométrica es arriba en pantalla: las muestras con a-1, b-1 o ambas.
+   */
+  private bankShadow(a: number, b: number): number {
+    const level = this.sSurf[b * M + a];
+    for (let d = 1; d <= BANK_SHADOW; d++) {
+      for (const [da, db] of [[-d, 0], [0, -d], [-d, -d]] as const) {
+        const na = a + da, nb = b + db;
+        if (na < 0 || nb < 0) continue;
+        const nq = nb * M + na;
+        if (!this.grids.inside[nq]) continue;
+        if (this.sWet[nq] === 0 && this.sSurf[nq] > level) return d;
+      }
+    }
+    return 0;
   }
 
   // ── 4. Pintado de atrás hacia delante ─────────────────────────────
@@ -287,6 +320,7 @@ export class ChunkBaker {
         cell = cellIndex(clamp(Math.floor((u + 0.5) * G), 0, C - 1), clamp(Math.floor((v + 0.5) * G), 0, C - 1)) + 1;
         const lvl = this.sLvl[q];
         const isWet = this.sWet[q] === 1;
+        const isStream = this.sStream[q] === 1;
         const surf = this.sSurf[q];
         const px = Math.round(BAKE_ORIGIN_X + (u - v) * TW / 2);
         const base = BAKE_ORIGIN_Y + (u + v) * TH / 2;
@@ -308,12 +342,20 @@ export class ChunkBaker {
 
         // Cara superior
         let color: number;
-        if (isWet) {
+        if (isStream) {
+          // Arroyo o agua fina: misma agua que los lagos, algo más clara, con destellos sueltos
+          color = shade(TERRAIN_RAMPS.water, clamp(0.72 + tex * 0.8), px, py);
+          if (hash2(px, py, 23) < 0.04) color = TERRAIN_RAMPS.shallow[3];
+        } else if (isWet) {
+          // Más oscuro cuanto más hondo; sin reborde claro (el reborde claro hacía que el lago pareciera elevado)
           const depth = this.sDepth[q];
-          const val = 0.75 - clamp(depth / 1.2) * 0.6 + tex * 0.8;
-          color = depth < 0.12
-            ? shade(TERRAIN_RAMPS.shallow, clamp(val + 0.15), px, py)
-            : shade(TERRAIN_RAMPS.water, clamp(val), px, py);
+          let val = 0.78 - clamp(depth / 1.0) * 0.65 + tex * 0.6;
+          // Sombra de la orilla de atrás: franja oscura junto al borde superior del lago
+          const shadowAt = this.bankShadow(a, b);
+          if (shadowAt > 0) val -= 0.35 * (1 - (shadowAt - 1) / BANK_SHADOW);
+          color = shade(TERRAIN_RAMPS.water, clamp(val), px, py);
+          // Destellos sueltos lejos de la orilla
+          if (shadowAt === 0 && hash2(px, py, 29) < 0.012) color = TERRAIN_RAMPS.water[4];
         } else {
           const g = this.sGround[q];
           const slope = (this.bilinear(this.gArr, u + 0.2, v) - this.bilinear(this.gArr, u - 0.2, v)) +
@@ -343,15 +385,17 @@ export class ChunkBaker {
         if (drop <= 1) continue;
 
         const bottom = edgeF ? Math.round(base + DEPTH + (valueNoise(px * 0.15, 0, this.seed + 21) - 0.5) * 4) : py + drop;
+        // Cascada: el arroyo cae por la pared de la terraza; en el borde de la isla, hasta el mar de nubes
+        const edgeFall = edgeF && this.sDrain[q] === 1 && (isWet || isStream);
         const wall = MATERIAL_WALL[material] ?? (lvl >= 5 && biome !== Biome.TUNDRA ? TERRAIN_WALLS.rock : WALL[biome]);
         const leftFace = (edgeL ? -9 : this.sLvl[qL]) <= (edgeR ? -9 : this.sLvl[qR]);
-        const waterPx = isWet ? Math.round((surf - lvl) * STEP) : 0;
+        const waterPx = edgeFall ? bottom - py : isStream ? drop : isWet ? Math.round((surf - lvl) * STEP) : 0;
 
         for (let y = py + 1, d = 1; y <= bottom; y++, d++) {
           let wc: number;
           if (d <= waterPx) {
             // Espuma solo en cascadas de verdad; si el desnivel es pequeño, agua normal
-            wc = drop > STEP + 1 ? WATERFALL[(y + px + 999) % 3] : TERRAIN_RAMPS.water[2];
+            wc = drop > STEP + 1 || edgeFall ? WATERFALL[(y + px + 999) % 3] : TERRAIN_RAMPS.water[2];
           } else {
             const dd = d - waterPx;
             if (dd <= 1 && !isWet) {
@@ -363,6 +407,12 @@ export class ChunkBaker {
             }
           }
           put(px, y, leftFace ? wc : darken(wc, 0.18));        // la cara derecha queda en sombra
+        }
+        // Espuma al pie de la cascada del borde, sobre las nubes
+        if (edgeFall) {
+          for (let f = 1; f <= 3; f++) {
+            if (hash2(px, f, 31) < 0.8 - f * 0.2) put(px + ((f & 1) ? 0 : (hash2(px, f, 32) < 0.5 ? -1 : 1)), bottom + f, WATERFALL[f === 1 ? 0 : 1]);
+          }
         }
       }
     }

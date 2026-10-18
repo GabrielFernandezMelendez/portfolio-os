@@ -26,7 +26,8 @@
     "exit": "Salir de Sandworld",
     "resume": "Volver a la isla",
     "devReveal": "Probar: descubrir terreno",
-    "devSand": "Probar: montón de arena"
+    "devSand": "Probar: montón de arena",
+    "devSpring": "Probar: manantial"
   },
   "lang": {
     "es": "Español",

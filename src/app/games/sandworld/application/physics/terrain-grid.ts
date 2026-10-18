@@ -1,6 +1,5 @@
 import { ChunkData, cellIndex, groundAt } from '../../domain/models/chunk.model';
 import { WORLD } from '../../domain/models/world.model';
-import { WATER_TABLE } from '../../config/world.config';
 import { World } from '../world/world';
 
 const C = WORLD.CELLS;
@@ -17,6 +16,9 @@ export interface CellRef {
  * Fuera de lo descubierto no hay celdas (null): la física lo trata como un muro.
  */
 export class TerrainGrid {
+  /** Se llama cuando cambia la altura de una celda (el agua de alrededor tiene que volver a moverse) */
+  onHeightChange: ((gx: number, gy: number) => void) | null = null;
+
   constructor(private readonly world: World) {}
 
   cell(gx: number, gy: number): CellRef | null {
@@ -29,14 +31,11 @@ export class TerrainGrid {
     return groundAt(ref.chunk, ref.k);
   }
 
-  /**
-   * Cambia el espesor de sedimento de una celda y recoloca el agua estática.
-   * Agua estática: hasta que llegue el agua dinámica (bloque 2), lo que queda por debajo del nivel freático se llena.
-   */
+  /** Cambia el espesor de sedimento de una celda y avisa (el agua la recalcula el sistema de agua) */
   setSediment(ref: CellRef, sediment: number): void {
     const c = ref.chunk;
     c.sediment[ref.k] = Math.max(0, sediment);
-    c.water[ref.k] = Math.max(0, WATER_TABLE - groundAt(c, ref.k));
+    this.onHeightChange?.(c.cx * C + (ref.k % C), c.cy * C + Math.floor(ref.k / C));
   }
 
   /** Clave numérica única de una celda global (para conjuntos de celdas activas) */

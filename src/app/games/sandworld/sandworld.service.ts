@@ -180,6 +180,7 @@ export class SandworldService implements OnDestroy {
     const next = nextChunkToReveal(this.world.exploration);
     if (!next || !this.world.exploration.reveal(next.cx, next.cy)) return;
     this.world.chunk(next.cx, next.cy);
+    this.physics.chunkRevealed(next.cx, next.cy);
     this.world.level++;
     this.events.emit('chunkRevealed', next);
     this.log({ type: 'world', key: 'chronicle.reveal', params: { level: this.world.level }, priority: 8 });
@@ -191,6 +192,22 @@ export class SandworldService implements OnDestroy {
   debugSandPile(): void {
     for (const [x, y] of [[15, 15], [16, 15], [15, 16], [16, 16]]) this.physics.deposit(x, y, Material.SAND, 4);
     this.events.emit('terrainChanged', [{ cx: 0, cy: 0 }]);
+  }
+
+  /** TEMPORAL (prueba del bloque 2): manantial en la cumbre más alta lejos de los que ya hay */
+  debugSpring(): void {
+    const chunk = this.world.chunk(0, 0);
+    const C = Math.round(Math.sqrt(chunk.spring.length));
+    const existing = [...chunk.spring].map((v, k) => (v > 0 ? k : -1)).filter(k => k >= 0);
+    let best = -1, bestH = -Infinity;
+    for (let k = 0; k < chunk.spring.length; k++) {
+      const x = k % C, y = Math.floor(k / C);
+      if (x < 2 || y < 2 || x > C - 3 || y > C - 3) continue;
+      if (existing.some(e => Math.hypot((e % C) - x, Math.floor(e / C) - y) < 10)) continue;
+      const h = chunk.rock[k] + chunk.sediment[k];
+      if (h > bestH) { bestH = h; best = k; }
+    }
+    if (best >= 0) this.physics.setSpring(best % C, Math.floor(best / C), 0.08);
   }
 
   showIslandLabel(): void {

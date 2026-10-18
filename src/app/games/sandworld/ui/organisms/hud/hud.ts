@@ -63,6 +63,7 @@ import { HUD_PLANKS } from './hud-planks';
           (exit)="exit.emit()"
           (devReveal)="game.closeMenu(); game.revealNextChunk()"
           (devSand)="game.closeMenu(); game.debugSandPile()"
+          (devSpring)="game.closeMenu(); game.debugSpring()"
         />
       }
       @case ('chronicle') {

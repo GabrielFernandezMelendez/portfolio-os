@@ -2,6 +2,7 @@ import { ChunkData } from '../../domain/models/chunk.model';
 import { generateChunk } from './chunk-generator';
 import { computeClimate } from './climate';
 import { ExplorationMap } from './exploration';
+import { placeNaturalSprings } from './springs';
 
 /**
  * El mundo de una partida: semilla y chunks cargados.
@@ -25,6 +26,7 @@ export class World {
     if (!c) {
       c = generateChunk(this.seed, cx, cy);
       computeClimate(c, this.seed);
+      placeNaturalSprings(c, this.seed);
       this.chunks.set(key, c);
     }
     return c;
