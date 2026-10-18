@@ -13,6 +13,8 @@ import { World } from './application/world/world';
 import { WORLD } from './domain/models/world.model';
 import { BRUSH_CELLS } from './config/brush.config';
 import { CLOUD_CAMERA_MARGIN, REVEAL_ON_START } from './config/clouds.config';
+import { REBAKE_INTERVAL_MS } from './config/physics.config';
+import { ChunkCoord } from './domain/events/game-events';
 
 /** Avisos del runtime hacia fuera (el componente los conecta con el servicio) */
 export interface RuntimeHooks {
@@ -35,6 +37,10 @@ export class SandworldRuntime {
   private readonly cursor = new CellCursor();
   private readonly terrains = new Map<string, TerrainLayer>();
   private readonly reveals: RevealEffect[] = [];
+  /** Chunks con el terreno cambiado pendientes de re-hornear, y cuándo se hornearon por última vez */
+  private readonly dirty = new Set<string>();
+  private readonly lastBake = new Map<string, number>();
+  private now = 0;
   private clouds: CloudLayer | null = null;
   private daylight: DaylightLayer | null = null;
   private input: PointerInput | null = null;
@@ -105,6 +111,11 @@ export class SandworldRuntime {
     this.camera.glideTo(c.x, c.y);
   }
 
+  /** El terreno de estos chunks ha cambiado: se re-hornearán en los próximos frames */
+  markDirty(chunks: readonly ChunkCoord[]): void {
+    for (const c of chunks) this.dirty.add(chunkKey(c.cx, c.cy));
+  }
+
   setBrushEnabled(enabled: boolean): void {
     this.brushEnabled = enabled;
     if (!enabled) this.cursor.hide();
@@ -133,6 +144,9 @@ export class SandworldRuntime {
 
   private frame = (ticker: Ticker): void => {
     const dt = ticker.deltaMS;
+    this.now += dt;
+    // Primero se dibuja lo que cambió en el frame anterior (p. ej. arena recién caída) y después avanza la física
+    this.rebakeDirty();
     this.engine.update(dt);
     this.camera.update(dt, this.input?.edgeVector() ?? { x: 0, y: 0 });
     this.clouds?.update(dt);
@@ -148,6 +162,22 @@ export class SandworldRuntime {
     this.daylight?.apply(this.engine.exactMinuteOfDay);
     this.hooks.frame?.(ticker.lastTime);
   };
+
+  /** Re-hornea los chunks cambiados, cada uno como mucho cada REBAKE_INTERVAL_MS */
+  private rebakeDirty(): void {
+    for (const key of this.dirty) {
+      const layer = this.terrains.get(key);
+      if (!layer) {
+        this.dirty.delete(key);
+        continue;
+      }
+      if (this.now - (this.lastBake.get(key) ?? -Infinity) < REBAKE_INTERVAL_MS) continue;
+      const [cx, cy] = key.split(',').map(Number);
+      layer.render(this.world.chunk(cx, cy));
+      this.lastBake.set(key, this.now);
+      this.dirty.delete(key);
+    }
+  }
 
   /** Hornea un chunk, lo coloca en su orden de dibujo, extiende las nubes y (opcional) lo hace emerger */
   private addChunk(cx: number, cy: number, animate: boolean): void {

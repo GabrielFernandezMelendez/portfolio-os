@@ -1,5 +1,6 @@
 import { ChunkData, cellIndex, groundAt, tileIndex } from '../../domain/models/chunk.model';
 import { Biome, BiomeId } from '../../domain/models/biome.model';
+import { Material, MaterialId } from '../../domain/models/material.model';
 import { WORLD } from '../../domain/models/world.model';
 import { TERRAIN_RAMPS, TERRAIN_WALLS, WATERFALL } from '../../config/palette.config';
 import { clamp, fbm, hash2, valueNoise } from '../../application/world/noise';
@@ -69,6 +70,29 @@ const WALL: Record<BiomeId, readonly number[]> = {
   [Biome.TUNDRA]: TERRAIN_WALLS.tundra,
   [Biome.WETLAND]: TERRAIN_WALLS.forest,
 };
+
+/**
+ * Color de la cara superior según el material de la capa de arriba.
+ * La tierra (SOIL) no tiene rampa propia: usa la del bioma, como el terreno generado.
+ */
+const MATERIAL_RAMP: Partial<Record<MaterialId, Ramp>> = {
+  [Material.SAND]: TERRAIN_RAMPS.desert,   // arena de Duna: amarilla como su botella (la playa usa la rampa "sand")
+  [Material.HUMUS]: TERRAIN_RAMPS.humus,
+  [Material.ASH]: TERRAIN_RAMPS.ash,
+  [Material.MUD]: TERRAIN_RAMPS.wetsand,
+  [Material.SNOW]: TERRAIN_RAMPS.tundra,
+  [Material.ICE]: TERRAIN_RAMPS.ice,
+};
+
+/** Paredes según material (si no, las del bioma) */
+const MATERIAL_WALL: Partial<Record<MaterialId, readonly number[]>> = {
+  [Material.SAND]: TERRAIN_WALLS.desert,
+  [Material.SNOW]: TERRAIN_WALLS.tundra,
+  [Material.ICE]: TERRAIN_WALLS.tundra,
+};
+
+/** Sedimento mínimo (en niveles) para que se vea el color del material */
+const MATERIAL_VISIBLE = 0.02;
 
 /** Rejillas que solo dependen de la semilla: se calculan una vez y se reutilizan en cada horneado */
 interface StaticGrids {
@@ -279,6 +303,8 @@ export class ChunkBaker {
 
         const biome = chunk.biome[bioTile[q]] as BiomeId;
         const tex = texture[q];
+        const material = chunk.sediment[cell - 1] > MATERIAL_VISIBLE ? chunk.material[cell - 1] as MaterialId : Material.SOIL;
+        const materialRamp = MATERIAL_RAMP[material];
 
         // Cara superior
         let color: number;
@@ -293,10 +319,10 @@ export class ChunkBaker {
           const slope = (this.bilinear(this.gArr, u + 0.2, v) - this.bilinear(this.gArr, u - 0.2, v)) +
                         (this.bilinear(this.gArr, u, v + 0.2) - this.bilinear(this.gArr, u, v - 0.2)) * 0.35;
           const val = 0.3 + lvl * 0.05 - slope * 0.35 + (g - lvl) * 0.25 + tex;
-          let ramp: Ramp = LAND_RAMP[biome];
+          let ramp: Ramp = materialRamp ?? LAND_RAMP[biome];
           // Orilla: arena seca, arena mojada o grava (tundra) cerca del agua y a su misma altura
           const shore = this.sShore[q] + tex * 1.5;
-          if (shore < 1.5 && lvl <= Math.floor(this.sWaterSurf[q] + 0.6)) {
+          if (!materialRamp && shore < 1.5 && lvl <= Math.floor(this.sWaterSurf[q] + 0.6)) {
             ramp = biome === Biome.TUNDRA ? TERRAIN_RAMPS.gravel : shore < 0.8 ? TERRAIN_RAMPS.wetsand : TERRAIN_RAMPS.sand;
           }
           color = shade(ramp, clamp(val), px, py);
@@ -317,7 +343,7 @@ export class ChunkBaker {
         if (drop <= 1) continue;
 
         const bottom = edgeF ? Math.round(base + DEPTH + (valueNoise(px * 0.15, 0, this.seed + 21) - 0.5) * 4) : py + drop;
-        const wall = lvl >= 5 && biome !== Biome.TUNDRA ? TERRAIN_WALLS.rock : WALL[biome];
+        const wall = MATERIAL_WALL[material] ?? (lvl >= 5 && biome !== Biome.TUNDRA ? TERRAIN_WALLS.rock : WALL[biome]);
         const leftFace = (edgeL ? -9 : this.sLvl[qL]) <= (edgeR ? -9 : this.sLvl[qR]);
         const waterPx = isWet ? Math.round((surf - lvl) * STEP) : 0;
 

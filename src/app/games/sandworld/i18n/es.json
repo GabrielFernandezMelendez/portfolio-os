@@ -25,7 +25,8 @@
     "language": "Idioma",
     "exit": "Salir de Sandworld",
     "resume": "Volver a la isla",
-    "devReveal": "Probar: descubrir terreno"
+    "devReveal": "Probar: descubrir terreno",
+    "devSand": "Probar: montón de arena"
   },
   "lang": {
     "es": "Español",

@@ -57,6 +57,8 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
     effect(() => this.runtime.setBrushEnabled(this.game.selectedSand() !== null));
     // Chunk descubierto → emerge de las nubes
     this.game.events.on('chunkRevealed', c => this.runtime.showChunk(c.cx, c.cy));
+    // Terreno cambiado (desprendimientos, vertidos) → re-horneado
+    this.game.events.on('terrainChanged', cs => this.runtime.markDirty(cs));
   }
 
   ngAfterViewInit(): void {

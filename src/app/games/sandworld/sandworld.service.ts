@@ -11,6 +11,8 @@ import { IndicatorRegistry, IndicatorValue } from './application/indicators/indi
 import { registerWorldIndicators } from './application/indicators/world-indicators';
 import { World } from './application/world/world';
 import { nextChunkToReveal } from './application/world/expansion';
+import { TerrainPhysics } from './application/physics/terrain-physics';
+import { Material } from './domain/models/material.model';
 import { Translator } from './i18n/translator';
 import { SETTINGS_STORAGE } from './infrastructure/settings-storage.token';
 import { DEFAULT_SEED } from './config/world.config';
@@ -40,6 +42,8 @@ export class SandworldService implements OnDestroy {
   readonly engine = new TimeEngine(this.events);
   readonly chronicle = new Chronicle();
   readonly indicators = new IndicatorRegistry();
+  /** Física del terreno: avanza con cada minuto de juego (se para en pausa, acelera a x2/x4) */
+  readonly physics = new TerrainPhysics(this.world);
 
   // ── Estado para la interfaz ──
   readonly lang = this.translator.lang.asReadonly();
@@ -75,6 +79,10 @@ export class SandworldService implements OnDestroy {
       if (t.minute % CLOCK_STEP_MINUTES === 0) this.time.set(t);
     });
     this.events.on('hour', () => this.refreshIndicators());
+    this.events.on('minute', () => {
+      const changed = this.physics.minute();
+      if (changed.length) this.events.emit('terrainChanged', changed);
+    });
     this.events.on('dawn', () => this.log({ type: 'time', key: 'chronicle.dawn' }));
     this.events.on('dusk', () => this.log({ type: 'time', key: 'chronicle.dusk' }));
     this.events.on('newDay', t => this.log({ type: 'time', key: 'chronicle.newDay', params: { day: t.day } }));
@@ -177,6 +185,12 @@ export class SandworldService implements OnDestroy {
     this.log({ type: 'world', key: 'chronicle.reveal', params: { level: this.world.level }, priority: 8 });
     this.refreshIndicators();
     this.showIslandLabel();
+  }
+
+  /** TEMPORAL (prueba del bloque 1): deja caer un montón de arena en el centro de la isla inicial */
+  debugSandPile(): void {
+    for (const [x, y] of [[15, 15], [16, 15], [15, 16], [16, 16]]) this.physics.deposit(x, y, Material.SAND, 4);
+    this.events.emit('terrainChanged', [{ cx: 0, cy: 0 }]);
   }
 
   showIslandLabel(): void {

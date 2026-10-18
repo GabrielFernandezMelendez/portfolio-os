@@ -19,4 +19,6 @@ export interface GameEvents {
   newSeason: GameTime;
   /** Se ha descubierto un chunk: el render lo hace emerger de las nubes */
   chunkRevealed: ChunkCoord;
+  /** El terreno de estos chunks ha cambiado (desprendimientos, vertidos...): hay que volver a hornearlos */
+  terrainChanged: readonly ChunkCoord[];
 }
