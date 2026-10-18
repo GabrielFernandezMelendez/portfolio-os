@@ -13,6 +13,7 @@ import { WORLD } from './world.model';
  *   spring    caudal de un manantial en la celda (niveles por minuto de juego), 0 = ninguno
  *   drain     agua que salió por el borde de la isla en el último minuto (para dibujar la cascada)
  *   ruleId / ruleTimer  regla de transformación en curso y días que lleva cumpliéndose
+ *   pending / pendingSand  arena vertida que aún no se ha asentado (cantidad) y cuál (índice en SAND_ORDER + 1)
  *
  * Rejilla ecológica (TILES × TILES):
  *   temperature, humidity, fertility, essence  (0..1)
@@ -32,6 +33,8 @@ export interface ChunkData {
   readonly drain: Float32Array;
   readonly ruleId: Uint8Array;
   readonly ruleTimer: Float32Array;
+  readonly pending: Float32Array;
+  readonly pendingSand: Uint8Array;
 
   readonly temperature: Float32Array;
   readonly humidity: Float32Array;
@@ -57,6 +60,8 @@ export function createChunkData(cx: number, cy: number): ChunkData {
     drain: new Float32Array(CELLS_TOTAL),
     ruleId: new Uint8Array(CELLS_TOTAL),
     ruleTimer: new Float32Array(CELLS_TOTAL),
+    pending: new Float32Array(CELLS_TOTAL),
+    pendingSand: new Uint8Array(CELLS_TOTAL),
     temperature: new Float32Array(TILES_TOTAL),
     humidity: new Float32Array(TILES_TOTAL),
     fertility: new Float32Array(TILES_TOTAL),

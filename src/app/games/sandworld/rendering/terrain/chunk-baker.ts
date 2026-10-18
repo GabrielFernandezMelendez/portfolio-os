@@ -2,6 +2,8 @@ import { ChunkData, cellIndex, groundAt, tileIndex } from '../../domain/models/c
 import { Biome, BiomeId } from '../../domain/models/biome.model';
 import { Material, MaterialId } from '../../domain/models/material.model';
 import { MATERIAL_DEFS } from '../../config/materials.config';
+import { MASSLESS_SANDS, SAND_COLOR_NUM } from '../../config/sands.config';
+import { SAND_ORDER } from '../../domain/models/sand.model';
 import { WORLD } from '../../domain/models/world.model';
 import { TERRAIN_RAMPS, TERRAIN_WALLS, WATERFALL } from '../../config/palette.config';
 import { clamp, fbm, hash2, valueNoise } from '../../application/world/noise';
@@ -40,6 +42,8 @@ const DRAIN = 0.0005;
 const LAKE_MIN_DEPTH = 0.1;
 /** La lámina de un lago se dibuja este tanto por debajo de su terraza: queda una orilla de 1 px (se lee hundido) */
 const WATER_INSET = 0.2;
+/** Arena pendiente (en niveles) a partir de la cual la capa sin asentar se ve completamente cubierta */
+const PENDING_FULL = 0.6;
 /** Muestras de agua que oscurece la sombra de la orilla de atrás */
 const BANK_SHADOW = 3;
 
@@ -93,6 +97,9 @@ for (const [id, def] of Object.entries(MATERIAL_DEFS)) {
   if (def.ramp) MATERIAL_RAMP[m] = RAMPS[def.ramp];
   if (def.wall) MATERIAL_WALL[m] = WALLS[def.wall];
 }
+
+/** Roca a la vista */
+const ROCK_RAMP: Ramp = RAMPS[MATERIAL_DEFS[Material.ROCK].ramp ?? 'gravel'];
 
 /** Sedimento mínimo (en niveles) para que se vea el color del material */
 const MATERIAL_VISIBLE = 0.02;
@@ -337,8 +344,10 @@ export class ChunkBaker {
 
         const biome = chunk.biome[bioTile[q]] as BiomeId;
         const tex = texture[q];
-        const material = chunk.sediment[cell - 1] > MATERIAL_VISIBLE ? chunk.material[cell - 1] as MaterialId : Material.SOIL;
-        const materialRamp = MATERIAL_RAMP[material];
+        // Sin sedimento encima, lo que se ve es la roca madre (roquedal, laderas lavadas)
+        const bareRock = chunk.sediment[cell - 1] <= MATERIAL_VISIBLE;
+        const material = bareRock ? Material.ROCK : chunk.material[cell - 1] as MaterialId;
+        const materialRamp = bareRock ? ROCK_RAMP : MATERIAL_RAMP[material];
 
         // Cara superior
         let color: number;
@@ -377,6 +386,20 @@ export class ChunkBaker {
           // Borde iluminado de la terraza
           if (frontLvl < lvl && frontLvl > -9) color = lighten(color, 0.22);
         }
+        // Capa sin asentar: granos sueltos del color de la arena (o destellos si no tiene masa),
+        // más densos cuanta más arena queda por asentar
+        const pendingSand = chunk.pendingSand[cell - 1];
+        if (pendingSand > 0 && !isWet) {
+          const density = clamp(chunk.pending[cell - 1] / PENDING_FULL);
+          const sandColor = SAND_COLOR_NUM[pendingSand - 1];
+          const massless = MASSLESS_SANDS.includes(SAND_ORDER[pendingSand - 1]);
+          const r = hash2(px, py, 41);
+          if (massless) {
+            if (r < density * 0.18) color = lighten(sandColor, 0.5);
+          } else if (r < density * 0.85) {
+            color = r < density * 0.25 ? lighten(sandColor, 0.3) : r < density * 0.6 ? sandColor : darken(sandColor, 0.2);
+          }
+        }
         put(px, py, color);
 
         // Pared: solo hasta la superficie de la muestra de delante (o hasta la base en el borde de la isla)
@@ -387,7 +410,8 @@ export class ChunkBaker {
         const bottom = edgeF ? Math.round(base + DEPTH + (valueNoise(px * 0.15, 0, this.seed + 21) - 0.5) * 4) : py + drop;
         // Cascada: el arroyo cae por la pared de la terraza; en el borde de la isla, hasta el mar de nubes
         const edgeFall = edgeF && this.sDrain[q] === 1 && (isWet || isStream);
-        const wall = MATERIAL_WALL[material] ?? (lvl >= 5 && biome !== Biome.TUNDRA ? TERRAIN_WALLS.rock : WALL[biome]);
+        const wall = bareRock ? TERRAIN_WALLS.rock
+          : MATERIAL_WALL[material] ?? (lvl >= 5 && biome !== Biome.TUNDRA ? TERRAIN_WALLS.rock : WALL[biome]);
         const leftFace = (edgeL ? -9 : this.sLvl[qL]) <= (edgeR ? -9 : this.sLvl[qR]);
         const waterPx = edgeFall ? bottom - py : isStream ? drop : isWet ? Math.round((surf - lvl) * STEP) : 0;
 

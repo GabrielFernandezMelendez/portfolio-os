@@ -2,7 +2,8 @@ import { Ticker } from 'pixi.js';
 import { PixiStage } from './rendering/pixi-stage';
 import { TerrainLayer } from './rendering/terrain/terrain-layer';
 import { Camera, Rect } from './rendering/camera';
-import { CellCursor } from './rendering/cell-cursor';
+import { BrushArea, CellCursor } from './rendering/cell-cursor';
+import { GrainParticles } from './rendering/sands/grain-particles';
 import { DaylightLayer } from './rendering/daylight-layer';
 import { CloudLayer } from './rendering/clouds/cloud-layer';
 import { RevealEffect } from './rendering/clouds/reveal-effect';
@@ -14,6 +15,7 @@ import { WORLD } from './domain/models/world.model';
 import { BRUSH_CELLS } from './config/brush.config';
 import { CLOUD_CAMERA_MARGIN, REVEAL_ON_START } from './config/clouds.config';
 import { REBAKE_INTERVAL_MS } from './config/physics.config';
+import { POUR_EDGE_BAND, POUR_TAP_SECONDS } from './config/pour.config';
 import { ChunkCoord } from './domain/events/game-events';
 
 /** Avisos del runtime hacia fuera (el componente los conecta con el servicio) */
@@ -22,6 +24,20 @@ export interface RuntimeHooks {
   frame?(nowMs: number): void;
   /** Toque sobre la isla sin arena seleccionada */
   islandTap?(): void;
+  /** Pincel de arena (lo implementa el servicio) */
+  pour?: PourHooks;
+}
+
+/** Lo que el runtime necesita del servicio para verter: el runtime sabe dónde está el dedo; el servicio, qué cae */
+export interface PourHooks {
+  /** El dedo se apoya con una arena elegida */
+  begin(): void;
+  /** El dedo pasa `seconds` sobre el bloque que empieza en la celda global (gx, gy). Devuelve si cayó arena. */
+  at(gx: number, gy: number, seconds: number): boolean;
+  /** El dedo se levanta (o entra un segundo dedo): lo vertido pasa a asentarse */
+  end(): void;
+  /** Color de los granos (el de la arena elegida) */
+  color(): number;
 }
 
 const chunkKey = (cx: number, cy: number): string => `${cx},${cy}`;
@@ -35,6 +51,9 @@ export class SandworldRuntime {
   private readonly stage = new PixiStage();
   private readonly camera = new Camera();
   private readonly cursor = new CellCursor();
+  private readonly grains = new GrainParticles();
+  /** Punto de pantalla donde está el dedo que vierte, o null si no se está vertiendo */
+  private brushPoint: { x: number; y: number } | null = null;
   private readonly terrains = new Map<string, TerrainLayer>();
   private readonly reveals: RevealEffect[] = [];
   /** Chunks con el terreno cambiado pendientes de re-hornear, y cuándo se hornearon por última vez */
@@ -61,7 +80,7 @@ export class SandworldRuntime {
 
     // Mar de nubes detrás de todo; la isla flota encima
     this.clouds = new CloudLayer(this.world.seed);
-    this.stage.world.addChild(this.clouds.back, this.cursor.view);
+    this.stage.world.addChild(this.clouds.back, this.cursor.view, this.grains.view);
 
     // Chunks ya descubiertos (en la fase 5 vendrán de la partida guardada)
     for (const { cx, cy } of this.world.exploration.list()) {
@@ -78,9 +97,20 @@ export class SandworldRuntime {
 
     this.input = new PointerInput(host, {
       brush: (phase, x, y) => {
-        // Fase 2: aquí caerá la arena. De momento el pincel solo mueve el cursor de celda.
-        if (phase === 'cancel') this.cursor.hide();
-        else this.pointAt(x, y);
+        if (phase === 'start') {
+          this.brushPoint = { x, y };
+          this.hooks.pour?.begin();
+          // Un toque corto también deja un pellizco de arena
+          this.pourUnderFinger(POUR_TAP_SECONDS * 1000);
+        } else if (phase === 'move') {
+          this.brushPoint = { x, y };
+        } else {
+          // 'end' o 'cancel' (segundo dedo): lo vertido hasta ahora se queda y empieza a asentarse
+          if (phase === 'end') this.pointAt(x, y);
+          this.brushPoint = null;
+          this.hooks.pour?.end();
+          if (phase === 'cancel') this.cursor.hide();
+        }
       },
       hover: (x, y) => this.pointAt(x, y),
       tap: (x, y) => {
@@ -148,7 +178,13 @@ export class SandworldRuntime {
     // Primero se dibuja lo que cambió en el frame anterior (p. ej. arena recién caída) y después avanza la física
     this.rebakeDirty();
     this.engine.update(dt);
-    this.camera.update(dt, this.input?.edgeVector() ?? { x: 0, y: 0 });
+    // Borde de pantalla: ratón quieto en el borde, o dedo vertiendo en la banda del borde
+    const edge = this.input?.edgeVector() ?? { x: 0, y: 0 };
+    const pourEdge = this.input?.brushEdgeVector(POUR_EDGE_BAND) ?? { x: 0, y: 0 };
+    this.camera.update(dt, { x: edge.x + pourEdge.x, y: edge.y + pourEdge.y });
+    // El dedo que vierte sigue vertiendo aunque no se mueva (el tiempo encima de un bloque cuenta)
+    if (this.brushPoint) this.pourUnderFinger(dt);
+    this.grains.update(dt);
     this.clouds?.update(dt);
     // Apariciones en curso (en tiempo real: siguen aunque el juego esté en pausa)
     for (let i = this.reveals.length - 1; i >= 0; i--) {
@@ -209,8 +245,25 @@ export class SandworldRuntime {
     return { x: x0 - margin, y: y0 - margin, w: x1 - x0 + 2 * margin, h: y1 - y0 + 2 * margin };
   }
 
+  /** Vierte durante `dtMs` sobre el bloque bajo el dedo y suelta granos sobre él */
+  private pourUnderFinger(dtMs: number): void {
+    const pour = this.hooks.pour;
+    if (!pour || !this.brushPoint) return;
+    const area = this.areaAt(this.brushPoint.x, this.brushPoint.y);
+    if (!area) return;
+    const C = WORLD.CELLS;
+    if (pour.at(area.cx * C + area.ci, area.cy * C + area.cj, dtMs / 1000)) {
+      this.grains.emit(this.cursor.view.x, this.cursor.view.y, pour.color(), dtMs);
+    }
+  }
+
   /** Coloca el cursor sobre el bloque del pincel bajo un punto de pantalla. Devuelve si hay isla ahí. */
   private pointAt(sx: number, sy: number): boolean {
+    return this.areaAt(sx, sy) !== null;
+  }
+
+  /** Bloque del pincel bajo un punto de pantalla (y coloca el cursor ahí), o null si no hay isla */
+  private areaAt(sx: number, sy: number): BrushArea | null {
     const w = this.camera.screenToWorld(sx, sy);
     // El chunk más cercano a la cámara (mayor cx + cy) tapa a los de detrás
     const layers = [...this.terrains.values()].sort((a, b) => b.view.zIndex - a.view.zIndex);
@@ -221,15 +274,16 @@ export class SandworldRuntime {
     }
     if (!cell) {
       this.cursor.hide();
-      return false;
+      return null;
     }
-    this.cursor.show({
+    const area: BrushArea = {
       cx: cell.cx,
       cy: cell.cy,
       ci: Math.floor(cell.ci / BRUSH_CELLS) * BRUSH_CELLS,
       cj: Math.floor(cell.cj / BRUSH_CELLS) * BRUSH_CELLS,
       surface: cell.surface,
-    });
-    return true;
+    };
+    this.cursor.show(area);
+    return area;
   }
 }

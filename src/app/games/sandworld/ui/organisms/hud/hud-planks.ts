@@ -18,6 +18,8 @@ export const HUD_PLANKS: readonly HudPlank[] = [
     labelKey: 'planks.sands',
     panel: SandsPanelComponent,
     liquid: s => (s.selectedSand ? SAND_COLORS[s.selectedSand] : '#d8b375'),
+    // Mientras se vierte, cuánto le queda al trazo
+    meter: s => (s.selectedSand && s.strokeLeft < 1 ? s.strokeLeft : null),
   },
   { id: 'balance', icon: 'scale', labelKey: 'planks.balance', panel: BalancePanelComponent },
   { id: 'decisions', icon: 'letter', labelKey: 'planks.decisions', panel: DecisionsPanelComponent },

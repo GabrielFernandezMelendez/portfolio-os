@@ -16,6 +16,10 @@ import { TPipe } from '../../../i18n/t.pipe';
     @for (p of planks(); track p.id) {
       <button swWood variant="plank" class="plank" [active]="panel() === p.id" (click)="toggle.emit(p.id)">
         <sw-icon [name]="p.icon" [scale]="2" [liquid]="p.liquid?.(state())" />
+        @let m = p.meter?.(state()) ?? null;
+        @if (m !== null) {
+          <i class="meter" [style.--fill]="m"></i>
+        }
         <span>{{ p.labelKey | t }}</span>
       </button>
     }
@@ -52,6 +56,14 @@ import { TPipe } from '../../../i18n/t.pipe';
       min-height: 62px;
       padding: 0 2px 2px;
     }
+    /* Medidor pixel bajo el icono: lo que le queda al trazo */
+    .meter {
+      display: block;
+      width: 28px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--sw-accent) calc(var(--fill) * 100%), rgb(46 26 13 / 0.45) 0);
+      box-shadow: 0 0 0 1px var(--sw-edge);
+    }
     .plank span {
       max-width: 100%;
       overflow: hidden;
@@ -64,7 +76,8 @@ export class PlankBarComponent {
   readonly planks = input.required<readonly HudPlank[]>();
   readonly panel = input<string | null>(null);
   readonly selectedSand = input<SandId | null>(null);
+  readonly strokeLeft = input(1);
   readonly toggle = output<string>();
 
-  protected readonly state = computed(() => ({ selectedSand: this.selectedSand() }));
+  protected readonly state = computed(() => ({ selectedSand: this.selectedSand(), strokeLeft: this.strokeLeft() }));
 }

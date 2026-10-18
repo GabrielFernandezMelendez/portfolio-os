@@ -49,7 +49,17 @@
       "2": "Autumn arrives: the leaves turn.",
       "3": "Winter arrives: the cold creeps down from the peaks."
     },
-    "reveal": "The clouds part: the island grows to level {level}."
+    "reveal": "The clouds part: the island grows to level {level}.",
+    "settled": {
+      "duna": "The dune has settled: the land has risen.",
+      "brasa": "The ember has settled.",
+      "humus": "The humus has settled.",
+      "manantial": "The spring sand has settled.",
+      "escarcha": "The frost has settled.",
+      "marea": "The tide has settled.",
+      "despertar": "The awakening has settled.",
+      "afinidad": "The affinity has settled."
+    }
   },
   "indicators": {
     "water": "Water",
@@ -66,7 +76,6 @@
   "sands": {
     "title": "Sands",
     "hint": "Pick a sand and drag one finger over the island. Two fingers move the camera.",
-    "soon": "Sands don't fall yet: they arrive in the next phase.",
     "drop": "Put the sand away",
     "brasa": {
       "name": "Ember",

@@ -22,7 +22,6 @@ import { TPipe } from '../../../i18n/t.pipe';
       <p class="hint">
         @if (game.selectedSand(); as s) {
           <b>{{ 'sands.' + s + '.name' | t }}:</b> {{ 'sands.' + s + '.desc' | t }}
-          <br /><i>{{ 'sands.soon' | t }}</i>
         } @else {
           {{ 'sands.hint' | t }}
         }

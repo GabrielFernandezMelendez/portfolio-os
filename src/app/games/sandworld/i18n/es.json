@@ -49,7 +49,17 @@
       "2": "Llega el otoño: las hojas cambian de color.",
       "3": "Llega el invierno: el frío baja de las cumbres."
     },
-    "reveal": "Las nubes se abren: la isla crece hasta el nivel {level}."
+    "reveal": "Las nubes se abren: la isla crece hasta el nivel {level}.",
+    "settled": {
+      "duna": "La duna se ha asentado: el terreno ha crecido.",
+      "brasa": "La brasa se ha asentado.",
+      "humus": "El humus se ha asentado.",
+      "manantial": "El manantial se ha asentado.",
+      "escarcha": "La escarcha se ha asentado.",
+      "marea": "La marea se ha asentado.",
+      "despertar": "El despertar se ha asentado.",
+      "afinidad": "La afinidad se ha asentado."
+    }
   },
   "indicators": {
     "water": "Agua",
@@ -66,7 +76,6 @@
   "sands": {
     "title": "Arenas",
     "hint": "Elige una arena y arrastra un dedo sobre la isla. Con dos dedos mueves la cámara.",
-    "soon": "Las arenas aún no caen: llegan en la siguiente fase.",
     "drop": "Soltar arena",
     "brasa": {
       "name": "Brasa",

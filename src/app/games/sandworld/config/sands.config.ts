@@ -1,4 +1,4 @@
-import { SandId } from '../domain/models/sand.model';
+import { SAND_ORDER, SandId } from '../domain/models/sand.model';
 
 /** Color del contenido de cada botella (CSS) */
 export const SAND_COLORS: Record<SandId, string> = {
@@ -11,3 +11,9 @@ export const SAND_COLORS: Record<SandId, string> = {
   marea:     '#2f6fd0',   // azul
   afinidad:  '#f08bc4',   // rosa
 };
+
+/** Los mismos colores como número 0xRRGGBB (horneado y partículas), en el orden de SAND_ORDER */
+export const SAND_COLOR_NUM: readonly number[] = SAND_ORDER.map(s => parseInt(SAND_COLORS[s].slice(1), 16));
+
+/** Arenas sin masa: en la capa sin asentar se ven como destellos, no como granos */
+export const MASSLESS_SANDS: readonly SandId[] = ['despertar', 'afinidad'];

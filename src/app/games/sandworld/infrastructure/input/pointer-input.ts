@@ -90,6 +90,19 @@ export class PointerInput {
   }
 
   /** Dirección del scroll por bordes (-1..1 por eje). Se consulta en cada frame. */
+  /**
+   * Mientras se vierte con el dedo cerca de un borde (banda de `band` px), la cámara se desplaza hacia ese lado
+   * para poder seguir el trazo más allá de la pantalla. Fuera del pincel devuelve (0, 0).
+   */
+  brushEdgeVector(band: number): { x: number; y: number } {
+    if (this.mode !== 'brush' || this.pointers.size !== 1) return { x: 0, y: 0 };
+    const p = this.pointers.values().next().value!;
+    const w = this.el.clientWidth, h = this.el.clientHeight;
+    const axis = (v: number, size: number): number =>
+      v < band ? -(1 - v / band) : v > size - band ? 1 - (size - v) / band : 0;
+    return { x: axis(p.x, w), y: axis(p.y, h) };
+  }
+
   edgeVector(now = performance.now()): { x: number; y: number } {
     const m = this.mouse;
     if (!m.inside || this.mode !== 'idle' || now - m.since < EDGE_DWELL_MS) return { x: 0, y: 0 };

@@ -51,7 +51,7 @@ import { HUD_PLANKS } from './hud-planks';
           />
         }
       </div>
-      <sw-plank-bar [planks]="planks" [panel]="game.panel()" [selectedSand]="game.selectedSand()" (toggle)="game.togglePanel($event)" />
+      <sw-plank-bar [planks]="planks" [panel]="game.panel()" [selectedSand]="game.selectedSand()" [strokeLeft]="game.strokeLeft()" (toggle)="game.togglePanel($event)" />
     </div>
 
     @switch (game.menu()) {

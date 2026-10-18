@@ -3,7 +3,7 @@ import { SandworldLang, SimSpeed, SIM_SPEEDS } from './domain/models/settings.mo
 import { GameTime } from './domain/models/time.model';
 import { GameEvents } from './domain/events/game-events';
 import { ChronicleDraft, ChronicleEntry } from './domain/models/chronicle.model';
-import { SandId } from './domain/models/sand.model';
+import { SAND_ORDER, SandId } from './domain/models/sand.model';
 import { EventBus } from './application/events/event-bus';
 import { TimeEngine } from './application/time/time-engine';
 import { Chronicle } from './application/chronicle/chronicle';
@@ -13,6 +13,14 @@ import { World } from './application/world/world';
 import { nextChunkToReveal } from './application/world/expansion';
 import { TerrainPhysics } from './application/physics/terrain-physics';
 import { Material } from './domain/models/material.model';
+import { WORLD } from './domain/models/world.model';
+import { ChunkCoord } from './domain/events/game-events';
+import { PourQueue, SettledPour } from './application/sands/pour-queue';
+import { Stroke } from './application/sands/stroke';
+import { SAND_EFFECTS } from './application/sands/sand-effects';
+import { SeededRandom } from './infrastructure/seeded-random';
+import { SAND_COLOR_NUM } from './config/sands.config';
+import { PENDING_REDRAW_MINUTES } from './config/pour.config';
 import { Translator } from './i18n/translator';
 import { SETTINGS_STORAGE } from './infrastructure/settings-storage.token';
 import { DEFAULT_SEED } from './config/world.config';
@@ -44,6 +52,10 @@ export class SandworldService implements OnDestroy {
   readonly indicators = new IndicatorRegistry();
   /** Física del terreno: avanza con cada minuto de juego (se para en pausa, acelera a x2/x4) */
   readonly physics = new TerrainPhysics(this.world);
+  /** Vertidos asentándose (cada uno tarda 1–2 días de juego) */
+  readonly pours = new PourQueue(this.physics, new SeededRandom(this.world.seed * 7919 + 13));
+  /** Trazo en curso mientras el dedo vierte */
+  private stroke: Stroke | null = null;
 
   // ── Estado para la interfaz ──
   readonly lang = this.translator.lang.asReadonly();
@@ -58,6 +70,8 @@ export class SandworldService implements OnDestroy {
   readonly chronicleEntries = signal<readonly ChronicleEntry[]>([]);
   readonly indicatorValues = signal<readonly IndicatorValue[]>([]);
   readonly islandLabel = signal(false);
+  /** Lo que le queda al trazo en curso (1 = botella llena). La botella del estante lo muestra. */
+  readonly strokeLeft = signal(1);
 
   private chronicleRevision = -1;
   private islandLabelTimer: ReturnType<typeof setTimeout> | null = null;
@@ -79,9 +93,10 @@ export class SandworldService implements OnDestroy {
       if (t.minute % CLOCK_STEP_MINUTES === 0) this.time.set(t);
     });
     this.events.on('hour', () => this.refreshIndicators());
-    this.events.on('minute', () => {
+    this.events.on('minute', t => {
       const changed = this.physics.minute();
       if (changed.length) this.events.emit('terrainChanged', changed);
+      this.settlePours(t.minute);
     });
     this.events.on('dawn', () => this.log({ type: 'time', key: 'chronicle.dawn' }));
     this.events.on('dusk', () => this.log({ type: 'time', key: 'chronicle.dusk' }));
@@ -172,6 +187,63 @@ export class SandworldService implements OnDestroy {
     this.selectedSand.update(s => (s === sand ? null : sand));
   }
 
+  // ── Pincel de arena ──
+
+  /** El dedo se apoya: empieza un trazo con la arena elegida */
+  beginStroke(): void {
+    const sand = this.selectedSand();
+    this.stroke = sand ? new Stroke(sand) : null;
+    this.strokeLeft.set(1);
+  }
+
+  /** El dedo pasa `seconds` sobre el bloque de la celda global (gx, gy). Devuelve si cayó arena. */
+  pourAt(gx: number, gy: number, seconds: number): boolean {
+    const stroke = this.stroke;
+    if (!stroke) return false;
+    const changed = stroke.pour(gx, gy, seconds);
+    if (changed.length === 0) return false;
+    this.pours.preview(stroke.sand, changed);
+    this.events.emit('terrainChanged', chunksOf(changed));
+    // La botella baja de 2 en 2 % (no hace falta avisar a la interfaz en cada frame)
+    if (Math.abs(this.strokeLeft() - stroke.remaining) >= 0.02 || stroke.remaining === 0) this.strokeLeft.set(stroke.remaining);
+    return true;
+  }
+
+  /** El dedo se levanta: lo vertido pasa a la cola y empieza a asentarse */
+  endStroke(): void {
+    if (this.stroke) this.pours.commit(this.stroke);
+    this.stroke = null;
+    this.strokeLeft.set(1);
+  }
+
+  /** Color de los granos que caen (el de la arena elegida) */
+  sandColor(): number {
+    const sand = this.stroke?.sand ?? this.selectedSand();
+    return sand ? SAND_COLOR_NUM[SAND_ORDER.indexOf(sand)] : 0xffffff;
+  }
+
+  /**
+   * Cada minuto los vertidos aplican su parte. Las arenas con masa cambian la altura y se redibujan cada minuto;
+   * las demás solo adelgazan su capa, así que basta con redibujarlas cada PENDING_REDRAW_MINUTES.
+   */
+  private settlePours(minute: number): void {
+    if (this.pours.active.length === 0) return;
+    const redrawAll = minute % PENDING_REDRAW_MINUTES === 0;
+    const heavy = this.pours.active.some(p => !SAND_EFFECTS[p.sand].massless);
+    const chunks = redrawAll || heavy ? this.pours.chunksWithPours() : null;
+    const settled = this.pours.minute();
+    if (chunks) this.events.emit('terrainChanged', [...chunks].map(k => {
+      const [cx, cy] = k.split(',').map(Number);
+      return { cx, cy };
+    }));
+    for (const s of settled) this.onSettled(s);
+  }
+
+  private onSettled(s: SettledPour): void {
+    this.events.emit('terrainChanged', chunksOf(s.cells));
+    this.log({ type: 'world', key: `chronicle.settled.${s.sand}`, priority: 4 });
+  }
+
   /**
    * Descubre el siguiente chunk bajo las nubes y sube el nivel de la isla.
    * Hoy lo dispara el botón de prueba de Ajustes; en la fase 7, las reglas de expansión.
@@ -223,4 +295,15 @@ export class SandworldService implements OnDestroy {
   private refreshIndicators(): void {
     this.indicatorValues.set(this.indicators.snapshot());
   }
+}
+
+/** Chunks (sin repetir) que contienen estas celdas globales */
+function chunksOf(cells: readonly (readonly number[])[]): ChunkCoord[] {
+  const C = WORLD.CELLS;
+  const seen = new Map<string, ChunkCoord>();
+  for (const [gx, gy] of cells) {
+    const cx = Math.floor(gx / C), cy = Math.floor(gy / C);
+    seen.set(`${cx},${cy}`, { cx, cy });
+  }
+  return [...seen.values()];
 }

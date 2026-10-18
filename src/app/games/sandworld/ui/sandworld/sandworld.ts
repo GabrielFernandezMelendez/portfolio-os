@@ -46,6 +46,12 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
   private readonly runtime = new SandworldRuntime(this.game.engine, this.game.world, {
     frame: now => this.game.tick(now),
     islandTap: () => this.zone.run(() => this.game.showIslandLabel()),
+    pour: {
+      begin: () => this.game.beginStroke(),
+      at: (gx, gy, s) => this.game.pourAt(gx, gy, s),
+      end: () => this.game.endStroke(),
+      color: () => this.game.sandColor(),
+    },
   });
 
   constructor() {

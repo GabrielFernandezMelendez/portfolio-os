@@ -4,6 +4,8 @@ import { SandId } from '../../../domain/models/sand.model';
 /** Estado que algunas tablas usan para su icono (p. ej. la botella toma el color de la arena elegida) */
 export interface HudPlankState {
   readonly selectedSand: SandId | null;
+  /** Lo que le queda al trazo en curso (1 = lleno) */
+  readonly strokeLeft: number;
 }
 
 /**
@@ -22,4 +24,6 @@ export interface HudPlank {
   readonly panel: Type<unknown>;
   /** Color del líquido del icono, si el icono lo tiene (botellas) */
   readonly liquid?: (state: HudPlankState) => string | undefined;
+  /** Medidor bajo el icono (0..1), o null para no mostrarlo (la botella mientras se vierte) */
+  readonly meter?: (state: HudPlankState) => number | null;
 }
