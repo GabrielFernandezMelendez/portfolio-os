@@ -1,0 +1,25 @@
+import { Type } from '@angular/core';
+import { SandId } from '../../../domain/models/sand.model';
+
+/** Estado que algunas tablas usan para su icono (p. ej. la botella toma el color de la arena elegida) */
+export interface HudPlankState {
+  readonly selectedSand: SandId | null;
+}
+
+/**
+ * Una tabla del estante inferior y el panel que abre.
+ * El panel es un organismo que se conecta solo al servicio (no recibe inputs), así añadir una tabla
+ * nueva —árbol de habilidades, mapa, bestiario...— es crear su panel y registrarla en HUD_PLANKS.
+ */
+export interface HudPlank {
+  /** Identificador único; también es el id del panel abierto en el servicio */
+  readonly id: string;
+  /** Icono pixel (ui/atoms/icon/pixel-icons.ts) */
+  readonly icon: string;
+  /** Clave de traducción del rótulo */
+  readonly labelKey: string;
+  /** Panel que se abre sobre el estante */
+  readonly panel: Type<unknown>;
+  /** Color del líquido del icono, si el icono lo tiene (botellas) */
+  readonly liquid?: (state: HudPlankState) => string | undefined;
+}

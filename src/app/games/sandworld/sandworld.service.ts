@@ -1,44 +1,124 @@
-import { Injectable, OnDestroy, signal } from '@angular/core';
-import { DEFAULT_LANG, SandworldLang, SimSpeed, SIM_SPEEDS } from './domain/models/settings.model';
+import { Injectable, OnDestroy, inject, signal } from '@angular/core';
+import { SandworldLang, SimSpeed, SIM_SPEEDS } from './domain/models/settings.model';
 import { GameTime } from './domain/models/time.model';
 import { GameEvents } from './domain/events/game-events';
+import { ChronicleDraft, ChronicleEntry } from './domain/models/chronicle.model';
+import { SandId } from './domain/models/sand.model';
 import { EventBus } from './application/events/event-bus';
 import { TimeEngine } from './application/time/time-engine';
+import { Chronicle } from './application/chronicle/chronicle';
+import { IndicatorRegistry, IndicatorValue } from './application/indicators/indicator-registry';
+import { registerWorldIndicators } from './application/indicators/world-indicators';
+import { World } from './application/world/world';
+import { Translator } from './i18n/translator';
+import { SETTINGS_STORAGE } from './infrastructure/settings-storage.token';
+import { DEFAULT_SEED } from './config/world.config';
 
-/** El reloj de la interfaz avanza de 10 en 10 minutos de juego, como en Stardew (y sin refrescar el HUD 25 veces por segundo a x4) */
+/** El reloj de la interfaz avanza de 10 en 10 minutos de juego, como en Stardew */
 const CLOCK_STEP_MINUTES = 10;
+/** Segundos que se ve la etiqueta "Isla viva · Nivel N" */
+const ISLAND_LABEL_MS = 3000;
+
+/** Id del panel abierto: el de una tabla del estante (ver ui/organisms/hud/hud-planks.ts) */
+export type HudPanel = string;
+export type HudMenu = 'settings' | 'chronicle';
 
 /**
- * Estado del juego que necesita la interfaz (HUD).
- * Se provee en el componente raíz (no en 'root'): nace al abrir el juego y muere al cerrarlo,
- * así no queda estado vivo en el portfolio y el juego se puede extraer tal cual.
+ * Estado de la partida que necesita la interfaz y raíz de composición de la lógica.
+ * Se provee en el componente raíz (no en 'root'): nace al abrir el juego y muere al cerrarlo.
  * El estado del mundo (celdas, agua, animales) NO va en signals: vive en arrays tipados del dominio.
  */
 @Injectable()
 export class SandworldService implements OnDestroy {
-  /** Bus de eventos del juego y motor de tiempo: una instancia por partida */
+  private readonly translator = inject(Translator);
+  private readonly storage = inject(SETTINGS_STORAGE);
+
+  // ── Lógica de la partida ──
+  readonly world = new World(DEFAULT_SEED);
   readonly events = new EventBus<GameEvents>();
   readonly engine = new TimeEngine(this.events);
+  readonly chronicle = new Chronicle();
+  readonly indicators = new IndicatorRegistry();
 
-  readonly lang = signal<SandworldLang>(DEFAULT_LANG);
+  // ── Estado para la interfaz ──
+  readonly lang = this.translator.lang.asReadonly();
   readonly speed = signal<SimSpeed>(1);
+  /** Pausa elegida por el jugador (los menús pausan aparte, sin tocar esta) */
   readonly isPaused = signal(false);
   readonly isReady = signal(false);
   readonly time = signal<GameTime>(this.engine.time);
+  readonly panel = signal<HudPanel | null>(null);
+  readonly menu = signal<HudMenu | null>(null);
+  readonly selectedSand = signal<SandId | null>(null);
+  readonly chronicleEntries = signal<readonly ChronicleEntry[]>([]);
+  readonly indicatorValues = signal<readonly IndicatorValue[]>([]);
+  readonly islandLabel = signal(false);
+
+  private chronicleRevision = -1;
+  private islandLabelTimer: ReturnType<typeof setTimeout> | null = null;
+  private hasStoredLang = false;
 
   constructor() {
+    const stored = this.storage.load();
+    if (stored.lang) {
+      this.translator.setLang(stored.lang);
+      this.hasStoredLang = true;
+    }
+
+    // Generar el chunk inicial antes de registrar indicadores que lo leen
+    this.world.chunk(0, 0);
+    registerWorldIndicators(this.indicators, this.world);
+    this.refreshIndicators();
+
     this.events.on('minute', t => {
       if (t.minute % CLOCK_STEP_MINUTES === 0) this.time.set(t);
     });
+    this.events.on('hour', () => this.refreshIndicators());
+    this.events.on('dawn', () => this.log({ type: 'time', key: 'chronicle.dawn' }));
+    this.events.on('dusk', () => this.log({ type: 'time', key: 'chronicle.dusk' }));
+    this.events.on('newDay', t => this.log({ type: 'time', key: 'chronicle.newDay', params: { day: t.day } }));
+    this.events.on('newSeason', t => this.log({ type: 'world', key: `chronicle.newSeason.${t.season}`, priority: 5 }));
   }
 
   ngOnDestroy(): void {
     this.events.clear();
+    if (this.islandLabelTimer) clearTimeout(this.islandLabelTimer);
+  }
+
+  /** Llamar cuando el mundo ya se ve en pantalla */
+  start(): void {
+    this.isReady.set(true);
+    this.log({ type: 'world', key: 'chronicle.start', priority: 10 });
+    this.showIslandLabel();
+  }
+
+  /** Se llama en cada frame con el tiempo real: deja salir mensajes de la cola de la crónica */
+  tick(nowMs: number): void {
+    this.chronicle.tick(nowMs);
+    if (this.chronicle.revision !== this.chronicleRevision) {
+      this.chronicleRevision = this.chronicle.revision;
+      this.chronicleEntries.set([...this.chronicle.entries]);
+    }
+  }
+
+  log(draft: ChronicleDraft): void {
+    this.chronicle.push(draft, this.engine.time, performance.now());
+  }
+
+  // ── Idioma ──
+
+  /** Idioma que propone el OS: solo se aplica si el jugador no eligió otro antes */
+  suggestLang(lang: SandworldLang): void {
+    if (!this.hasStoredLang) this.translator.setLang(lang);
   }
 
   setLang(lang: SandworldLang): void {
-    this.lang.set(lang);
+    this.translator.setLang(lang);
+    this.hasStoredLang = true;
+    this.storage.save({ ...this.storage.load(), lang });
   }
+
+  // ── Velocidad y pausa ──
 
   setSpeed(speed: SimSpeed): void {
     this.speed.set(speed);
@@ -50,18 +130,50 @@ export class SandworldService implements OnDestroy {
     this.setSpeed(SIM_SPEEDS[(i + 1) % SIM_SPEEDS.length]);
   }
 
-  pause(): void {
-    this.isPaused.set(true);
-    this.engine.setPaused(true);
-  }
-
-  resume(): void {
-    this.isPaused.set(false);
-    this.engine.setPaused(false);
-  }
-
   togglePause(): void {
-    if (this.isPaused()) this.resume();
-    else this.pause();
+    this.isPaused.update(p => !p);
+    this.syncPause();
+  }
+
+  // ── Menús y paneles ──
+
+  /** Ajustes y crónica pausan el juego mientras están abiertos */
+  openMenu(menu: HudMenu): void {
+    this.panel.set(null);
+    this.menu.set(menu);
+    this.syncPause();
+  }
+
+  closeMenu(): void {
+    this.menu.set(null);
+    this.syncPause();
+  }
+
+  /** Los paneles de las tablas no pausan. Solo uno abierto a la vez. */
+  togglePanel(panel: HudPanel): void {
+    this.panel.update(p => (p === panel ? null : panel));
+  }
+
+  closePanel(): void {
+    this.panel.set(null);
+  }
+
+  /** Elegir una arena activa el pincel; elegir la misma otra vez la suelta */
+  selectSand(sand: SandId | null): void {
+    this.selectedSand.update(s => (s === sand ? null : sand));
+  }
+
+  showIslandLabel(): void {
+    this.islandLabel.set(true);
+    if (this.islandLabelTimer) clearTimeout(this.islandLabelTimer);
+    this.islandLabelTimer = setTimeout(() => this.islandLabel.set(false), ISLAND_LABEL_MS);
+  }
+
+  private syncPause(): void {
+    this.engine.setPaused(this.isPaused() || this.menu() !== null);
+  }
+
+  private refreshIndicators(): void {
+    this.indicatorValues.set(this.indicators.snapshot());
   }
 }

@@ -1,20 +1,42 @@
 /*
   Tokens propios del juego, definidos en su raíz.
   No se usan las variables de styles.css del portfolio para que el juego sea extraíble.
+  Las fuentes (OFL) se sirven desde public/sandworld/fonts: funcionan sin conexión.
 */
+@font-face {
+  font-family: "Silkscreen";
+  src: url("/sandworld/fonts/silkscreen-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Pixelify Sans";
+  src: url("/sandworld/fonts/pixelify-sans-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Pixelify Sans";
+  src: url("/sandworld/fonts/pixelify-sans-600.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+
 :host {
-  --sw-sky:       #8fd0f0;
-  --sw-wood:      #a8693a;
-  --sw-wood-hi:   #cf8c4e;
-  --sw-wood-dk:   #6e4021;
-  --sw-edge:      #2e1a0d;
-  --sw-parch:     #f7dfa8;
-  --sw-parch-dk:  #e7c483;
-  --sw-ink:       #4a2c17;
-  --sw-ink-wood:  #fff0cf;
-  --sw-accent:    #f2b33d;
-  --sw-font-ui:   "Silkscreen", "Pixelify Sans", ui-monospace, monospace;
-  --sw-font-text: "Pixelify Sans", ui-monospace, monospace;
+  --sw-sky:          #8fd0f0;
+  --sw-wood:         #a8693a;
+  --sw-wood-hi:      #d9944f;
+  --sw-wood-dk:      #6e4021;
+  --sw-wood-dk-soft: #94592f;
+  --sw-edge:         #2e1a0d;
+  --sw-parch:        #f7dfa8;
+  --sw-parch-dk:     #e0bf83;
+  --sw-ink:          #4a2c17;
+  --sw-ink-wood:     #fff0cf;
+  --sw-accent:       #f2b33d;
+  --sw-font-ui:      "Silkscreen", ui-monospace, monospace;
+  --sw-font-text:    "Pixelify Sans", ui-monospace, monospace;
+
 
   /* Ocupa todo el frame de la app sin generar scroll en .app-content */
   position: absolute;
@@ -26,6 +48,13 @@
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+}
+
+/* Todo el juego (incluidos los componentes hijos) mide con el borde incluido */
+:host *,
+:host *::before,
+:host *::after {
+  box-sizing: border-box;
 }
 
 .stage {
@@ -67,16 +96,4 @@
 
 @media (prefers-reduced-motion: reduce) {
   .loading span { animation: none; }
-}
-
-/* TEMPORAL (bloque 3): línea de depuración del tiempo de juego */
-.debug {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 3px 6px;
-  font: 11px/1.2 ui-monospace, monospace;
-  color: var(--sw-ink-wood);
-  background: rgb(46 26 13 / 0.7);
-  pointer-events: none;
 }
