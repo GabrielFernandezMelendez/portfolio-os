@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Window } from './window';
+import { WindowComponent } from './window';
 
-describe('Window', () => {
-  let component: Window;
-  let fixture: ComponentFixture<Window>;
+describe('WindowComponent', () => {
+  let component: WindowComponent;
+  let fixture: ComponentFixture<WindowComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Window],
+      imports: [WindowComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(Window);
+    fixture = TestBed.createComponent(WindowComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { NotificationPanel } from './notification-panel';
+import { NotificationPanelComponent } from './notification-panel';
 
-describe('NotificationPanel', () => {
-  let component: NotificationPanel;
-  let fixture: ComponentFixture<NotificationPanel>;
+describe('NotificationPanelComponent', () => {
+  let component: NotificationPanelComponent;
+  let fixture: ComponentFixture<NotificationPanelComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NotificationPanel],
+      imports: [NotificationPanelComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(NotificationPanel);
+    fixture = TestBed.createComponent(NotificationPanelComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

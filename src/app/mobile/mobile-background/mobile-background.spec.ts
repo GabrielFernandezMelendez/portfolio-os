@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { MobileBackground } from './mobile-background';
+import { MobileBackgroundComponent } from './mobile-background';
 
-describe('MobileBackground', () => {
-  let component: MobileBackground;
-  let fixture: ComponentFixture<MobileBackground>;
+describe('MobileBackgroundComponent', () => {
+  let component: MobileBackgroundComponent;
+  let fixture: ComponentFixture<MobileBackgroundComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MobileBackground],
+      imports: [MobileBackgroundComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(MobileBackground);
+    fixture = TestBed.createComponent(MobileBackgroundComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

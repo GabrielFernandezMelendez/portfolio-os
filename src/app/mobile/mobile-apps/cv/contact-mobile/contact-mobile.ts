@@ -1,44 +1,75 @@
-import { Component, signal, ViewChild, ElementRef,
-         AfterViewInit, input, OnInit, inject, computed, effect } from '@angular/core';
+import {
+  Component,
+  signal,
+  ViewChild,
+  ElementRef,
+  AfterViewInit,
+  input,
+  OnInit,
+  inject,
+  computed,
+  effect,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../../../i18n/i18n.service';
 
 interface ChatMessage {
-  id:      number;
-  text:    string;
-  sender:  'ai' | 'user';
+  id: number;
+  text: string;
+  sender: 'ai' | 'user';
 }
 
 @Component({
-  selector:    'app-contact-mobile',
-  standalone:  true,
-  imports:     [FormsModule],
+  selector: 'app-contact-mobile',
+  standalone: true,
+  imports: [FormsModule],
   templateUrl: './contact-mobile.html',
-  styleUrl:    './contact-mobile.css',
+  changeDetection: ChangeDetectionStrategy.Eager,
+  styleUrl: './contact-mobile.css',
 })
 export class ContactMobileComponent implements OnInit, AfterViewInit {
-
-  @ViewChild('chatBody')  chatBody!:  ElementRef;
+  @ViewChild('chatBody') chatBody!: ElementRef;
   @ViewChild('chatInput') chatInput!: ElementRef;
 
-  isDark     = input<boolean>(true);
-  i18n       = inject(I18nService);
-  lang       = computed(() => this.i18n.currentLang());
+  isDark = input<boolean>(true);
+  i18n = inject(I18nService);
+  lang = computed(() => this.i18n.currentLang());
   currentMsg = '';
-  isTyping   = signal(false);
+  isTyping = signal(false);
   showConfirm = signal(false);
-  msgId      = 0;
-  messages   = signal<ChatMessage[]>([]);
+  msgId = 0;
+  messages = signal<ChatMessage[]>([]);
 
   readonly KEYWORDS: Record<string, string[]> = {
-    linkedin:  ['linkedin', 'perfil', 'red profesional', 'profile'],
-    email:     ['email', 'gmail', 'correo', 'mail', 'escribir', 'write'],
-    telefono:  ['teléfono', 'telefono', 'llamar', 'llámame', 'llamame',
-                'tlf', 'móvil', 'movil', 'phone', 'call'],
-    github:    ['github', 'código', 'codigo', 'repos', 'repositorio', 'code'],
-    ayuda:     ['ayuda', 'help', 'comandos', 'qué puedo', 'que puedo', 'commands'],
-    sobre:     ['quien', 'quién', 'sobre gabriel', 'sobre ti', 'hola',
-                'buenas', 'who', 'about', 'hello', 'hi'],
+    linkedin: ['linkedin', 'perfil', 'red profesional', 'profile'],
+    email: ['email', 'gmail', 'correo', 'mail', 'escribir', 'write'],
+    telefono: [
+      'teléfono',
+      'telefono',
+      'llamar',
+      'llámame',
+      'llamame',
+      'tlf',
+      'móvil',
+      'movil',
+      'phone',
+      'call',
+    ],
+    github: ['github', 'código', 'codigo', 'repos', 'repositorio', 'code'],
+    ayuda: ['ayuda', 'help', 'comandos', 'qué puedo', 'que puedo', 'commands'],
+    sobre: [
+      'quien',
+      'quién',
+      'sobre gabriel',
+      'sobre ti',
+      'hola',
+      'buenas',
+      'who',
+      'about',
+      'hello',
+      'hi',
+    ],
   };
 
   constructor() {
@@ -62,13 +93,13 @@ export class ContactMobileComponent implements OnInit, AfterViewInit {
     this.scrollBottom();
     setTimeout(() => {
       this.isTyping.set(false);
-      this.messages.update(m => [...m, { id: ++this.msgId, text, sender: 'ai' }]);
+      this.messages.update((m) => [...m, { id: ++this.msgId, text, sender: 'ai' }]);
       this.scrollBottom();
     }, 900);
   }
 
   addUserMessage(text: string) {
-    this.messages.update(m => [...m, { id: ++this.msgId, text, sender: 'user' }]);
+    this.messages.update((m) => [...m, { id: ++this.msgId, text, sender: 'user' }]);
     this.scrollBottom();
   }
 
@@ -84,8 +115,9 @@ export class ContactMobileComponent implements OnInit, AfterViewInit {
     if (this.matchesKeyword(msg, this.KEYWORDS['linkedin'])) {
       this.addAiMessage(this.i18n.t('contact.ai_linkedin_response'));
       setTimeout(() => {
-        const profileUrl = 'https://www.linkedin.com/in/gabriel-fern%C3%A1ndez-mel%C3%A9ndez-336640238';
-        const intentUrl  = `intent://${profileUrl.replace('https://', '')}#Intent;package=com.linkedin.android;scheme=https;end`;
+        const profileUrl =
+          'https://www.linkedin.com/in/gabriel-fern%C3%A1ndez-mel%C3%A9ndez-336640238';
+        const intentUrl = `intent://${profileUrl.replace('https://', '')}#Intent;package=com.linkedin.android;scheme=https;end`;
         window.location.href = intentUrl;
         setTimeout(() => window.open(profileUrl, '_blank'), 1500);
       }, 2000);
@@ -94,10 +126,14 @@ export class ContactMobileComponent implements OnInit, AfterViewInit {
 
     if (this.matchesKeyword(msg, this.KEYWORDS['email'])) {
       this.addAiMessage(this.i18n.t('contact.ai_email_response'));
-      setTimeout(() => window.open(
-        'mailto:gabriel.fernandezdeveloper@gmail.com?subject=Contacto desde Portfolio',
-        '_blank'
-      ), 2000);
+      setTimeout(
+        () =>
+          window.open(
+            'mailto:gabriel.fernandezdeveloper@gmail.com?subject=Contacto desde Portfolio',
+            '_blank',
+          ),
+        2000,
+      );
       return;
     }
 
@@ -140,7 +176,7 @@ export class ContactMobileComponent implements OnInit, AfterViewInit {
   }
 
   matchesKeyword(msg: string, keywords: string[]): boolean {
-    return keywords.some(k => msg.includes(k));
+    return keywords.some((k) => msg.includes(k));
   }
 
   scrollBottom() {

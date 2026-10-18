@@ -1,9 +1,19 @@
-import { Component, input, output, signal, OnInit, OnDestroy, HostListener } from '@angular/core';
+import {
+  Component,
+  input,
+  output,
+  signal,
+  OnInit,
+  OnDestroy,
+  HostListener,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 @Component({
   selector: 'app-mobile-status-bar',
   standalone: true,
   templateUrl: './mobile-status-bar.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mobile-status-bar.css',
 })
 export class MobileStatusBarComponent implements OnInit, OnDestroy {

@@ -1,10 +1,11 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { OsWindow } from '../interfaces/window.interface';
 
 @Component({
   selector: 'app-desktop-icon',
   standalone: true,
   templateUrl: './desktop-icon.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './desktop-icon.css',
 })
 export class DesktopIconComponent {

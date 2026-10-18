@@ -1,35 +1,46 @@
-import { Component, input, OnInit, OnDestroy, ElementRef, ViewChild, effect } from '@angular/core';
+import {
+  Component,
+  input,
+  OnInit,
+  OnDestroy,
+  ElementRef,
+  ViewChild,
+  effect,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 @Component({
-  selector:    'app-mobile-background',
-  standalone:  true,
-  template:    '<canvas #canvas class="pixel-canvas"></canvas>',
-  styles: [`
-    .pixel-canvas {
-      position: absolute;
-      inset:    0;
-      z-index:  0;
-    }
-  `]
+  selector: 'app-mobile-background',
+  standalone: true,
+  template: '<canvas #canvas class="pixel-canvas"></canvas>',
+  changeDetection: ChangeDetectionStrategy.Eager,
+  styles: [
+    `
+      .pixel-canvas {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+      }
+    `,
+  ],
 })
 export class MobileBackgroundComponent implements OnInit, OnDestroy {
-
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
 
   isDark = input<boolean>(true);
   paused = input<boolean>(false);
 
-  readonly CELL      = 18;
-  readonly COLORS    = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'];
+  readonly CELL = 18;
+  readonly COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'];
   readonly TRAIL_LEN = 12;
-  readonly SPEED     = 0.1;
+  readonly SPEED = 0.1;
 
-  private ctx!:        CanvasRenderingContext2D;
-  private cols         = 0;
-  private rows         = 0;
-  private drops:       number[]  = [];
-  private dropColors:  string[]  = [];
-  private animFrameId: number    = 0;
+  private ctx!: CanvasRenderingContext2D;
+  private cols = 0;
+  private rows = 0;
+  private drops: number[] = [];
+  private dropColors: string[] = [];
+  private animFrameId: number = 0;
 
   constructor() {
     effect(() => {
@@ -39,8 +50,8 @@ export class MobileBackgroundComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    const canvas  = this.canvasRef.nativeElement;
-    this.ctx      = canvas.getContext('2d')!;
+    const canvas = this.canvasRef.nativeElement;
+    this.ctx = canvas.getContext('2d')!;
     this.resize();
     window.addEventListener('resize', () => this.resize());
     this.animate();
@@ -52,13 +63,13 @@ export class MobileBackgroundComponent implements OnInit, OnDestroy {
   }
 
   resize() {
-    const canvas   = this.canvasRef.nativeElement;
-    canvas.width   = window.innerWidth;
-    canvas.height  = window.innerHeight;
-    this.cols      = Math.ceil(canvas.width  / this.CELL);
-    this.rows      = Math.ceil(canvas.height / this.CELL);
-    this.drops     = Array.from({ length: this.cols }, () => Math.random() * -this.rows);
-    this.dropColors= Array.from({ length: this.cols }, () => this.randomColor());
+    const canvas = this.canvasRef.nativeElement;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    this.cols = Math.ceil(canvas.width / this.CELL);
+    this.rows = Math.ceil(canvas.height / this.CELL);
+    this.drops = Array.from({ length: this.cols }, () => Math.random() * -this.rows);
+    this.dropColors = Array.from({ length: this.cols }, () => this.randomColor());
   }
 
   animate() {
@@ -78,18 +89,18 @@ export class MobileBackgroundComponent implements OnInit, OnDestroy {
 
   draw() {
     const canvas = this.canvasRef.nativeElement;
-    const bg     = this.isDark() ? '#06060f' : '#f0f0f8';
-    const grid   = this.isDark() ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)';
-    const S      = this.CELL;
+    const bg = this.isDark() ? '#06060f' : '#f0f0f8';
+    const grid = this.isDark() ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)';
+    const S = this.CELL;
 
     this.ctx.fillStyle = bg;
     this.ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     this.ctx.strokeStyle = grid;
-    this.ctx.lineWidth   = 0.5;
+    this.ctx.lineWidth = 0.5;
     for (let r = 0; r <= this.rows; r++) {
       this.ctx.beginPath();
-      this.ctx.moveTo(0,            r * S);
+      this.ctx.moveTo(0, r * S);
       this.ctx.lineTo(canvas.width, r * S);
       this.ctx.stroke();
     }
@@ -101,7 +112,7 @@ export class MobileBackgroundComponent implements OnInit, OnDestroy {
     }
 
     for (let c = 0; c < this.cols; c++) {
-      const head  = Math.floor(this.drops[c]);
+      const head = Math.floor(this.drops[c]);
       const color = this.dropColors[c];
       for (let t = 0; t < this.TRAIL_LEN; t++) {
         const row = head - t;

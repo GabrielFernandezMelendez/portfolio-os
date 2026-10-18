@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { DesktopIcon } from './desktop-icon';
+import { DesktopIconComponent } from './desktop-icon';
 
-describe('DesktopIcon', () => {
-  let component: DesktopIcon;
-  let fixture: ComponentFixture<DesktopIcon>;
+describe('DesktopIconComponent', () => {
+  let component: DesktopIconComponent;
+  let fixture: ComponentFixture<DesktopIconComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DesktopIcon],
+      imports: [DesktopIconComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(DesktopIcon);
+    fixture = TestBed.createComponent(DesktopIconComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

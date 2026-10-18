@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { MobileStatusBar } from './mobile-status-bar';
+import { MobileStatusBarComponent } from './mobile-status-bar';
 
-describe('MobileStatusBar', () => {
-  let component: MobileStatusBar;
-  let fixture: ComponentFixture<MobileStatusBar>;
+describe('MobileStatusBarComponent', () => {
+  let component: MobileStatusBarComponent;
+  let fixture: ComponentFixture<MobileStatusBarComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MobileStatusBar],
+      imports: [MobileStatusBarComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(MobileStatusBar);
+    fixture = TestBed.createComponent(MobileStatusBarComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

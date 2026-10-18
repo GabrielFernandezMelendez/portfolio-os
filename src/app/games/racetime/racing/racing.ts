@@ -1,4 +1,13 @@
-import { Component, ElementRef, ViewChild, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  ViewChild,
+  OnInit,
+  OnDestroy,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { RacingService } from '../racing.service';
 import { TrackGenerator } from '../application/track-generator';
 import { CarRenderer } from '../application/car-renderer';
@@ -9,10 +18,10 @@ import { updatePhysics } from '../application/race-physics.service';
   selector: 'app-racing',
   standalone: true,
   templateUrl: './racing.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './racing.css',
 })
 export class RacingComponent implements OnInit, OnDestroy {
-
   @ViewChild('gameCanvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private game = inject(RacingService);
@@ -29,9 +38,9 @@ export class RacingComponent implements OnInit, OnDestroy {
   private mouseDown = false;
 
   // Camera
-private readonly CAMERA_ZOOM = 0.8;
-private readonly BASE_WIDTH = 5000;
-private readonly BASE_HEIGHT = 3500;
+  private readonly CAMERA_ZOOM = 0.8;
+  private readonly BASE_WIDTH = 5000;
+  private readonly BASE_HEIGHT = 3500;
 
   // HUD signals
   raceTime = this.game.raceTime;
@@ -124,7 +133,9 @@ private readonly BASE_HEIGHT = 3500;
 
   // ── Canvas sizing ──
 
-  private onResize = (): void => { this.resizeCanvas(); };
+  private onResize = (): void => {
+    this.resizeCanvas();
+  };
 
   private resizeCanvas(): void {
     const canvas = this.canvasRef.nativeElement;
@@ -174,8 +185,14 @@ private readonly BASE_HEIGHT = 3500;
       e.preventDefault();
       this.isAccelerating = true;
     }
-    if (['arrowleft', 'a'].includes(key)) { e.preventDefault(); this.steerInput = -1; }
-    if (['arrowright', 'd'].includes(key)) { e.preventDefault(); this.steerInput = 1; }
+    if (['arrowleft', 'a'].includes(key)) {
+      e.preventDefault();
+      this.steerInput = -1;
+    }
+    if (['arrowright', 'd'].includes(key)) {
+      e.preventDefault();
+      this.steerInput = 1;
+    }
     if (key === 'escape' || key === 'p') this.togglePause();
   };
 
@@ -185,8 +202,12 @@ private readonly BASE_HEIGHT = 3500;
 
     if (['arrowup', 'w', ' '].includes(key)) this.isAccelerating = false;
     if (['arrowleft', 'a', 'arrowright', 'd'].includes(key)) {
-      if (!this.keys['arrowleft'] && !this.keys['a'] &&
-          !this.keys['arrowright'] && !this.keys['d']) {
+      if (
+        !this.keys['arrowleft'] &&
+        !this.keys['a'] &&
+        !this.keys['arrowright'] &&
+        !this.keys['d']
+      ) {
         this.steerInput = 0;
       }
     }
@@ -224,7 +245,9 @@ private readonly BASE_HEIGHT = 3500;
     else this.game.pause();
   }
 
-  goToMenu(): void { this.game.goToMenu(); }
+  goToMenu(): void {
+    this.game.goToMenu();
+  }
 
   formatTime(seconds: number): string {
     const mins = Math.floor(seconds / 60);

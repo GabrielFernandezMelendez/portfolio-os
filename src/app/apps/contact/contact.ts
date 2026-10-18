@@ -1,5 +1,14 @@
-import { Component, signal, ViewChild, ElementRef,
-         AfterViewInit, input, inject, effect } from '@angular/core';
+import {
+  Component,
+  signal,
+  ViewChild,
+  ElementRef,
+  AfterViewInit,
+  input,
+  inject,
+  effect,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../i18n/i18n.service';
 
@@ -9,22 +18,22 @@ interface TerminalLine {
 }
 
 @Component({
-  selector:    'app-contact',
-  standalone:  true,
-  imports:     [FormsModule],
+  selector: 'app-contact',
+  standalone: true,
+  imports: [FormsModule],
   templateUrl: './contact.html',
-  styleUrl:    './contact.css',
+  changeDetection: ChangeDetectionStrategy.Eager,
+  styleUrl: './contact.css',
 })
 export class ContactComponent implements AfterViewInit {
-
   @ViewChild('terminalInput') inputRef!: ElementRef;
-  @ViewChild('terminalBody')  bodyRef!:  ElementRef;
+  @ViewChild('terminalBody') bodyRef!: ElementRef;
 
-  i18n           = inject(I18nService);
-  isLight        = input<boolean>(false);
+  i18n = inject(I18nService);
+  isLight = input<boolean>(false);
   currentCommand = '';
-  isError        = signal(false);
-  history        = signal<TerminalLine[]>([]);
+  isError = signal(false);
+  history = signal<TerminalLine[]>([]);
 
   constructor() {
     effect(() => {
@@ -41,9 +50,18 @@ export class ContactComponent implements AfterViewInit {
       { text: '', type: 'system' },
       { text: 'C:\\Recruiters\\Contact> contact --info', type: 'command' },
       { text: '', type: 'system' },
-      { text: 'C:\\Recruiters\\Contact\\Gmail>    gabriel.fernandezdeveloper@gmail.com', type: 'info' },
-      { text: 'C:\\Recruiters\\Contact\\LinkedIn> linkedin.com/in/gabriel-fernandez-melendez', type: 'info' },
-      { text: 'C:\\Recruiters\\Contact\\GitHub>   github.com/GabrielFernandezMelendez', type: 'info' },
+      {
+        text: 'C:\\Recruiters\\Contact\\Gmail>    gabriel.fernandezdeveloper@gmail.com',
+        type: 'info',
+      },
+      {
+        text: 'C:\\Recruiters\\Contact\\LinkedIn> linkedin.com/in/gabriel-fernandez-melendez',
+        type: 'info',
+      },
+      {
+        text: 'C:\\Recruiters\\Contact\\GitHub>   github.com/GabrielFernandezMelendez',
+        type: 'info',
+      },
       { text: 'C:\\Recruiters\\Contact\\Tlf>      +34 648446865', type: 'info' },
       { text: '', type: 'system' },
       { text: '─────────────────────────────────────────────────────', type: 'system' },
@@ -53,7 +71,9 @@ export class ContactComponent implements AfterViewInit {
     ];
   }
 
-  ngAfterViewInit() { this.focusInput(); }
+  ngAfterViewInit() {
+    this.focusInput();
+  }
 
   focusInput() {
     setTimeout(() => this.inputRef?.nativeElement?.focus(), 100);
@@ -68,7 +88,7 @@ export class ContactComponent implements AfterViewInit {
   }
 
   addLine(text: string, type: TerminalLine['type']) {
-    this.history.update(h => [...h, { text, type }]);
+    this.history.update((h) => [...h, { text, type }]);
   }
 
   executeCommand() {
@@ -84,7 +104,7 @@ export class ContactComponent implements AfterViewInit {
         this.addLine(this.i18n.t('contact.terminal_gmail_to'), 'success');
         window.open(
           'https://mail.google.com/mail/?view=cm&to=gabriel.fernandezdeveloper@gmail.com&su=Contacto desde Portfolio',
-          '_blank'
+          '_blank',
         );
         break;
 
@@ -92,7 +112,7 @@ export class ContactComponent implements AfterViewInit {
         this.addLine(this.i18n.t('contact.terminal_linkedin_ok'), 'success');
         window.open(
           'https://www.linkedin.com/in/gabriel-fern%C3%A1ndez-mel%C3%A9ndez-336640238',
-          '_blank'
+          '_blank',
         );
         break;
 
@@ -102,18 +122,18 @@ export class ContactComponent implements AfterViewInit {
         break;
 
       case 'tlf':
-        this.addLine(this.i18n.t('contact.terminal_tlf_error'),  'warning');
+        this.addLine(this.i18n.t('contact.terminal_tlf_error'), 'warning');
         this.addLine(this.i18n.t('contact.terminal_tlf_manual'), 'warning');
         this.addLine(this.i18n.t('contact.terminal_tlf_number'), 'warning');
         break;
 
       case 'help':
-        this.addLine(this.i18n.t('contact.terminal_help_header'),   'system');
-        this.addLine(this.i18n.t('contact.terminal_help_gmail'),    'info');
+        this.addLine(this.i18n.t('contact.terminal_help_header'), 'system');
+        this.addLine(this.i18n.t('contact.terminal_help_gmail'), 'info');
         this.addLine(this.i18n.t('contact.terminal_help_linkedin'), 'info');
-        this.addLine(this.i18n.t('contact.terminal_help_github'),   'info');
-        this.addLine(this.i18n.t('contact.terminal_help_tlf'),      'info');
-        this.addLine(this.i18n.t('contact.terminal_help_clear'),    'info');
+        this.addLine(this.i18n.t('contact.terminal_help_github'), 'info');
+        this.addLine(this.i18n.t('contact.terminal_help_tlf'), 'info');
+        this.addLine(this.i18n.t('contact.terminal_help_clear'), 'info');
         break;
 
       case 'clear':

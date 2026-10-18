@@ -1,53 +1,61 @@
-import { Component, input, output, inject, computed, signal } from '@angular/core';
+import {
+  Component,
+  input,
+  output,
+  inject,
+  computed,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { MobileApp, MobilePage } from '../mobile.interfaces';
 import { I18nService } from '../../i18n/i18n.service';
 
 @Component({
-  selector:    'app-mobile-home',
-  standalone:  true,
+  selector: 'app-mobile-home',
+  standalone: true,
   templateUrl: './mobile-home.html',
-  styleUrl:    './mobile-home.css'
+  changeDetection: ChangeDetectionStrategy.Eager,
+  styleUrl: './mobile-home.css',
 })
 export class MobileHomeComponent {
+  pages = input.required<MobilePage[]>();
+  currentPage = input<number>(0);
+  isDark = input<boolean>(true);
 
-  pages        = input.required<MobilePage[]>();
-  currentPage  = input<number>(0);
-  isDark       = input<boolean>(true);
-
-  onOpenApp          = output<MobileApp>();
-  onPageChange       = output<number>();
-  onAddPage          = output<void>();
-  onMoveAppToPage    = output<{ app: MobileApp; fromPageId: string; toPageIndex: number }>();
+  onOpenApp = output<MobileApp>();
+  onPageChange = output<number>();
+  onAddPage = output<void>();
+  onMoveAppToPage = output<{ app: MobileApp; fromPageId: string; toPageIndex: number }>();
   onMoveAppToNewPage = output<{ app: MobileApp; fromPageId: string }>();
-  onCreateFolder     = output<{ app1: MobileApp; app2: MobileApp; pageId: string }>();
-  onAddAppToFolder   = output<{ app: MobileApp; folderId: string; fromPageId: string }>();
+  onCreateFolder = output<{ app1: MobileApp; app2: MobileApp; pageId: string }>();
+  onAddAppToFolder = output<{ app: MobileApp; folderId: string; fromPageId: string }>();
   onRenameFolder_emit = output<{ folderId: string; newName: string }>();
 
-  i18n        = inject(I18nService);
-  lang        = computed(() => this.i18n.currentLang());
+  i18n = inject(I18nService);
+  lang = computed(() => this.i18n.currentLang());
   showConfirm = signal(false);
 
   // ── Drag state ────────────────────────────────
-  draggingApp     = signal<MobileApp | null>(null);
-  dragFromPageId  = signal<string>('');
-  isDragging      = signal(false);
-  ghostX          = signal(0);
-  ghostY          = signal(0);
+  draggingApp = signal<MobileApp | null>(null);
+  dragFromPageId = signal<string>('');
+  isDragging = signal(false);
+  ghostX = signal(0);
+  ghostY = signal(0);
   showNewPageHint = signal(false);
-  dropTargetId    = signal<string | null>(null);
+  dropTargetId = signal<string | null>(null);
 
-  readonly screenWidth  = window.innerWidth;
+  readonly screenWidth = window.innerWidth;
   private readonly EDGE = 50;
 
-  private longPressTimer: any    = null;
-  private edgeNavTimer: any      = null;
-  private dropHoverTimer: any    = null;
-  private dragStartX             = 0;
-  private dragStartY             = 0;
-  private touchStartX            = 0;
-  private touchStartY            = 0;
-  private longPressTriggered     = false;
-  private dropTargetReady        = false;
+  private longPressTimer: any = null;
+  private edgeNavTimer: any = null;
+  private dropHoverTimer: any = null;
+  private dragStartX = 0;
+  private dragStartY = 0;
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private longPressTriggered = false;
+  private dropTargetReady = false;
 
   // ── Carpeta abierta ───────────────────────────
   openFolder = signal<MobileApp | null>(null);
@@ -78,7 +86,7 @@ export class MobileHomeComponent {
     if (Math.abs(deltaX) < 50 || deltaY > 40) return;
 
     const current = this.currentPage();
-    const total   = this.pages().length;
+    const total = this.pages().length;
 
     if (deltaX < 0 && current < total - 1) {
       this.onPageChange.emit(current + 1);
@@ -102,7 +110,9 @@ export class MobileHomeComponent {
       this.isDragging.set(true);
       this.ghostX.set(this.dragStartX - 36);
       this.ghostY.set(this.dragStartY - 36);
-      try { navigator.vibrate(50); } catch {}
+      try {
+        navigator.vibrate(50);
+      } catch {}
     }, 500);
   }
 
@@ -154,7 +164,9 @@ export class MobileHomeComponent {
       if (targetId) {
         this.dropHoverTimer = setTimeout(() => {
           this.dropTargetReady = true;
-          try { navigator.vibrate(30); } catch {}
+          try {
+            navigator.vibrate(30);
+          } catch {}
         }, 400);
       }
     }
@@ -164,8 +176,8 @@ export class MobileHomeComponent {
     // No navegar si estamos sobre un drop target
     if (this.dropTargetId()) return;
 
-    const current    = this.currentPage();
-    const total      = this.pages().length;
+    const current = this.currentPage();
+    const total = this.pages().length;
     const isLastPage = current === total - 1;
     const isFirstPage = current === 0;
 
@@ -219,16 +231,19 @@ export class MobileHomeComponent {
     e.stopPropagation();
 
     const app = this.draggingApp();
-    if (!app) { this.resetDrag(); return; }
+    if (!app) {
+      this.resetDrag();
+      return;
+    }
 
-    const current    = this.currentPage();
+    const current = this.currentPage();
     const fromPageId = this.dragFromPageId();
-    const targetId   = this.dropTargetId();
+    const targetId = this.dropTargetId();
 
     // Soltar sobre otra app → crear carpeta o añadir a carpeta
     if (targetId && this.dropTargetReady) {
       const currentPageData = this.pages()[current];
-      const targetApp = currentPageData?.apps.find(a => a.id === targetId);
+      const targetApp = currentPageData?.apps.find((a) => a.id === targetId);
 
       if (targetApp) {
         if (targetApp.isFolder) {
@@ -285,41 +300,44 @@ export class MobileHomeComponent {
   }
 
   // ── Carpeta modal ─────────────────────────────
-closeFolder() {
-  this.closingFolder.set(true);
-  setTimeout(() => {
-    this.closingFolder.set(false);
-    this.openFolder.set(null);
-  }, 300);
-}
+  closeFolder() {
+    this.closingFolder.set(true);
+    setTimeout(() => {
+      this.closingFolder.set(false);
+      this.openFolder.set(null);
+    }, 300);
+  }
 
-openAppFromFolder(app: MobileApp) {
-  this.closingFolder.set(true);
-  setTimeout(() => {
-    this.closingFolder.set(false);
-    this.openFolder.set(null);
-    this.onOpenApp.emit(app);
-  }, 300);
-}
-
-  
+  openAppFromFolder(app: MobileApp) {
+    this.closingFolder.set(true);
+    setTimeout(() => {
+      this.closingFolder.set(false);
+      this.openFolder.set(null);
+      this.onOpenApp.emit(app);
+    }, 300);
+  }
 
   // ── Popup ─────────────────────────────────────
-  confirmAddPage() { this.showConfirm.set(true);  }
-  onConfirm()      { this.showConfirm.set(false); this.onAddPage.emit(); }
-  onCancel()       { this.showConfirm.set(false); }
+  confirmAddPage() {
+    this.showConfirm.set(true);
+  }
+  onConfirm() {
+    this.showConfirm.set(false);
+    this.onAddPage.emit();
+  }
+  onCancel() {
+    this.showConfirm.set(false);
+  }
 
   onRenameFolder() {
-  const folder = this.openFolder();
-  if (!folder) return;
-  const name = this.folderEditName().trim() || 'Carpeta';
-  this.folderEditName.set(name);
+    const folder = this.openFolder();
+    if (!folder) return;
+    const name = this.folderEditName().trim() || 'Carpeta';
+    this.folderEditName.set(name);
 
-  // Emitir output para que layout actualice el signal
-  this.onRenameFolder_emit.emit({ folderId: folder.id, newName: name });
-}
+    // Emitir output para que layout actualice el signal
+    this.onRenameFolder_emit.emit({ folderId: folder.id, newName: name });
+  }
 
-closingFolder = signal(false);
-
-
+  closingFolder = signal(false);
 }

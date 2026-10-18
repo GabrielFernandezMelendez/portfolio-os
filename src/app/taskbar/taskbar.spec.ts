@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Taskbar } from './taskbar';
+import { TaskbarComponent } from './taskbar';
 
-describe('Taskbar', () => {
-  let component: Taskbar;
-  let fixture: ComponentFixture<Taskbar>;
+describe('TaskbarComponent', () => {
+  let component: TaskbarComponent;
+  let fixture: ComponentFixture<TaskbarComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Taskbar],
+      imports: [TaskbarComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(Taskbar);
+    fixture = TestBed.createComponent(TaskbarComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
