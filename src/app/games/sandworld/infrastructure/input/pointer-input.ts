@@ -26,6 +26,8 @@ export interface InputHandlers {
 
 /** El trazo de pincel no empieza hasta moverse esto o esperar BRUSH_DELAY_MS: da tiempo a poner el segundo dedo */
 const BRUSH_SLOP_PX = 4;
+/** Sin arena, un dedo que se mueve menos que esto sigue siendo un toque (los dedos tiemblan unos píxeles) */
+const TAP_SLOP_PX = 10;
 const BRUSH_DELAY_MS = 90;
 /** Cambio de distancia entre dedos necesario para saltar un nivel de zoom */
 const PINCH_STEP = 1.3;
@@ -168,7 +170,7 @@ export class PointerInput {
         break;
       case 'drag-pan':
         // Hasta superar el umbral no se mueve nada: así un toque con algo de temblor sigue siendo un toque
-        if (!this.dragMoved && Math.hypot(p.x - this.dragStart.x, p.y - this.dragStart.y) < BRUSH_SLOP_PX) break;
+        if (!this.dragMoved && Math.hypot(p.x - this.dragStart.x, p.y - this.dragStart.y) < TAP_SLOP_PX) break;
         this.dragMoved = true;
         this.on.pan(p.x - prev.x, p.y - prev.y);
         this.trackVelocity(p.x - prev.x, p.y - prev.y, e.timeStamp);

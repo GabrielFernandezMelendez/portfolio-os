@@ -155,7 +155,8 @@
     "swamp": "Pantano",
     "rockland": "Roquedal",
     "burnt": "Tierra Quemada",
-    "glade": "Claro Despierto"
+    "glade": "Claro Despierto",
+    "water": "Agua"
   },
   "weather": {
     "rain": "Lluvia",

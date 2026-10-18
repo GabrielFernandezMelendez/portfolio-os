@@ -45,7 +45,7 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
   protected readonly game = inject(SandworldService);
   private readonly runtime = new SandworldRuntime(this.game.engine, this.game.world, {
     frame: now => this.game.tick(now),
-    tileTap: t => this.zone.run(() => this.game.inspectTile(t.cx, t.cy, t.i, t.j, t.screenX, t.screenY)),
+    tileTap: t => this.zone.run(() => this.game.inspectTile(t)),
     atmosphere: () => ({ weather: this.game.weatherSystem.current, season: this.game.physics.climate.seasonBlend }),
     pour: {
       begin: () => this.game.beginStroke(),

@@ -40,6 +40,9 @@ export interface TappedTile {
   readonly cy: number;
   readonly i: number;
   readonly j: number;
+  /** Celda tocada dentro del chunk (para saber si es agua) */
+  readonly ci: number;
+  readonly cj: number;
   readonly screenX: number;
   readonly screenY: number;
 }
@@ -145,7 +148,10 @@ export class SandworldRuntime {
         const area = this.areaAt(x, y);
         if (area) {
           const G = WORLD.CELLS_PER_TILE;
-          this.hooks.tileTap?.({ cx: area.cx, cy: area.cy, i: Math.floor(area.ci / G), j: Math.floor(area.cj / G), screenX: x, screenY: y });
+          this.hooks.tileTap?.({
+            cx: area.cx, cy: area.cy, i: Math.floor(area.ci / G), j: Math.floor(area.cj / G),
+            ci: area.ci, cj: area.cj, screenX: x, screenY: y,
+          });
         }
       },
       leave: () => this.cursor.hide(),

@@ -36,9 +36,9 @@ import { TPipe } from '../../../i18n/t.pipe';
       (chronicle)="game.openMenu('chronicle')"
     />
 
-    @if (game.inspected(); as info) {
-      <!-- Al tocar un tile: su bioma junto al dedo -->
-      <sw-tile-tag class="tag" [style.left.px]="info.x" [style.top.px]="info.y" [label]="'biome.' + info.biomeKey | t" />
+    <!-- Al tocar un tile: su bioma (o agua) junto al dedo. Cada toque crea una etiqueta nueva -->
+    @for (info of game.inspected(); track info.id) {
+      <sw-tile-tag class="tag" [style.left.px]="info.x" [style.top.px]="info.y" [label]="'biome.' + info.key | t" />
     }
 
     @if (game.islandLabel()) {

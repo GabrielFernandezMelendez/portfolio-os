@@ -23,7 +23,9 @@ import { BiomeSystem } from './application/world/biomes';
 import { BIOME_BY_ID, BIOME_CHECK_MINUTES } from './config/biomes.config';
 import { WeatherNews, WeatherSystem } from './application/climate/weather';
 import { CLEAR_WEATHER, WeatherState } from './domain/models/weather.model';
-import { BiomeId } from './domain/models/biome.model';
+import { Biome, BiomeId } from './domain/models/biome.model';
+import { cellIndex, tileIndex } from './domain/models/chunk.model';
+import type { TappedTile } from './sandworld-runtime';
 import { Season } from './domain/models/time.model';
 import { DevTileView } from './rendering/dev/dev-tile-overlay';
 import { DevAction } from './config/dev.config';
@@ -37,6 +39,8 @@ import { DEFAULT_SEED } from './config/world.config';
 const CLOCK_STEP_MINUTES = 10;
 /** Milisegundos que se ve el nombre del bioma al tocar un tile */
 const INSPECT_MS = 2500;
+/** Agua (en niveles) en la celda tocada a partir de la que la etiqueta dice "Agua" */
+const INSPECT_WATER = 0.05;
 /** Segundos que se ve la etiqueta "Isla viva · Nivel N" */
 const ISLAND_LABEL_MS = 3000;
 
@@ -88,8 +92,12 @@ export class SandworldService implements OnDestroy {
   readonly devView = signal<DevTileView | null>(null);
   /** El tiempo que hace (la placa de la hora muestra su icono) */
   readonly weather = signal<WeatherState>(CLEAR_WEATHER);
-  /** Tile tocado sin arena: qué bioma es y dónde enseñarlo */
-  readonly inspected = signal<{ readonly biomeKey: string; readonly x: number; readonly y: number } | null>(null);
+  /**
+   * Tile tocado sin arena: qué es (bioma, o agua) y dónde enseñarlo. Es una lista de 0 o 1 elementos con un id
+   * nuevo en cada toque: así la etiqueta se vuelve a crear (y a animar) aunque se toque el mismo tile seguido.
+   */
+  readonly inspected = signal<readonly { readonly id: number; readonly key: string; readonly x: number; readonly y: number }[]>([]);
+  private inspectId = 0;
   private inspectTimer: ReturnType<typeof setTimeout> | null = null;
   /** Lo que le queda al trazo en curso (1 = botella llena). La botella del estante lo muestra. */
   readonly strokeLeft = signal(1);
@@ -384,12 +392,17 @@ export class SandworldService implements OnDestroy {
     this.engine.skipToNextSeason();
   }
 
-  /** Toque en un tile sin arena: muestra su bioma un momento junto al dedo */
-  inspectTile(cx: number, cy: number, i: number, j: number, x: number, y: number): void {
-    const biome = this.world.chunk(cx, cy).biome[j * 8 + i] as BiomeId;
-    this.inspected.set({ biomeKey: BIOME_BY_ID[biome].key, x, y });
+  /**
+   * Toque en un tile sin arena: muestra un momento junto al dedo su bioma, o "Agua" si se ha tocado un lago
+   * o un río (el humedal ya es un bioma de agua y sale con su nombre).
+   */
+  inspectTile(t: TappedTile): void {
+    const chunk = this.world.chunk(t.cx, t.cy);
+    const biome = chunk.biome[tileIndex(t.i, t.j)] as BiomeId;
+    const water = chunk.water[cellIndex(t.ci, t.cj)] > INSPECT_WATER && biome !== Biome.WETLAND;
+    this.inspected.set([{ id: ++this.inspectId, key: water ? 'water' : BIOME_BY_ID[biome].key, x: t.screenX, y: t.screenY }]);
     if (this.inspectTimer) clearTimeout(this.inspectTimer);
-    this.inspectTimer = setTimeout(() => this.inspected.set(null), INSPECT_MS);
+    this.inspectTimer = setTimeout(() => this.inspected.set([]), INSPECT_MS);
   }
 
   showIslandLabel(): void {

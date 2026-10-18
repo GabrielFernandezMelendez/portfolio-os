@@ -155,7 +155,8 @@
     "swamp": "Swamp",
     "rockland": "Rockland",
     "burnt": "Burnt Land",
-    "glade": "Awakened Glade"
+    "glade": "Awakened Glade",
+    "water": "Water"
   },
   "weather": {
     "rain": "Rain",
