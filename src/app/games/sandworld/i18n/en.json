@@ -28,7 +28,8 @@
     "devReveal": "Test: uncover land",
     "devSand": "Test: sand pile",
     "devSpring": "Test: spring",
-    "devTileValues": "Test: show essence and affinity"
+    "devTileValues": "Test: show essence and affinity",
+    "devGlade": "Test: Awakened Glade"
   },
   "lang": {
     "es": "Español",
@@ -62,7 +63,7 @@
       "afinidad": "The affinity has settled."
     },
     "outcome": {
-      "charred": "Fire has scorched the earth: Burnt Land is born.",
+      "charred": "Fire has scorched the earth.",
       "springNew": "A new spring wells up.",
       "springStronger": "A spring flows stronger."
     },
@@ -70,6 +71,16 @@
       "buried": "A spring has been buried.",
       "frozen": "A spring has frozen over.",
       "open": "A spring flows again."
+    },
+    "biome": {
+      "forest": "The forest regains ground.",
+      "desert": "The desert advances.",
+      "tundra": "The tundra spreads.",
+      "wetland": "A wetland forms.",
+      "swamp": "A swamp is born.",
+      "rockland": "A rocky outcrop is laid bare.",
+      "burnt": "The land is left burnt.",
+      "glade": "An Awakened Glade is born!"
     }
   },
   "indicators": {

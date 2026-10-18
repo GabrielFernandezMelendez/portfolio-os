@@ -1,6 +1,7 @@
 import { IndicatorRegistry } from './indicator-registry';
 import { World } from '../world/world';
-import { Biome } from '../../domain/models/biome.model';
+import { BiomeId } from '../../domain/models/biome.model';
+import { BIOME_BY_ID } from '../../config/biomes.config';
 
 /** Fracción de agua a partir de la cual la isla se considera bien abastecida (barra llena) */
 const WATER_FULL = 0.2;
@@ -24,8 +25,7 @@ export function vegetationLevel(world: World): number {
   for (const c of world.loadedChunks) {
     for (let t = 0; t < c.biome.length; t++) {
       total++;
-      if (c.biome[t] === Biome.FOREST || c.biome[t] === Biome.WETLAND) sum += c.fertility[t];
-      else sum += c.fertility[t] * 0.3;
+      sum += c.fertility[t] * BIOME_BY_ID[c.biome[t] as BiomeId].vegetation;
     }
   }
   return total ? sum / total : 0;

@@ -19,6 +19,8 @@ import { PourQueue, SettledPour } from './application/sands/pour-queue';
 import { Stroke } from './application/sands/stroke';
 import { SAND_EFFECTS } from './application/sands/sand-effects';
 import { SeededRandom } from './infrastructure/seeded-random';
+import { BiomeSystem } from './application/world/biomes';
+import { BIOME_BY_ID, BIOME_CHECK_MINUTES } from './config/biomes.config';
 import { SAND_COLOR_NUM } from './config/sands.config';
 import { PENDING_REDRAW_MINUTES } from './config/pour.config';
 import { Translator } from './i18n/translator';
@@ -54,6 +56,8 @@ export class SandworldService implements OnDestroy {
   readonly physics = new TerrainPhysics(this.world);
   /** Vertidos asentándose (cada uno tarda 1–2 días de juego) */
   readonly pours = new PourQueue(this.physics, new SeededRandom(this.world.seed * 7919 + 13));
+  /** Biomas vivos: cambian con el estado del terreno; el Claro Despierto nace raro y crece despacio */
+  readonly biomes = new BiomeSystem(this.world, new SeededRandom(this.world.seed * 104729 + 7));
   /** Trazo en curso mientras el dedo vierte */
   private stroke: Stroke | null = null;
 
@@ -100,7 +104,9 @@ export class SandworldService implements OnDestroy {
       if (changed.length) this.events.emit('terrainChanged', changed);
       this.settlePours(t.minute);
       this.reportWorldEvents();
+      if (t.minute % BIOME_CHECK_MINUTES === 0) this.updateBiomes();
     });
+    this.events.on('newSeason', () => this.biomes.newSeason());
     this.events.on('dawn', () => this.log({ type: 'time', key: 'chronicle.dawn' }));
     this.events.on('dusk', () => this.log({ type: 'time', key: 'chronicle.dusk' }));
     this.events.on('newDay', t => this.log({ type: 'time', key: 'chronicle.newDay', params: { day: t.day } }));
@@ -256,6 +262,21 @@ export class SandworldService implements OnDestroy {
     }
   }
 
+  /** Revisa los biomas: redibuja los chunks que cambian y lo cuenta en la crónica (un aviso por bioma nuevo) */
+  private updateBiomes(): void {
+    const changes = this.biomes.update(BIOME_CHECK_MINUTES / 1440);
+    if (changes.length === 0) return;
+    const chunks = new Map<string, ChunkCoord>();
+    const born = new Set<string>();
+    for (const c of changes) {
+      chunks.set(`${c.cx},${c.cy}`, { cx: c.cx, cy: c.cy });
+      born.add(BIOME_BY_ID[c.to].key);
+    }
+    this.events.emit('terrainChanged', [...chunks.values()]);
+    for (const key of born) this.log({ type: 'world', key: `chronicle.biome.${key}`, priority: key === 'glade' ? 9 : 6 });
+    this.refreshIndicators();
+  }
+
   private onSettled(s: SettledPour): void {
     this.events.emit('terrainChanged', chunksOf(s.cells));
     this.log({ type: 'world', key: `chronicle.settled.${s.sand}`, priority: 4 });
@@ -297,6 +318,11 @@ export class SandworldService implements OnDestroy {
       if (h > bestH) { bestH = h; best = k; }
     }
     if (best >= 0) this.physics.setSpring(best % C, Math.floor(best / C), 0.05);
+  }
+
+  /** TEMPORAL (modo desarrollo): despierta un claro sin sorteo en el tile sano más cercano al centro de la isla inicial */
+  debugGlade(): void {
+    if (this.biomes.forceGlade(0, 0)) this.updateBiomes();
   }
 
   /** TEMPORAL (modo desarrollo): muestra u oculta la esencia y la afinidad de cada tile */

@@ -22,6 +22,8 @@ import { WORLD } from './world.model';
  *   temperature, humidity, fertility, essence, affinity  (0..1)
  *   tempShift desvío temporal de temperatura (Brasa lo sube, Escarcha lo baja; vuelve solo a 0)
  *   biome     BiomeId
+ *   biomeNext / biomeTimer  bioma al que tiende el tile y días que lleva cumpliendo sus condiciones
+ *   glade     1 si el tile tiene un Claro Despierto; gladeWait  días que faltan para poder volver a intentarlo
  */
 export interface ChunkData {
   readonly cx: number;
@@ -53,6 +55,10 @@ export interface ChunkData {
   readonly affinity: Float32Array;
   readonly tempShift: Float32Array;
   readonly biome: Uint8Array;
+  readonly biomeNext: Uint8Array;
+  readonly biomeTimer: Float32Array;
+  readonly glade: Uint8Array;
+  readonly gladeWait: Float32Array;
 }
 
 const CELLS_TOTAL = WORLD.CELLS * WORLD.CELLS;
@@ -86,6 +92,10 @@ export function createChunkData(cx: number, cy: number): ChunkData {
     affinity: new Float32Array(TILES_TOTAL),
     tempShift: new Float32Array(TILES_TOTAL),
     biome: new Uint8Array(TILES_TOTAL),
+    biomeNext: new Uint8Array(TILES_TOTAL),
+    biomeTimer: new Float32Array(TILES_TOTAL),
+    glade: new Uint8Array(TILES_TOTAL),
+    gladeWait: new Float32Array(TILES_TOTAL),
   };
 }
 

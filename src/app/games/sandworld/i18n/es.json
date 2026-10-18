@@ -28,7 +28,8 @@
     "devReveal": "Probar: descubrir terreno",
     "devSand": "Probar: montón de arena",
     "devSpring": "Probar: manantial",
-    "devTileValues": "Probar: ver esencia y afinidad"
+    "devTileValues": "Probar: ver esencia y afinidad",
+    "devGlade": "Probar: Claro Despierto"
   },
   "lang": {
     "es": "Español",
@@ -62,7 +63,7 @@
       "afinidad": "La afinidad se ha asentado."
     },
     "outcome": {
-      "charred": "El fuego ha calcinado la tierra: nace Tierra Quemada.",
+      "charred": "El fuego ha calcinado la tierra.",
       "springNew": "Brota un manantial nuevo.",
       "springStronger": "Un manantial mana con más fuerza."
     },
@@ -70,6 +71,16 @@
       "buried": "Un manantial ha quedado sepultado.",
       "frozen": "Un manantial se ha congelado.",
       "open": "Un manantial vuelve a manar."
+    },
+    "biome": {
+      "forest": "El bosque recupera terreno.",
+      "desert": "Avanza el desierto.",
+      "tundra": "La tundra se extiende.",
+      "wetland": "Se forma un humedal.",
+      "swamp": "Nace un pantano.",
+      "rockland": "Queda un roquedal al descubierto.",
+      "burnt": "La tierra queda quemada.",
+      "glade": "¡Un Claro Despierto ha nacido!"
     }
   },
   "indicators": {

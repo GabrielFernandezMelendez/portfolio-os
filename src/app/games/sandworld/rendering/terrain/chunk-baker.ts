@@ -1,5 +1,6 @@
 import { ChunkData, cellIndex, groundAt, tileIndex } from '../../domain/models/chunk.model';
 import { Biome, BiomeId } from '../../domain/models/biome.model';
+import { BIOME_BY_ID, BIOME_DEFS } from '../../config/biomes.config';
 import { Material, MaterialId } from '../../domain/models/material.model';
 import { MATERIAL_DEFS } from '../../config/materials.config';
 import { MASSLESS_SANDS, SAND_COLOR_NUM } from '../../config/sands.config';
@@ -80,23 +81,18 @@ const lighten = (c: number, f: number): number => {
   return (Math.round(r + (255 - r) * f) << 16) | (Math.round(g + (255 - g) * f) << 8) | Math.round(b + (255 - b) * f);
 };
 
-const LAND_RAMP: Record<BiomeId, Ramp> = {
-  [Biome.FOREST]: TERRAIN_RAMPS.forest,
-  [Biome.DESERT]: TERRAIN_RAMPS.desert,
-  [Biome.TUNDRA]: TERRAIN_RAMPS.tundra,
-  [Biome.WETLAND]: TERRAIN_RAMPS.marsh,
-};
-
-const WALL: Record<BiomeId, readonly number[]> = {
-  [Biome.FOREST]: TERRAIN_WALLS.forest,
-  [Biome.DESERT]: TERRAIN_WALLS.desert,
-  [Biome.TUNDRA]: TERRAIN_WALLS.tundra,
-  [Biome.WETLAND]: TERRAIN_WALLS.forest,
-};
-
-/** Rampa y paredes de cada material, leídas del registro (sin rampa: la del bioma) */
+/** Rampa y paredes de cada material y de cada bioma, leídas de sus registros */
 const RAMPS = TERRAIN_RAMPS as unknown as Record<string, Ramp>;
 const WALLS = TERRAIN_WALLS as unknown as Record<string, readonly number[]>;
+const LAND_RAMP = {} as Record<BiomeId, Ramp>;
+const WALL = {} as Record<BiomeId, readonly number[]>;
+/** Agua de cada bioma (el pantano la tiene turbia) */
+const WATER_RAMP = {} as Record<BiomeId, Ramp>;
+for (const def of BIOME_DEFS) {
+  LAND_RAMP[def.id] = RAMPS[def.ramp];
+  WALL[def.id] = WALLS[def.wall];
+  WATER_RAMP[def.id] = def.water ? RAMPS[def.water] : TERRAIN_RAMPS.water;
+}
 const MATERIAL_RAMP: Partial<Record<MaterialId, Ramp>> = {};
 const MATERIAL_WALL: Partial<Record<MaterialId, readonly number[]>> = {};
 for (const [id, def] of Object.entries(MATERIAL_DEFS)) {
@@ -366,13 +362,15 @@ export class ChunkBaker {
         const bareRock = !covered && chunk.sediment[cell - 1] <= MATERIAL_VISIBLE;
         const material = covered ? chunk.coverMaterial[cell - 1] as MaterialId
           : bareRock ? Material.ROCK : chunk.material[cell - 1] as MaterialId;
-        const materialRamp = bareRock ? ROCK_RAMP : MATERIAL_RAMP[material];
+        // En un Claro Despierto la hierba manda sobre el humus que lo alimenta
+        const materialRamp = bareRock ? ROCK_RAMP
+          : biome === Biome.GLADE && material === Material.HUMUS ? undefined : MATERIAL_RAMP[material];
 
         // Cara superior
         let color: number;
         if (isFilm) {
           // Arroyo o agua fina: misma agua que los lagos, algo más clara, con destellos sueltos
-          color = shade(TERRAIN_RAMPS.water, clamp(0.72 + tex * 0.8), px, py);
+          color = shade(WATER_RAMP[biome], clamp(0.72 + tex * 0.8), px, py);
           if (hash2(px, py, 23) < 0.04) color = TERRAIN_RAMPS.shallow[3];
         } else if (isWet) {
           // Más oscuro cuanto más hondo; sin reborde claro (el reborde claro hacía que el lago pareciera elevado)
@@ -381,7 +379,7 @@ export class ChunkBaker {
           // Sombra de la orilla de atrás: franja oscura junto al borde superior del lago
           const shadowAt = this.bankShadow(a, b);
           if (shadowAt > 0) val -= 0.35 * (1 - (shadowAt - 1) / BANK_SHADOW);
-          color = shade(TERRAIN_RAMPS.water, clamp(val), px, py);
+          color = shade(WATER_RAMP[biome], clamp(val), px, py);
           // Destellos sueltos lejos de la orilla
           if (shadowAt === 0 && hash2(px, py, 29) < 0.012) color = TERRAIN_RAMPS.water[4];
         } else {
@@ -401,6 +399,12 @@ export class ChunkBaker {
             const r = hash2(px, py, 11);
             if (r < 0.015) color = TERRAIN_RAMPS.forest[4];
             else if (r > 0.988) color = TERRAIN_RAMPS.forest[0];
+          }
+          // Destellos propios del bioma (el Claro Despierto brilla)
+          const sparkle = BIOME_BY_ID[biome].sparkle;
+          if (sparkle && !materialRamp) {
+            const r = hash2(px, py, 61);
+            if (r < sparkle.density) color = sparkle.colors[Math.floor((r / sparkle.density) * sparkle.colors.length)];
           }
           // Borde iluminado de la terraza
           if (frontLvl < lvl && frontLvl > -9) color = lighten(color, 0.22);

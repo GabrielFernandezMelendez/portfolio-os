@@ -31,6 +31,7 @@ import { DEV_TOOLS } from '../../../config/dev.config';
         <button swWood class="dev" (click)="devSand.emit()">{{ 'settings.devSand' | t }}</button>
         <button swWood class="dev" (click)="devSpring.emit()">{{ 'settings.devSpring' | t }}</button>
         <button swWood class="dev" (click)="devTileValues.emit()">{{ 'settings.devTileValues' | t }}</button>
+        <button swWood class="dev" (click)="devGlade.emit()">{{ 'settings.devGlade' | t }}</button>
       }
     </sw-modal>
   `,
@@ -52,6 +53,7 @@ export class SettingsMenuComponent {
   readonly devSand = output<void>();
   readonly devSpring = output<void>();
   readonly devTileValues = output<void>();
+  readonly devGlade = output<void>();
   protected readonly langs = SANDWORLD_LANGS;
   protected readonly devTools = DEV_TOOLS;
 }
