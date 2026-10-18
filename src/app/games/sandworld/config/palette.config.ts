@@ -2,11 +2,15 @@
 
 export const SKY = {
   day:   0x8fd0f0,
+  dusk:  0xf79a62,
   night: 0x1c2342,
 } as const;
 
 /** Tinte que se aplica al mundo de noche */
 export const NIGHT_TINT = 0x5a66a8;
+
+/** Tinte cálido del amanecer y el atardecer */
+export const DUSK_TINT = 0xffb27a;
 
 /**
  * Rampas de 5 tonos (oscuro → claro) para la cara superior del terreno.

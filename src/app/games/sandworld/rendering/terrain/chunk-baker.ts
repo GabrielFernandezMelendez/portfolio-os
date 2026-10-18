@@ -94,6 +94,12 @@ export class ChunkBaker {
   private readonly wetArr = new Float32Array(C * C);
   private readonly shoreDist = new Float32Array(C * C);
 
+  /**
+   * Qué celda pintó cada píxel del último horneado (índice + 1; 0 = vacío).
+   * Da un picking exacto al píxel: tocar una pared o el agua selecciona la celda que se ve ahí.
+   */
+  private readonly owner = new Uint16Array(BAKE_WIDTH * BAKE_HEIGHT);
+
   constructor(private readonly seed: number) {
     this.grids = this.buildStaticGrids();
   }
@@ -101,9 +107,24 @@ export class ChunkBaker {
   /** Hornea el chunk en `out` (RGBA, BAKE_WIDTH × BAKE_HEIGHT). Los píxeles fuera de la isla quedan transparentes. */
   bake(chunk: ChunkData, out: Uint8ClampedArray): void {
     out.fill(0);
+    this.owner.fill(0);
     this.prepareCellArrays(chunk);
     this.prepareSamples();
     this.paint(chunk, out);
+  }
+
+  /** Celda (índice local) visible en el píxel (px, py) del buffer horneado, o -1 si no hay terreno */
+  pickCell(px: number, py: number): number {
+    const x = Math.floor(px), y = Math.floor(py);
+    if (x < 0 || y < 0 || x >= BAKE_WIDTH || y >= BAKE_HEIGHT) return -1;
+    return this.owner[y * BAKE_WIDTH + x] - 1;
+  }
+
+  /** Altura visible (terraza o lámina de agua, en niveles) en el centro de una celda, según el último horneado */
+  surfaceAtCell(ci: number, cj: number): number {
+    const a = Math.round((ci + 0.5) * S / G);
+    const b = Math.round((cj + 0.5) * S / G);
+    return this.sSurf[clamp(b, 0, M - 1) * M + clamp(a, 0, M - 1)];
   }
 
   // ── 1. Rejillas estáticas ─────────────────────────────────────────
@@ -219,8 +240,11 @@ export class ChunkBaker {
 
   private paint(chunk: ChunkData, out: Uint8ClampedArray): void {
     const { inside, bioTile, texture } = this.grids;
+    const owner = this.owner;
+    let cell = 0;                                         // celda de la muestra que se está pintando (+1)
     const put = (px: number, py: number, c: number): void => {
       if (px < 0 || py < 0 || px >= BAKE_WIDTH || py >= BAKE_HEIGHT) return;
+      owner[py * BAKE_WIDTH + px] = cell;
       const k = (py * BAKE_WIDTH + px) * 4;
       out[k] = c >> 16;
       out[k + 1] = (c >> 8) & 255;
@@ -236,6 +260,7 @@ export class ChunkBaker {
 
         const u = -0.5 + a / S;
         const v = -0.5 + b / S;
+        cell = cellIndex(clamp(Math.floor((u + 0.5) * G), 0, C - 1), clamp(Math.floor((v + 0.5) * G), 0, C - 1)) + 1;
         const lvl = this.sLvl[q];
         const isWet = this.sWet[q] === 1;
         const surf = this.sSurf[q];

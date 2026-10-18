@@ -52,4 +52,25 @@ describe('ChunkBaker', () => {
     baker.bake(chunk, b);
     expect(fingerprint(a)).toBe(fingerprint(b));
   });
+
+  it('el picking devuelve la celda que se ve en cada píxel', () => {
+    const chunk = generateChunk(SEED, 0, 0);
+    computeClimate(chunk, SEED);
+    const baker = new ChunkBaker(SEED);
+    const out = new Uint8ClampedArray(BAKE_WIDTH * BAKE_HEIGHT * 4);
+    baker.bake(chunk, out);
+
+    // Píxel transparente → sin celda; píxel opaco → siempre una celda válida
+    let opaque = 0, picked = 0;
+    for (let i = 0; i < BAKE_WIDTH * BAKE_HEIGHT; i++) {
+      const cell = baker.pickCell(i % BAKE_WIDTH, Math.floor(i / BAKE_WIDTH));
+      if (out[i * 4 + 3] === 0) expect(cell).toBe(-1);
+      else {
+        opaque++;
+        if (cell >= 0 && cell < 32 * 32) picked++;
+      }
+    }
+    expect(picked).toBe(opaque);
+    expect(baker.pickCell(-1, 5)).toBe(-1);
+  });
 });

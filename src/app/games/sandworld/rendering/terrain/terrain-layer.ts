@@ -2,6 +2,16 @@ import { Container, Sprite, Texture } from 'pixi.js';
 import { ChunkData } from '../../domain/models/chunk.model';
 import { WORLD } from '../../domain/models/world.model';
 import { BAKE_HEIGHT, BAKE_ORIGIN_X, BAKE_ORIGIN_Y, BAKE_WIDTH, ChunkBaker } from './chunk-baker';
+import { Rect } from '../camera';
+
+/** Celda seleccionada: chunk + índice local + altura visible */
+export interface PickedCell {
+  cx: number;
+  cy: number;
+  ci: number;
+  cj: number;
+  surface: number;
+}
 
 /**
  * Adaptador de Pixi para el terreno de un chunk.
@@ -17,6 +27,7 @@ export class TerrainLayer {
   private readonly image: ImageData;
   private readonly texture: Texture;
   private readonly sprite: Sprite;
+  private chunk: ChunkData | null = null;
 
   constructor(seed: number) {
     this.baker = new ChunkBaker(seed);
@@ -38,6 +49,7 @@ export class TerrainLayer {
 
   /** Hornea el chunk y lo coloca en su posición isométrica dentro del mundo */
   render(chunk: ChunkData): void {
+    this.chunk = chunk;
     this.baker.bake(chunk, this.image.data);
     this.ctx.putImageData(this.image, 0, 0);
     this.texture.source.update();
@@ -49,6 +61,21 @@ export class TerrainLayer {
       (ox - oy) * WORLD.TILE_W / 2 - BAKE_ORIGIN_X,
       (ox + oy) * WORLD.TILE_H / 2 - BAKE_ORIGIN_Y,
     );
+  }
+
+  /** Rectángulo que ocupa el chunk en coordenadas de mundo (para los límites de la cámara) */
+  get bounds(): Rect {
+    return { x: this.sprite.x, y: this.sprite.y, w: BAKE_WIDTH, h: BAKE_HEIGHT };
+  }
+
+  /** Celda visible en un punto del mundo, o null si ahí no hay terreno */
+  pick(wx: number, wy: number): PickedCell | null {
+    if (!this.chunk) return null;
+    const k = this.baker.pickCell(wx - this.sprite.x, wy - this.sprite.y);
+    if (k < 0) return null;
+    const ci = k % WORLD.CELLS;
+    const cj = Math.floor(k / WORLD.CELLS);
+    return { cx: this.chunk.cx, cy: this.chunk.cy, ci, cj, surface: this.baker.surfaceAtCell(ci, cj) };
   }
 
   destroy(): void {

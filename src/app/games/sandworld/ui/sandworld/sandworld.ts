@@ -1,15 +1,13 @@
 import {
   AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, NgZone, OnDestroy,
-  effect, inject, input, viewChild,
+  computed, effect, inject, input, viewChild,
 } from '@angular/core';
 import { SandworldService } from '../../sandworld.service';
-import { PixiStage } from '../../rendering/pixi-stage';
-import { TerrainLayer } from '../../rendering/terrain/terrain-layer';
-import { BAKE_HEIGHT, BAKE_ORIGIN_Y, BAKE_WIDTH } from '../../rendering/terrain/chunk-baker';
-import { generateChunk } from '../../application/world/chunk-generator';
-import { computeClimate } from '../../application/world/climate';
-import { DEFAULT_SEED } from '../../config/world.config';
-import { SandworldLang } from '../../domain/models/settings.model';
+import { SandworldRuntime } from '../../sandworld-runtime';
+import { SandworldLang, SimSpeed } from '../../domain/models/settings.model';
+
+/** TEMPORAL (hasta el HUD del bloque 4) */
+const SEASON_NAMES = ['Primavera', 'Verano', 'Otoño', 'Invierno'];
 
 /**
  * Punto de entrada único del juego.
@@ -32,8 +30,16 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
   private readonly stageRef = viewChild.required<ElementRef<HTMLDivElement>>('stage');
   private readonly zone = inject(NgZone);
   protected readonly game = inject(SandworldService);
-  private readonly stage = new PixiStage();
-  private terrain: TerrainLayer | null = null;
+  private readonly runtime = new SandworldRuntime(this.game.engine);
+
+  /** TEMPORAL: línea de depuración con el tiempo de juego (la sustituye el HUD en el bloque 4) */
+  protected readonly debugLine = computed(() => {
+    const t = this.game.time();
+    const hh = String(t.hour).padStart(2, '0');
+    const mm = String(t.minute).padStart(2, '0');
+    const speed = this.game.isPaused() ? 'pausa' : `x${this.game.speed()}`;
+    return `Año ${t.year} · ${SEASON_NAMES[t.season]} · Día ${t.dayOfSeason} · ${hh}:${mm} · ${speed}`;
+  });
 
   constructor() {
     effect(() => {
@@ -46,45 +52,35 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
     // Pixi corre su propio bucle; fuera de la zona de Angular para no disparar detección de cambios en cada frame
     this.zone.runOutsideAngular(() => this.start());
     document.addEventListener('visibilitychange', this.onVisibility);
+    document.addEventListener('keydown', this.onKey);
   }
 
   ngOnDestroy(): void {
     document.removeEventListener('visibilitychange', this.onVisibility);
-    this.terrain?.destroy();
-    this.terrain = null;
-    this.stage.destroy();
+    document.removeEventListener('keydown', this.onKey);
+    this.runtime.destroy();
   }
 
   private async start(): Promise<void> {
-    const app = await this.stage.mount(this.stageRef().nativeElement, (w, h) => this.center(w, h));
-    if (!app) return;                       // se cerró antes de terminar de cargar
-
-    // Chunk inicial (0,0): física → clima → horneado
-    const chunk = generateChunk(DEFAULT_SEED, 0, 0);
-    computeClimate(chunk, DEFAULT_SEED);
-    this.terrain = new TerrainLayer(DEFAULT_SEED);
-    this.terrain.render(chunk);
-    this.stage.world.addChild(this.terrain.view);
-
-    this.center(app.screen.width, app.screen.height);
-    this.zone.run(() => this.game.isReady.set(true));
+    const ok = await this.runtime.mount(this.stageRef().nativeElement);
+    if (ok) this.zone.run(() => this.game.isReady.set(true));
   }
 
-  /** Pausa el render cuando la pestaña o la app pasan a segundo plano */
+  /** Detiene el render y el tiempo cuando la pestaña o la app pasan a segundo plano */
   private onVisibility = (): void => {
-    if (document.hidden) this.stage.pause();
-    else if (!this.game.isPaused()) this.stage.resume();
+    if (document.hidden) this.runtime.pause();
+    else this.runtime.resume();
   };
 
-  /**
-   * Encaje provisional: escala entera o de medio paso que quepa a lo ancho y centra la isla.
-   * En el bloque 3 lo sustituye la cámara (arrastre con dos dedos, zoom y scroll por bordes).
-   */
-  private center(w: number, h: number): void {
-    const scale = Math.max(1, Math.floor(((w - 24) / BAKE_WIDTH) * 2) / 2);
-    // Centro vertical del dibujo horneado, en coordenadas del mundo
-    const midY = BAKE_HEIGHT / 2 - BAKE_ORIGIN_Y;
-    this.stage.world.scale.set(scale);
-    this.stage.world.position.set(Math.round(w / 2), Math.round(h * 0.45 - midY * scale));
-  }
+  /** TEMPORAL: espacio pausa, 1/2/4 cambian la velocidad (los botones de madera llegan en el bloque 4) */
+  private onKey = (e: KeyboardEvent): void => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('input, textarea, [contenteditable]')) return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      this.zone.run(() => this.game.togglePause());
+    } else if (e.key === '1' || e.key === '2' || e.key === '4') {
+      this.zone.run(() => this.game.setSpeed(Number(e.key) as SimSpeed));
+    }
+  };
 }
