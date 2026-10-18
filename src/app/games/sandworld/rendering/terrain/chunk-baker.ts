@@ -34,8 +34,10 @@ const S = 20;
 const M = N * S + 1;
 /** Agua mínima (en niveles) para considerarse lámina visible (lago o charco) */
 const WET = 0.06;
-/** Agua mínima para dibujar un arroyo: lámina fina que corre sobre la terraza */
-const STREAM = 0.006;
+/** Agua mínima para empezar a dibujar una lámina fina que corre sobre la terraza */
+const STREAM = 0.003;
+/** Lámina a partir de la cual el agua fina cubre la celda entera (entre STREAM y esto, va apareciendo) */
+const FILM_FULL = 0.01;
 /** Agua caída por el borde (en el último minuto) a partir de la cual se dibuja la cascada al mar de nubes */
 const DRAIN = 0.0005;
 /** Profundidad mínima para dibujar un lago (por debajo es arroyo o charco fino) */
@@ -60,6 +62,9 @@ type Ramp = readonly number[];
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + 0.5) / 16);
 const bayer = (x: number, y: number): number => BAYER[(y & 3) * 4 + (x & 3)];
+/** Posición de pantalla aproximada de una muestra (para el patrón de la lámina fina, estable entre horneados) */
+const px0 = (a: number, b: number): number => a - b + 4096;
+const py0 = (a: number, b: number): number => (a + b) >> 1;
 
 const shade = (ramp: Ramp, val: number, px: number, py: number): number =>
   ramp[clamp(Math.floor(val * (ramp.length - 1) + bayer(px, py)), 0, ramp.length - 1)];
@@ -124,6 +129,8 @@ export class ChunkBaker {
   private readonly sShore = new Float32Array(M * M);
   private readonly sWaterSurf = new Float32Array(M * M);
   private readonly sStream = new Uint8Array(M * M);
+  /** Cobertura de agua fina por muestra (0..1): el frente de un río se ve salpicado y se va llenando */
+  private readonly sFilm = new Float32Array(M * M);
   private readonly sDrain = new Uint8Array(M * M);
   private readonly streamArr = new Float32Array(C * C);
   private readonly drainArr = new Float32Array(C * C);
@@ -203,7 +210,7 @@ export class ChunkBaker {
       this.gArr[k] = g;
       this.wetArr[k] = wet ? 1 : 0;
       this.wsArr[k] = wet ? g + chunk.water[k] : 0;
-      this.streamArr[k] = chunk.water[k] > STREAM ? 1 : 0;
+      this.streamArr[k] = clamp((chunk.water[k] - STREAM) / (FILM_FULL - STREAM));
       this.drainArr[k] = chunk.drain[k] > DRAIN ? 1 : 0;
     }
     this.computeShoreDistance();
@@ -276,7 +283,10 @@ export class ChunkBaker {
           this.sDepth[q] = 0;
         }
         // Arroyo: agua fina sobre la terraza (no sube la superficie, solo cambia el color y cae por las paredes)
-        this.sStream[q] = this.sWet[q] === 0 && this.bilinear(this.streamArr, u, v) > 0.45 ? 1 : 0;
+        const film = this.sWet[q] === 0 ? this.bilinear(this.streamArr, u, v) : 0;
+        this.sFilm[q] = film;
+        // Por las paredes solo cae el agua que ya forma un arroyo continuo
+        this.sStream[q] = film > 0.45 ? 1 : 0;
         this.sDrain[q] = this.bilinear(this.drainArr, u, v) > 0.3 ? 1 : 0;
       }
     }
@@ -328,6 +338,9 @@ export class ChunkBaker {
         const lvl = this.sLvl[q];
         const isWet = this.sWet[q] === 1;
         const isStream = this.sStream[q] === 1;
+        // Agua fina en la cara de arriba: sólida donde hay agua; solo el borde del frente se ve salpicado
+        const film = isWet ? 0 : this.sFilm[q];
+        const isFilm = film >= 0.6 || (film > 0.3 && bayer(px0(a, b), py0(a, b)) < (film - 0.3) / 0.3);
         const surf = this.sSurf[q];
         const px = Math.round(BAKE_ORIGIN_X + (u - v) * TW / 2);
         const base = BAKE_ORIGIN_Y + (u + v) * TH / 2;
@@ -351,7 +364,7 @@ export class ChunkBaker {
 
         // Cara superior
         let color: number;
-        if (isStream) {
+        if (isFilm) {
           // Arroyo o agua fina: misma agua que los lagos, algo más clara, con destellos sueltos
           color = shade(TERRAIN_RAMPS.water, clamp(0.72 + tex * 0.8), px, py);
           if (hash2(px, py, 23) < 0.04) color = TERRAIN_RAMPS.shallow[3];

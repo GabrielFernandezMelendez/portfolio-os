@@ -31,6 +31,8 @@ export interface ChunkData {
   readonly stagnant: Float32Array;
   readonly spring: Float32Array;
   readonly drain: Float32Array;
+  /** Caudal de salida hacia las 4 vecinas (E, O, S, N) por celda: la inercia del agua que corre */
+  readonly flux: Float32Array;
   readonly ruleId: Uint8Array;
   readonly ruleTimer: Float32Array;
   readonly pending: Float32Array;
@@ -58,6 +60,7 @@ export function createChunkData(cx: number, cy: number): ChunkData {
     stagnant: new Float32Array(CELLS_TOTAL),
     spring: new Float32Array(CELLS_TOTAL),
     drain: new Float32Array(CELLS_TOTAL),
+    flux: new Float32Array(CELLS_TOTAL * 4),
     ruleId: new Uint8Array(CELLS_TOTAL),
     ruleTimer: new Float32Array(CELLS_TOTAL),
     pending: new Float32Array(CELLS_TOTAL),

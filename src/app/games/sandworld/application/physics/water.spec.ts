@@ -49,8 +49,9 @@ describe('Agua', () => {
   it('baja por la pendiente y nunca sube sola', () => {
     const { world, chunk } = flatIsland((ci) => 2 + ci * 0.1);              // sube hacia la derecha
     const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false });
-    physics.addWater(20, 16, 1);
-    for (let i = 0; i < 4; i++) physics.minute();
+    // Menos agua que el escalón entre celdas (0,1): su superficie nunca supera a la vecina de arriba
+    physics.addWater(20, 16, 0.05);
+    for (let i = 0; i < 6; i++) physics.minute();
     let left = 0, right = 0;
     for (let cj = 0; cj < C; cj++) {
       for (let ci = 0; ci < C; ci++) {
@@ -58,7 +59,7 @@ describe('Agua', () => {
         if (ci > 20) right += chunk.water[cellIndex(ci, cj)];
       }
     }
-    expect(left).toBeGreaterThan(0.1);
+    expect(left).toBeGreaterThan(0.02);
     expect(right).toBeLessThan(0.001);
   });
 
@@ -81,6 +82,8 @@ describe('Agua', () => {
     const { world, chunk } = flatIsland();
     const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false });
     physics.addWater(0, 10, 0.5);
+    // El agua se mueve cada 2 minutos de juego
+    physics.minute();
     physics.minute();
     expect(chunk.drain[cellIndex(0, 10)]).toBeGreaterThan(0);
     let drained = sum(chunk.drain);
@@ -141,9 +144,9 @@ describe('Agua', () => {
       return m;
     };
     const soil = crossing(Material.SOIL);
-    // Objetivo acordado: un cuarto de día (360 min) por chunk sobre tierra
-    expect(soil).toBeGreaterThan(200);
-    expect(soil).toBeLessThan(500);
+    // Objetivo: unas 15 h de juego por chunk sobre tierra seca (≈ 4 min reales a x1); sobre roca, menos de 2 h
+    expect(soil).toBeGreaterThan(650);
+    expect(soil).toBeLessThan(1200);
     expect(crossing(Material.ROCK)).toBeLessThan(soil / 2);
   });
 

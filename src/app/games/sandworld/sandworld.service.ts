@@ -279,7 +279,7 @@ export class SandworldService implements OnDestroy {
       const h = chunk.rock[k] + chunk.sediment[k];
       if (h > bestH) { bestH = h; best = k; }
     }
-    if (best >= 0) this.physics.setSpring(best % C, Math.floor(best / C), 0.08);
+    if (best >= 0) this.physics.setSpring(best % C, Math.floor(best / C), 0.05);
   }
 
   showIslandLabel(): void {
