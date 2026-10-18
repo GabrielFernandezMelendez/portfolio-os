@@ -9,6 +9,12 @@ export const SKY = {
 /** Tinte que se aplica al mundo de noche */
 export const NIGHT_TINT = 0x5a66a8;
 
+/** Tono de cada estación sobre el mundo (primavera, verano, otoño, invierno) */
+export const SEASON_TINT = [0xffffff, 0xfff1c4, 0xffe2bc, 0xd6e0f0] as const;
+
+/** Cielo gris de lluvia */
+export const STORM_GREY = 0x8a97a8;
+
 /** Tinte cálido del amanecer y el atardecer */
 export const DUSK_TINT = 0xffb27a;
 

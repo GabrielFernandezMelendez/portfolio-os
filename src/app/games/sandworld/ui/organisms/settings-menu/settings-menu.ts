@@ -3,7 +3,7 @@ import { SANDWORLD_LANGS, SandworldLang } from '../../../domain/models/settings.
 import { ModalComponent } from '../../molecules/modal/modal';
 import { WoodButtonComponent } from '../../atoms/wood-button/wood-button';
 import { TPipe } from '../../../i18n/t.pipe';
-import { DEV_TOOLS } from '../../../config/dev.config';
+import { DEV_ACTIONS, DEV_TOOLS, DevAction } from '../../../config/dev.config';
 
 /** Ajustes: idioma y salir. El juego queda en pausa mientras está abierto. */
 @Component({
@@ -26,12 +26,12 @@ import { DEV_TOOLS } from '../../../config/dev.config';
         <button swWood class="exit" (click)="exit.emit()">{{ 'settings.exit' | t }}</button>
       </div>
       @if (devTools) {
-        <!-- TEMPORAL: prueba de la aparición de chunks (fase 7: expansión real) -->
-        <button swWood class="dev" (click)="devReveal.emit()">{{ 'settings.devReveal' | t }}</button>
-        <button swWood class="dev" (click)="devSand.emit()">{{ 'settings.devSand' | t }}</button>
-        <button swWood class="dev" (click)="devSpring.emit()">{{ 'settings.devSpring' | t }}</button>
-        <button swWood class="dev" (click)="devTileValues.emit()">{{ 'settings.devTileValues' | t }}</button>
-        <button swWood class="dev" (click)="devGlade.emit()">{{ 'settings.devGlade' | t }}</button>
+        <!-- TEMPORAL: botones de prueba (config/dev.config.ts) -->
+        <div class="dev-grid">
+          @for (a of devActions; track a) {
+            <button swWood class="dev" (click)="devAction.emit(a)">{{ 'settings.dev.' + a | t }}</button>
+          }
+        </div>
       }
     </sw-modal>
   `,
@@ -40,8 +40,8 @@ import { DEV_TOOLS } from '../../../config/dev.config';
     .langs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
     .actions { display: flex; flex-direction: column; gap: 8px; }
     .exit { --sw-wood: #9c4a35; }
-    .dev { width: 100%; margin-top: 8px; --sw-wood: #5b6f8f; font-size: 10px; }
-    .dev:first-of-type { margin-top: 14px; }
+    .dev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 14px; }
+    .dev { width: 100%; min-height: 34px; padding: 2px 4px; --sw-wood: #5b6f8f; font-size: 9px; line-height: 1.1; }
   `,
 })
 export class SettingsMenuComponent {
@@ -49,11 +49,8 @@ export class SettingsMenuComponent {
   readonly langChange = output<SandworldLang>();
   readonly close = output<void>();
   readonly exit = output<void>();
-  readonly devReveal = output<void>();
-  readonly devSand = output<void>();
-  readonly devSpring = output<void>();
-  readonly devTileValues = output<void>();
-  readonly devGlade = output<void>();
+  readonly devAction = output<DevAction>();
   protected readonly langs = SANDWORLD_LANGS;
   protected readonly devTools = DEV_TOOLS;
+  protected readonly devActions = DEV_ACTIONS;
 }

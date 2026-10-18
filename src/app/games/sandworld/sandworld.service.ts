@@ -21,6 +21,12 @@ import { SAND_EFFECTS } from './application/sands/sand-effects';
 import { SeededRandom } from './infrastructure/seeded-random';
 import { BiomeSystem } from './application/world/biomes';
 import { BIOME_BY_ID, BIOME_CHECK_MINUTES } from './config/biomes.config';
+import { WeatherNews, WeatherSystem } from './application/climate/weather';
+import { CLEAR_WEATHER, WeatherState } from './domain/models/weather.model';
+import { BiomeId } from './domain/models/biome.model';
+import { Season } from './domain/models/time.model';
+import { DevTileView } from './rendering/dev/dev-tile-overlay';
+import { DevAction } from './config/dev.config';
 import { SAND_COLOR_NUM } from './config/sands.config';
 import { PENDING_REDRAW_MINUTES } from './config/pour.config';
 import { Translator } from './i18n/translator';
@@ -29,6 +35,8 @@ import { DEFAULT_SEED } from './config/world.config';
 
 /** El reloj de la interfaz avanza de 10 en 10 minutos de juego, como en Stardew */
 const CLOCK_STEP_MINUTES = 10;
+/** Milisegundos que se ve el nombre del bioma al tocar un tile */
+const INSPECT_MS = 2500;
 /** Segundos que se ve la etiqueta "Isla viva · Nivel N" */
 const ISLAND_LABEL_MS = 3000;
 
@@ -58,6 +66,8 @@ export class SandworldService implements OnDestroy {
   readonly pours = new PourQueue(this.physics, new SeededRandom(this.world.seed * 7919 + 13));
   /** Biomas vivos: cambian con el estado del terreno; el Claro Despierto nace raro y crece despacio */
   readonly biomes = new BiomeSystem(this.world, new SeededRandom(this.world.seed * 104729 + 7));
+  /** Tiempo atmosférico: lluvia (o nieve), repartida al azar en cada estación según el registro de fenómenos */
+  readonly weatherSystem = new WeatherSystem(this.physics, new SeededRandom(this.world.seed * 7907 + 3));
   /** Trazo en curso mientras el dedo vierte */
   private stroke: Stroke | null = null;
 
@@ -74,8 +84,13 @@ export class SandworldService implements OnDestroy {
   readonly chronicleEntries = signal<readonly ChronicleEntry[]>([]);
   readonly indicatorValues = signal<readonly IndicatorValue[]>([]);
   readonly islandLabel = signal(false);
-  /** Modo desarrollo: capa con la esencia y la afinidad de cada tile (los valores aún no tienen uso para el jugador) */
-  readonly devTileValues = signal(false);
+  /** Modo desarrollo: capa de esencia y afinidad o de biomas sobre la isla (null = ninguna) */
+  readonly devView = signal<DevTileView | null>(null);
+  /** El tiempo que hace (la placa de la hora muestra su icono) */
+  readonly weather = signal<WeatherState>(CLEAR_WEATHER);
+  /** Tile tocado sin arena: qué bioma es y dónde enseñarlo */
+  readonly inspected = signal<{ readonly biomeKey: string; readonly x: number; readonly y: number } | null>(null);
+  private inspectTimer: ReturnType<typeof setTimeout> | null = null;
   /** Lo que le queda al trazo en curso (1 = botella llena). La botella del estante lo muestra. */
   readonly strokeLeft = signal(1);
 
@@ -100,13 +115,19 @@ export class SandworldService implements OnDestroy {
     });
     this.events.on('hour', () => this.refreshIndicators());
     this.events.on('minute', t => {
+      this.physics.climate.update(t);
+      this.reportWeather(this.weatherSystem.minute(t));
       const changed = this.physics.minute();
       if (changed.length) this.events.emit('terrainChanged', changed);
       this.settlePours(t.minute);
       this.reportWorldEvents();
       if (t.minute % BIOME_CHECK_MINUTES === 0) this.updateBiomes();
     });
-    this.events.on('newSeason', () => this.biomes.newSeason());
+    this.events.on('newSeason', t => {
+      this.biomes.newSeason();
+      this.weatherSystem.planSeason(t.season, t.totalMinutes);
+      if (t.season === Season.SPRING) this.log({ type: 'world', key: 'chronicle.thaw', priority: 5 });
+    });
     this.events.on('dawn', () => this.log({ type: 'time', key: 'chronicle.dawn' }));
     this.events.on('dusk', () => this.log({ type: 'time', key: 'chronicle.dusk' }));
     this.events.on('newDay', t => this.log({ type: 'time', key: 'chronicle.newDay', params: { day: t.day } }));
@@ -116,6 +137,7 @@ export class SandworldService implements OnDestroy {
   ngOnDestroy(): void {
     this.events.clear();
     if (this.islandLabelTimer) clearTimeout(this.islandLabelTimer);
+    if (this.inspectTimer) clearTimeout(this.inspectTimer);
   }
 
   /** Llamar cuando el mundo ya se ve en pantalla */
@@ -248,6 +270,19 @@ export class SandworldService implements OnDestroy {
     for (const s of settled) this.onSettled(s);
   }
 
+  /** El tiempo ha cambiado: actualiza el icono y lo cuenta en la crónica */
+  private reportWeather(news: readonly WeatherNews[]): void {
+    const now = this.weatherSystem.current;
+    if (now !== this.weather()) {
+      const before = this.weather();
+      if (before.key !== now.key || before.look !== now.look) this.weather.set(now);
+    }
+    for (const n of news) {
+      if (n.type === 'drought') this.log({ type: 'world', key: 'chronicle.drought', params: { days: n.days }, priority: 6 });
+      else this.log({ type: 'world', key: `chronicle.weather.${n.key}.${n.type}${n.look === 'snow' ? 'Snow' : ''}`, priority: 3 });
+    }
+  }
+
   /** Cuenta en la crónica lo que han provocado las arenas y los manantiales que se tapan o se abren */
   private reportWorldEvents(): void {
     const seen = new Set<string>();
@@ -325,9 +360,36 @@ export class SandworldService implements OnDestroy {
     if (this.biomes.forceGlade(0, 0)) this.updateBiomes();
   }
 
-  /** TEMPORAL (modo desarrollo): muestra u oculta la esencia y la afinidad de cada tile */
-  toggleDevTileValues(): void {
-    this.devTileValues.update(v => !v);
+  /** TEMPORAL (modo desarrollo): botones de prueba de Ajustes */
+  runDevAction(action: DevAction): void {
+    switch (action) {
+      case 'reveal': return this.revealNextChunk();
+      case 'sandPile': return this.debugSandPile();
+      case 'spring': return this.debugSpring();
+      case 'rain': return this.weatherSystem.forceNow('rain', this.engine.time.totalMinutes);
+      case 'nextSeason': return this.debugNextSeason();
+      case 'glade': return this.debugGlade();
+      case 'viewValues': return this.toggleDevView('values');
+      case 'viewBiomes': return this.toggleDevView('biomes');
+    }
+  }
+
+  /** TEMPORAL (modo desarrollo): muestra una capa de prueba sobre la isla, u oculta la que está si es la misma */
+  toggleDevView(view: DevTileView): void {
+    this.devView.update(v => (v === view ? null : view));
+  }
+
+  /** TEMPORAL (modo desarrollo): salta a la estación siguiente */
+  debugNextSeason(): void {
+    this.engine.skipToNextSeason();
+  }
+
+  /** Toque en un tile sin arena: muestra su bioma un momento junto al dedo */
+  inspectTile(cx: number, cy: number, i: number, j: number, x: number, y: number): void {
+    const biome = this.world.chunk(cx, cy).biome[j * 8 + i] as BiomeId;
+    this.inspected.set({ biomeKey: BIOME_BY_ID[biome].key, x, y });
+    if (this.inspectTimer) clearTimeout(this.inspectTimer);
+    this.inspectTimer = setTimeout(() => this.inspected.set(null), INSPECT_MS);
   }
 
   showIslandLabel(): void {

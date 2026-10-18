@@ -7,6 +7,15 @@ import { TerrainGrid } from './terrain-grid';
 import { LandslideSystem } from './landslides';
 import { SpringChange, WaterOptions, WaterSystem } from './water';
 import { ThermalSystem } from './thermal';
+import { ClimateState } from '../climate/climate-state';
+import { FREEZE_RATE, FREEZE_TEMPERATURE, SNOW_PER_RAIN, SNOW_TEMPERATURE } from '../../config/climate.config';
+import { SOIL_WATER_CAPACITY, WATER_MIN } from '../../config/water.config';
+import { temperatureAt, tileIndex } from '../../domain/models/chunk.model';
+
+const C = WORLD.CELLS;
+const G = WORLD.CELLS_PER_TILE;
+/** Cada cuántos minutos se mira si se congela el agua */
+const FREEZE_CHECK_MINUTES = 10;
 
 /**
  * Física del terreno de la partida. Avanza con el tiempo de juego (se para en pausa
@@ -18,13 +27,17 @@ export class TerrainPhysics {
   readonly grid: TerrainGrid;
   readonly water: WaterSystem;
   readonly thermal: ThermalSystem;
+  /** Estación y hora: desvío global de temperatura (lo actualiza quien lleva el reloj) */
+  readonly climate = new ClimateState();
+  private minutes = 0;
   private readonly landslides: LandslideSystem;
 
-  constructor(private readonly world: World, waterOptions?: WaterOptions) {
+  constructor(private readonly world: World, private readonly waterOptions?: WaterOptions) {
     this.grid = new TerrainGrid(world);
     this.landslides = new LandslideSystem(this.grid);
-    this.water = new WaterSystem(this.grid, waterOptions);
-    this.thermal = new ThermalSystem(this.grid, (gx, gy, water) => this.addWater(gx, gy, water));
+    const offset = () => this.climate.offset;
+    this.water = new WaterSystem(this.grid, waterOptions, offset);
+    this.thermal = new ThermalSystem(this.grid, (gx, gy, water) => this.addWater(gx, gy, water), offset);
     // Si cambia la altura de una celda, su agua y la de alrededor vuelven a moverse
     this.grid.onHeightChange = (gx, gy) => this.water.wake(gx, gy);
     for (const { cx, cy } of world.exploration.list()) {
@@ -53,8 +66,10 @@ export class TerrainPhysics {
   minute(): ChunkCoord[] {
     const changed = new Set<string>();
     for (let i = 0; i < LANDSLIDE_PASSES_PER_MINUTE; i++) this.landslides.step(changed);
+    this.minutes++;
     this.thermal.minute(changed);
     this.water.minute(changed);
+    if (this.waterOptions?.freezing !== false && this.minutes % FREEZE_CHECK_MINUTES === 0) this.freezeStillWater(changed);
     // Material cambiado por una regla (p. ej. barro, de talud bajo): puede volver a deslizarse
     for (const [gx, gy] of this.water.transformed.splice(0)) {
       this.landslides.wake(gx, gy);
@@ -152,6 +167,61 @@ export class TerrainPhysics {
     }
     if (opts.ash > 0) this.deposit(gx, gy, Material.ASH, opts.ash);
     return false;
+  }
+
+  /**
+   * Lluvia o nieve sobre todo lo descubierto: `amount` niveles de agua por celda en este minuto.
+   * Donde hace frío cae nieve (de temporada). La lluvia empapa primero el suelo y lo que sobra queda encima y corre.
+   * Devuelve true si en la mayor parte de la isla ha caído nieve (para dibujar copos en vez de gotas).
+   */
+  precipitate(amount: number): boolean {
+    let snowed = 0, rained = 0;
+    const offset = this.climate.offset;
+    for (const { cx, cy } of this.world.exploration.list()) {
+      const c = this.world.chunk(cx, cy);
+      for (let k = 0; k < C * C; k++) {
+        const ci = k % C, cj = Math.floor(k / C);
+        const gx = cx * C + ci, gy = cy * C + cj;
+        const t = tileIndex(Math.floor(ci / G), Math.floor(cj / G));
+        if (temperatureAt(c, t) + offset < SNOW_TEMPERATURE) {
+          this.thermal.addCover(gx, gy, Material.SNOW, amount * SNOW_PER_RAIN, true);
+          snowed++;
+          continue;
+        }
+        rained++;
+        let rain = amount;
+        if (c.moisture[k] < 1) {
+          const soak = Math.min(rain, (1 - c.moisture[k]) * SOIL_WATER_CAPACITY);
+          c.moisture[k] += soak / SOIL_WATER_CAPACITY;
+          rain -= soak;
+        }
+        if (rain > 0) {
+          c.water[k] += rain;
+          if (c.water[k] > WATER_MIN) this.water.wake(gx, gy);
+        }
+      }
+    }
+    return snowed > rained;
+  }
+
+  /** Invierno: el agua de las celdas frías se va congelando (hielo de temporada, se funde al subir la temperatura) */
+  private freezeStillWater(changed: Set<string>): void {
+    const offset = this.climate.offset;
+    if (offset > FREEZE_TEMPERATURE) return;   // con este desvío ningún tile llega a helar
+    for (const key of this.water.wetKeys) {
+      const [gx, gy] = TerrainGrid.fromKey(key);
+      const cell = this.grid.cell(gx, gy);
+      if (!cell) continue;
+      const c = cell.chunk, k = cell.k;
+      if (c.water[k] <= WATER_MIN) continue;
+      const t = tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G));
+      const cold = FREEZE_TEMPERATURE - (temperatureAt(c, t) + offset);
+      if (cold <= 0) continue;
+      const ice = Math.min(c.water[k], FREEZE_RATE * FREEZE_CHECK_MINUTES * cold);
+      c.water[k] -= ice;
+      this.thermal.addCover(gx, gy, Material.ICE, ice, true);
+      changed.add(`${c.cx},${c.cy}`);
+    }
   }
 
   /** Coordenadas globales de celda a partir de chunk + celda local */

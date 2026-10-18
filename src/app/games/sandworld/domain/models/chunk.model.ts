@@ -15,6 +15,7 @@ import { WORLD } from './world.model';
  *   ruleId / ruleTimer  regla de transformación en curso y días que lleva cumpliéndose
  *   pending / pendingSand  arena vertida que aún no se ha asentado (cantidad) y cuál (índice en SAND_ORDER + 1)
  *   cover / coverMaterial  capa helada encima de todo (nieve o hielo, en niveles): cuenta en la altura y se funde
+ *   coverSeasonal  1 si la capa helada es del tiempo (nevada, hielo de invierno): no cambia el bioma
  *   springBase  altura del terreno cuando nació el manantial: si se entierra por encima, el manantial se tapa
  *   heat      calor acumulado por la Brasa (se disipa); en exceso calcina el suelo
  *
@@ -39,6 +40,7 @@ export interface ChunkData {
   readonly drain: Float32Array;
   readonly cover: Float32Array;
   readonly coverMaterial: Uint8Array;
+  readonly coverSeasonal: Uint8Array;
   readonly springBase: Float32Array;
   readonly heat: Float32Array;
   /** Caudal de salida hacia las 4 vecinas (E, O, S, N) por celda: la inercia del agua que corre */
@@ -78,6 +80,7 @@ export function createChunkData(cx: number, cy: number): ChunkData {
     drain: new Float32Array(CELLS_TOTAL),
     cover: new Float32Array(CELLS_TOTAL),
     coverMaterial: new Uint8Array(CELLS_TOTAL),
+    coverSeasonal: new Uint8Array(CELLS_TOTAL),
     springBase: new Float32Array(CELLS_TOTAL),
     heat: new Float32Array(CELLS_TOTAL),
     flux: new Float32Array(CELLS_TOTAL * 4),

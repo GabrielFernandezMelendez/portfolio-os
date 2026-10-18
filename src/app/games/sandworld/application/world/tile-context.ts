@@ -17,7 +17,8 @@ export function tileContext(chunk: ChunkData, i: number, j: number): TileContext
       const k = cellIndex(i * G + di, j * G + dj);
       if (chunk.water[k] > WET) water++;
       moisture += chunk.moisture[k];
-      if (chunk.cover[k] > BARE_ROCK) { cover++; continue; }
+      // La nieve y el hielo de temporada no cuentan para el bioma: se mira lo que hay debajo
+      if (chunk.cover[k] > BARE_ROCK && !chunk.coverSeasonal[k]) { cover++; continue; }
       if (chunk.sediment[k] <= BARE_ROCK) { rock++; continue; }
       switch (chunk.material[k]) {
         case Material.MUD: case Material.PEAT: mud++; break;

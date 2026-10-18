@@ -47,6 +47,8 @@ export interface WaterOptions {
   infiltration: boolean;
   evaporation: boolean;
   recharge: boolean;
+  /** Hielo con el frío (por defecto, sí) */
+  freezing?: boolean;
 }
 
 /**
@@ -85,7 +87,14 @@ export class WaterSystem {
   constructor(
     private readonly grid: TerrainGrid,
     private readonly options: WaterOptions = { infiltration: true, evaporation: true, recharge: true },
+    /** Desvío global de temperatura del momento (estación y hora) */
+    private readonly climateOffset: () => number = () => 0,
   ) {}
+
+  /** Celdas con agua o manantial (para el hielo de invierno) */
+  get wetKeys(): ReadonlySet<number> {
+    return this.wet;
+  }
 
   get wetCount(): number {
     return this.wet.size;
@@ -225,7 +234,7 @@ export class WaterSystem {
       }
       const c = cell.chunk, k = cell.k;
       const def = MATERIAL_DEFS[c.material[k] as MaterialId];
-      const temperature = temperatureAt(c, tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G)));
+      const temperature = temperatureAt(c, tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G))) + this.climateOffset();
 
       // Manantial: solo mana si no está enterrado ni helado
       if (c.spring[k] > 0) {
@@ -282,7 +291,7 @@ export class WaterSystem {
       const c = cell.chunk, k = cell.k;
       if (c.moisture[k] <= 0) continue;
       const def = MATERIAL_DEFS[c.material[k] as MaterialId];
-      const temperature = temperatureAt(c, tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G)));
+      const temperature = temperatureAt(c, tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G))) + this.climateOffset();
       c.moisture[k] = Math.max(0, c.moisture[k] - SOIL_DRYING * (1 - def.retention) * (0.5 + temperature));
     }
   }

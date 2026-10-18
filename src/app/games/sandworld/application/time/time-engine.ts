@@ -46,6 +46,20 @@ export class TimeEngine {
     this.paused = paused;
   }
 
+  /**
+   * TEMPORAL (modo desarrollo): salta a la estación siguiente. Emite los eventos de su primer minuto
+   * (nuevo día y nueva estación) y deja el reloj en `minuteOfDay` del día 1. Lo saltado no se simula.
+   */
+  skipToNextSeason(minuteOfDay = START_MINUTE): void {
+    const seasonMinutes = CALENDAR.DAYS_PER_SEASON * CALENDAR.MINUTES_PER_DAY;
+    this.total = (Math.floor(this.total / seasonMinutes) + 1) * seasonMinutes - 1;
+    this.fraction = 0;
+    this.step();
+    this.total += minuteOfDay;
+    this.current = toGameTime(this.total);
+    this.bus.emit('minute', this.current);
+  }
+
   /** Avanza según los milisegundos reales transcurridos. Devuelve cuántos minutos de juego han pasado. */
   update(realMs: number): number {
     if (this.paused || realMs <= 0) return 0;

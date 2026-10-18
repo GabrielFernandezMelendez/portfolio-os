@@ -33,7 +33,7 @@ const sum = (a: Float32Array): number => a.reduce((s, v) => s + v, 0);
 describe('Agua', () => {
   it('se conserva: lo que hay + lo que cayó por los bordes = lo que había + lo que dieron los manantiales', () => {
     const { world, chunk } = flatIsland((ci, cj) => 3 + (ci + cj) * 0.05);   // ladera suave
-    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false });
+    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false, freezing: false });
     physics.addWater(20, 20, 2);
     physics.setSpring(25, 25, 0.05);
     const start = sum(chunk.water);
@@ -48,7 +48,7 @@ describe('Agua', () => {
 
   it('baja por la pendiente y nunca sube sola', () => {
     const { world, chunk } = flatIsland((ci) => 2 + ci * 0.1);              // sube hacia la derecha
-    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false });
+    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false, freezing: false });
     // Menos agua que el escalón entre celdas (0,1): su superficie nunca supera a la vecina de arriba
     physics.addWater(20, 16, 0.05);
     for (let i = 0; i < 6; i++) physics.minute();
@@ -67,7 +67,7 @@ describe('Agua', () => {
     // Meseta a 3 con un hoyo de 5×5 a 2 en el centro
     const inHole = (ci: number, cj: number): boolean => ci >= 14 && ci <= 18 && cj >= 14 && cj <= 18;
     const { world, chunk } = flatIsland((ci, cj) => (inHole(ci, cj) ? 2 : 3));
-    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false });
+    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false, freezing: false });
     for (let cj = 14; cj <= 18; cj++) for (let ci = 14; ci <= 18; ci++) physics.addWater(ci, cj, 0.6);
     for (let i = 0; i < 200; i++) physics.minute();
     let outside = 0;
@@ -80,7 +80,7 @@ describe('Agua', () => {
 
   it('cae al mar de nubes por cualquier borde con agua', () => {
     const { world, chunk } = flatIsland();
-    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false });
+    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false, freezing: false });
     physics.addWater(0, 10, 0.5);
     // El agua se mueve cada 2 minutos de juego
     physics.minute();
@@ -103,7 +103,7 @@ describe('Agua', () => {
       if (ci >= 20 && ci <= 26 && cj >= 20 && cj <= 26) return 2;    // lago: 1 de profundidad
       return 3;
     });
-    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false });
+    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false, freezing: false });
     for (let cj = 4; cj <= 8; cj++) for (let ci = 4; ci <= 8; ci++) physics.addWater(ci, cj, 0.1);
     for (let cj = 20; cj <= 26; cj++) for (let ci = 20; ci <= 26; ci++) physics.addWater(ci, cj, 1);
     for (let i = 0; i < 4 * DAY; i++) physics.minute();
@@ -137,7 +137,7 @@ describe('Agua', () => {
     const crossing = (material: number): number => {
       const { world, chunk } = flatIsland(slope);
       for (let k = 0; k < C * C; k++) chunk.material[k] = material;
-      const physics = new TerrainPhysics(world, { infiltration: true, evaporation: false, recharge: false });
+      const physics = new TerrainPhysics(world, { infiltration: true, evaporation: false, recharge: false, freezing: false });
       physics.setSpring(31, 16, 0.06);
       let m = 0;
       while (chunk.water[cellIndex(1, 16)] < 0.003 && m < 2000) { physics.minute(); m++; }
@@ -153,7 +153,7 @@ describe('Agua', () => {
   it('un charco se evapora con el calor', () => {
     const { world, chunk } = flatIsland();
     for (let t = 0; t < chunk.temperature.length; t++) chunk.temperature[t] = 0.9;
-    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: true, recharge: false });
+    const physics = new TerrainPhysics(world, { infiltration: false, evaporation: true, recharge: false, freezing: false });
     // Charco en un hoyo para que no se escurra
     chunk.rock[cellIndex(10, 10)] = 2.9;
     physics.addWater(10, 10, 0.08);

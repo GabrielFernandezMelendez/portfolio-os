@@ -25,11 +25,16 @@
     "language": "Language",
     "exit": "Exit Sandworld",
     "resume": "Back to the island",
-    "devReveal": "Test: uncover land",
-    "devSand": "Test: sand pile",
-    "devSpring": "Test: spring",
-    "devTileValues": "Test: show essence and affinity",
-    "devGlade": "Test: Awakened Glade"
+    "dev": {
+      "reveal": "Test: reveal land",
+      "sandPile": "Test: sand pile",
+      "spring": "Test: spring",
+      "rain": "Test: rain",
+      "nextSeason": "Test: next season",
+      "glade": "Test: Awakened Glade",
+      "viewValues": "Show essence and affinity",
+      "viewBiomes": "Show biomes"
+    }
   },
   "lang": {
     "es": "Español",
@@ -81,6 +86,16 @@
       "rockland": "A rocky outcrop is laid bare.",
       "burnt": "The land is left burnt.",
       "glade": "An Awakened Glade is born!"
+    },
+    "thaw": "The thaw arrives: the rivers run high.",
+    "drought": "Drought: {days} days without rain.",
+    "weather": {
+      "rain": {
+        "start": "It starts to rain.",
+        "end": "The rain stops.",
+        "startSnow": "It starts to snow.",
+        "endSnow": "The snow stops."
+      }
     }
   },
   "indicators": {
@@ -131,5 +146,20 @@
       "name": "Affinity",
       "desc": "Massless. More offspring, less aggression."
     }
+  },
+  "biome": {
+    "forest": "Forest",
+    "desert": "Desert",
+    "tundra": "Tundra",
+    "wetland": "Wetland",
+    "swamp": "Swamp",
+    "rockland": "Rockland",
+    "burnt": "Burnt Land",
+    "glade": "Awakened Glade"
+  },
+  "weather": {
+    "rain": "Rain",
+    "snow": "Snow",
+    "clear": "Clear"
   }
 }

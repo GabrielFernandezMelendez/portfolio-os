@@ -34,6 +34,8 @@ export class ThermalSystem {
     private readonly grid: TerrainGrid,
     /** Se llama con el agua que deja una celda al fundirse */
     private readonly onMelt: (gx: number, gy: number, water: number) => void,
+    /** Desvío global de temperatura del momento (estación y hora) */
+    private readonly climateOffset: () => number = () => 0,
   ) {}
 
   /** Registra las celdas heladas de un chunk (p. ej. al cargarlo) */
@@ -43,12 +45,18 @@ export class ThermalSystem {
     }
   }
 
-  /** Añade nieve o hielo encima de la celda */
-  addCover(gx: number, gy: number, material: typeof Material.SNOW | typeof Material.ICE, amount: number): void {
+  /**
+   * Añade nieve o hielo encima de la celda. `seasonal` = viene del tiempo (nevada, hielo de invierno):
+   * se funde igual, pero no cuenta para el bioma. Si se mezcla con la de una arena, deja de ser de temporada.
+   */
+  addCover(gx: number, gy: number, material: typeof Material.SNOW | typeof Material.ICE, amount: number, seasonal = false): void {
     const cell = this.grid.cell(gx, gy);
     if (!cell || amount <= 0) return;
+    const c = cell.chunk, k = cell.k;
+    const fresh = c.cover[k] <= EPSILON;
     // El hielo manda sobre la nieve (es lo que bloquea el agua)
-    if (cell.chunk.cover[cell.k] <= EPSILON || material === Material.ICE) cell.chunk.coverMaterial[cell.k] = material;
+    if (fresh || material === Material.ICE) c.coverMaterial[k] = material;
+    c.coverSeasonal[k] = (fresh || c.coverSeasonal[k] === 1) && seasonal ? 1 : 0;
     this.grid.setCover(cell, cell.chunk.cover[cell.k] + amount);
     this.frozen.add(TerrainGrid.key(gx, gy));
   }
@@ -90,7 +98,7 @@ export class ThermalSystem {
       }
       const c = cell.chunk;
       const t = tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G));
-      const warmth = temperatureAt(c, t) - THAW_TEMPERATURE;
+      const warmth = temperatureAt(c, t) + this.climateOffset() - THAW_TEMPERATURE;
       if (warmth <= 0) continue;
       const before = c.cover[cell.k];
       this.meltCell(cell, gx, gy, THAW_RATE * warmth);

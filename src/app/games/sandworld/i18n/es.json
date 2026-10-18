@@ -25,11 +25,16 @@
     "language": "Idioma",
     "exit": "Salir de Sandworld",
     "resume": "Volver a la isla",
-    "devReveal": "Probar: descubrir terreno",
-    "devSand": "Probar: montón de arena",
-    "devSpring": "Probar: manantial",
-    "devTileValues": "Probar: ver esencia y afinidad",
-    "devGlade": "Probar: Claro Despierto"
+    "dev": {
+      "reveal": "Probar: descubrir terreno",
+      "sandPile": "Probar: montón de arena",
+      "spring": "Probar: manantial",
+      "rain": "Probar: lluvia",
+      "nextSeason": "Probar: siguiente estación",
+      "glade": "Probar: Claro Despierto",
+      "viewValues": "Ver esencia y afinidad",
+      "viewBiomes": "Ver biomas"
+    }
   },
   "lang": {
     "es": "Español",
@@ -81,6 +86,16 @@
       "rockland": "Queda un roquedal al descubierto.",
       "burnt": "La tierra queda quemada.",
       "glade": "¡Un Claro Despierto ha nacido!"
+    },
+    "thaw": "Llega el deshielo: los ríos bajan crecidos.",
+    "drought": "Sequía: {days} días sin llover.",
+    "weather": {
+      "rain": {
+        "start": "Empieza a llover.",
+        "end": "Escampa.",
+        "startSnow": "Empieza a nevar.",
+        "endSnow": "Deja de nevar."
+      }
     }
   },
   "indicators": {
@@ -131,5 +146,20 @@
       "name": "Afinidad",
       "desc": "Sin masa. Más crías y menos agresividad."
     }
+  },
+  "biome": {
+    "forest": "Bosque",
+    "desert": "Desierto",
+    "tundra": "Tundra",
+    "wetland": "Humedal",
+    "swamp": "Pantano",
+    "rockland": "Roquedal",
+    "burnt": "Tierra Quemada",
+    "glade": "Claro Despierto"
+  },
+  "weather": {
+    "rain": "Lluvia",
+    "snow": "Nieve",
+    "clear": "Despejado"
   }
 }

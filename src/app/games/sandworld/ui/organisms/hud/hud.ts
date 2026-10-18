@@ -8,6 +8,8 @@ import { ChronicleBookComponent } from '../chronicle-book/chronicle-book';
 import { IslandLabelComponent } from '../island-label/island-label';
 import { SpeedControlComponent } from '../../molecules/speed-control/speed-control';
 import { HUD_PLANKS } from './hud-planks';
+import { TileTagComponent } from '../../molecules/tile-tag/tile-tag';
+import { TPipe } from '../../../i18n/t.pipe';
 
 /**
  * HUD completo sobre el mundo. Lee el estado del servicio y le devuelve las acciones del jugador.
@@ -19,19 +21,25 @@ import { HUD_PLANKS } from './hud-planks';
   standalone: true,
   imports: [
     NgComponentOutlet, HudTopComponent, PlankBarComponent, SettingsMenuComponent, ChronicleBookComponent,
-    IslandLabelComponent, SpeedControlComponent,
+    IslandLabelComponent, SpeedControlComponent, TileTagComponent, TPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <sw-hud-top
       class="top"
       [time]="game.time()"
+      [weather]="game.weather().look"
       [entries]="game.chronicleEntries()"
       [indicators]="game.indicatorValues()"
       (settings)="game.openMenu('settings')"
       (balance)="game.togglePanel('balance')"
       (chronicle)="game.openMenu('chronicle')"
     />
+
+    @if (game.inspected(); as info) {
+      <!-- Al tocar un tile: su bioma junto al dedo -->
+      <sw-tile-tag class="tag" [style.left.px]="info.x" [style.top.px]="info.y" [label]="'biome.' + info.biomeKey | t" />
+    }
 
     @if (game.islandLabel()) {
       <sw-island-label class="label" [level]="game.world.level" />
@@ -61,11 +69,7 @@ import { HUD_PLANKS } from './hud-planks';
           (langChange)="game.setLang($event)"
           (close)="game.closeMenu()"
           (exit)="exit.emit()"
-          (devReveal)="game.closeMenu(); game.revealNextChunk()"
-          (devSand)="game.closeMenu(); game.debugSandPile()"
-          (devSpring)="game.closeMenu(); game.debugSpring()"
-          (devTileValues)="game.closeMenu(); game.toggleDevTileValues()"
-          (devGlade)="game.closeMenu(); game.debugGlade()"
+          (devAction)="game.closeMenu(); game.runDevAction($event)"
         />
       }
       @case ('chronicle') {
@@ -94,6 +98,9 @@ import { HUD_PLANKS } from './hud-planks';
       justify-content: center;
       pointer-events: none;
     }
+    /* La etiqueta del bioma sale encima del dedo (el HUD ocupa toda la pantalla, así que left/top son de pantalla) */
+    /* translate (no transform): la animación de la etiqueta usa transform y lo pisaría */
+    .tag { position: absolute; translate: -50% calc(-100% - 18px); pointer-events: none; z-index: 2; }
     .bottom { display: flex; flex-direction: column; gap: 6px; }
     /* Lo que flota sobre el estante: velocidad y pausa, o el panel abierto */
     .float {

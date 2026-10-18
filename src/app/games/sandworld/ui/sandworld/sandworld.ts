@@ -45,7 +45,8 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
   protected readonly game = inject(SandworldService);
   private readonly runtime = new SandworldRuntime(this.game.engine, this.game.world, {
     frame: now => this.game.tick(now),
-    islandTap: () => this.zone.run(() => this.game.showIslandLabel()),
+    tileTap: t => this.zone.run(() => this.game.inspectTile(t.cx, t.cy, t.i, t.j, t.screenX, t.screenY)),
+    atmosphere: () => ({ weather: this.game.weatherSystem.current, season: this.game.physics.climate.seasonBlend }),
     pour: {
       begin: () => this.game.beginStroke(),
       at: (gx, gy, s) => this.game.pourAt(gx, gy, s),
@@ -62,7 +63,7 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
     // Con una arena elegida, 1 dedo es pincel; sin arena, mueve la cámara
     effect(() => this.runtime.setBrushEnabled(this.game.selectedSand() !== null));
     // Modo desarrollo: esencia y afinidad de cada tile encima de la isla
-    effect(() => this.runtime.setTileValuesVisible(this.game.devTileValues()));
+    effect(() => this.runtime.setDevView(this.game.devView()));
     // Chunk descubierto → emerge de las nubes
     this.game.events.on('chunkRevealed', c => this.runtime.showChunk(c.cx, c.cy));
     // Terreno cambiado (desprendimientos, vertidos) → re-horneado

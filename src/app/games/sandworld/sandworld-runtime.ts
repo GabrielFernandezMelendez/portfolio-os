@@ -4,7 +4,10 @@ import { TerrainLayer } from './rendering/terrain/terrain-layer';
 import { Camera, Rect } from './rendering/camera';
 import { BrushArea, CellCursor } from './rendering/cell-cursor';
 import { GrainParticles } from './rendering/sands/grain-particles';
-import { TileValuesOverlay } from './rendering/dev/tile-values-overlay';
+import { DevTileOverlay, DevTileView } from './rendering/dev/dev-tile-overlay';
+import { Precipitation } from './rendering/weather/precipitation';
+import { SeasonBlend } from './rendering/daylight-layer';
+import { WeatherState } from './domain/models/weather.model';
 import { DaylightLayer } from './rendering/daylight-layer';
 import { CloudLayer } from './rendering/clouds/cloud-layer';
 import { RevealEffect } from './rendering/clouds/reveal-effect';
@@ -23,10 +26,22 @@ import { ChunkCoord } from './domain/events/game-events';
 export interface RuntimeHooks {
   /** Cada frame, con el tiempo real actual en ms */
   frame?(nowMs: number): void;
-  /** Toque sobre la isla sin arena seleccionada */
-  islandTap?(): void;
+  /** Toque sobre la isla sin arena seleccionada: tile tocado y punto de pantalla */
+  tileTap?(tile: TappedTile): void;
+  /** Tiempo y estación del momento (para la luz, el tono y la lluvia) */
+  atmosphere?(): { readonly weather: WeatherState; readonly season: SeasonBlend };
   /** Pincel de arena (lo implementa el servicio) */
   pour?: PourHooks;
+}
+
+/** Tile que se ha tocado (chunk + tile) y dónde está en pantalla */
+export interface TappedTile {
+  readonly cx: number;
+  readonly cy: number;
+  readonly i: number;
+  readonly j: number;
+  readonly screenX: number;
+  readonly screenY: number;
 }
 
 /** Lo que el runtime necesita del servicio para verter: el runtime sabe dónde está el dedo; el servicio, qué cae */
@@ -53,7 +68,8 @@ export class SandworldRuntime {
   private readonly camera = new Camera();
   private readonly cursor = new CellCursor();
   private readonly grains = new GrainParticles();
-  private tileValues: TileValuesOverlay | null = null;
+  private devOverlay: DevTileOverlay | null = null;
+  private readonly precipitation = new Precipitation();
   /** Punto de pantalla donde está el dedo que vierte, o null si no se está vertiendo */
   private brushPoint: { x: number; y: number } | null = null;
   private readonly terrains = new Map<string, TerrainLayer>();
@@ -69,7 +85,7 @@ export class SandworldRuntime {
   /** true cuando hay una arena seleccionada. Sin arena, 1 dedo mueve la cámara. */
   private brushEnabled = false;
   /** Lo pidió el servicio antes de montar (el efecto de Angular puede llegar antes que Pixi) */
-  private tileValuesWanted = false;
+  private devViewWanted: DevTileView | null = null;
 
   constructor(
     private readonly engine: TimeEngine,
@@ -79,14 +95,20 @@ export class SandworldRuntime {
 
   /** Devuelve false si se destruyó antes de terminar de cargar */
   async mount(host: HTMLElement): Promise<boolean> {
-    const app = await this.stage.mount(host, (w, h) => this.camera.setViewport(w, h));
+    const app = await this.stage.mount(host, (w, h) => {
+      this.camera.setViewport(w, h);
+      this.precipitation.resize(w, h);
+    });
     if (!app || this.destroyed) return false;
 
     // Mar de nubes detrás de todo; la isla flota encima
     this.clouds = new CloudLayer(this.world.seed);
-    this.tileValues = new TileValuesOverlay(this.world);
-    this.stage.world.addChild(this.clouds.back, this.cursor.view, this.grains.view, this.tileValues.view);
-    this.tileValues.setVisible(this.tileValuesWanted);
+    this.devOverlay = new DevTileOverlay(this.world);
+    this.stage.world.addChild(this.clouds.back, this.cursor.view, this.grains.view, this.devOverlay.view);
+    this.devOverlay.show(this.devViewWanted);
+    // Lluvia y nieve por encima del mundo, en coordenadas de pantalla
+    app.stage.addChild(this.precipitation.view);
+    this.precipitation.resize(app.screen.width, app.screen.height);
 
     // Chunks ya descubiertos (en la fase 5 vendrán de la partida guardada)
     for (const { cx, cy } of this.world.exploration.list()) {
@@ -120,7 +142,11 @@ export class SandworldRuntime {
       },
       hover: (x, y) => this.pointAt(x, y),
       tap: (x, y) => {
-        if (this.pointAt(x, y)) this.hooks.islandTap?.();
+        const area = this.areaAt(x, y);
+        if (area) {
+          const G = WORLD.CELLS_PER_TILE;
+          this.hooks.tileTap?.({ cx: area.cx, cy: area.cy, i: Math.floor(area.ci / G), j: Math.floor(area.cj / G), screenX: x, screenY: y });
+        }
       },
       leave: () => this.cursor.hide(),
       pan: (dx, dy) => this.camera.panBy(dx, dy),
@@ -152,10 +178,10 @@ export class SandworldRuntime {
     for (const c of chunks) this.dirty.add(chunkKey(c.cx, c.cy));
   }
 
-  /** Modo desarrollo: esencia y afinidad de cada tile encima de la isla */
-  setTileValuesVisible(visible: boolean): void {
-    this.tileValuesWanted = visible;
-    this.tileValues?.setVisible(visible);
+  /** Modo desarrollo: capa con la esencia y la afinidad, o con el bioma, de cada tile (null = ninguna) */
+  setDevView(view: DevTileView | null): void {
+    this.devViewWanted = view;
+    this.devOverlay?.show(view);
   }
 
   setBrushEnabled(enabled: boolean): void {
@@ -197,7 +223,7 @@ export class SandworldRuntime {
     // El dedo que vierte sigue vertiendo aunque no se mueva (el tiempo encima de un bloque cuenta)
     if (this.brushPoint) this.pourUnderFinger(dt);
     this.grains.update(dt);
-    this.tileValues?.update(dt);
+    this.devOverlay?.update(dt);
     this.clouds?.update(dt);
     // Apariciones en curso (en tiempo real: siguen aunque el juego esté en pausa)
     for (let i = this.reveals.length - 1; i >= 0; i--) {
@@ -208,7 +234,11 @@ export class SandworldRuntime {
     }
     this.stage.world.scale.set(this.camera.scale);
     this.stage.world.position.set(this.camera.offsetX, this.camera.offsetY);
-    this.daylight?.apply(this.engine.exactMinuteOfDay);
+    const atmosphere = this.hooks.atmosphere?.();
+    this.daylight?.apply(this.engine.exactMinuteOfDay, atmosphere?.season, atmosphere?.weather.gloom ?? 0);
+    // La lluvia se ve también en pausa (queda quieta en el aire si el juego está parado)
+    const weather = atmosphere?.weather;
+    this.precipitation.update(this.engine.isPaused ? 0 : dt, weather?.look ?? 'none', weather?.intensity ?? 0);
     this.hooks.frame?.(ticker.lastTime);
   };
 
