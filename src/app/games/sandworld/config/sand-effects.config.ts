@@ -56,7 +56,10 @@ export const THAW_TEMPERATURE = 0.3;
 export const SNOW_WATER = 0.5;
 
 // ── Manantiales tapados ──
-/** Un manantial queda tapado si el terreno sube este tanto por encima de donde nació (Duna, desprendimientos) */
-export const SPRING_BURY_DEPTH = 0.6;
+/**
+ * Un manantial queda tapado si el terreno (más la arena que le acaba de caer encima) sube este tanto
+ * por encima de donde nació. Un trazo normal de Duna lo tapa al momento; un toque suelto, no.
+ */
+export const SPRING_BURY_DEPTH = 0.5;
 /** ...o si lo cubre esta capa de nieve o hielo (vuelve a manar al fundirse) */
 export const SPRING_FREEZE_COVER = 0.15;

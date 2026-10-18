@@ -60,6 +60,26 @@ describe('Efectos de las arenas', () => {
     expect(physics.takeSpringChanges().map(c => c.state)).toContain('open');
   });
 
+  it('Duna tapa el manantial en cuanto cae encima, sin esperar a que se asiente', () => {
+    const { physics, queue, chunk } = setup();
+    physics.setSpring(16, 16, 0.02);
+    physics.minute();
+    const s = new Stroke(Sand.DUNA);
+    queue.preview(s.sand, s.pour(16, 16, 1));
+    queue.commit(s);
+    physics.minute();
+    expect(physics.takeSpringChanges().map(c => c.state)).toContain('buried');
+    // Un toque suelto no basta
+    const other = setup();
+    other.physics.setSpring(16, 16, 0.02);
+    other.physics.minute();
+    const tap = new Stroke(Sand.DUNA);
+    other.queue.preview(tap.sand, tap.pour(16, 16, 0.15));
+    other.queue.commit(tap);
+    other.physics.minute();
+    expect(other.physics.takeSpringChanges()).toEqual([]);
+  });
+
   it('Escarcha congela el agua en hielo y tapa el manantial hasta que se funde', { timeout: 30000 }, () => {
     const { physics, queue, chunk } = setup();
     physics.setSpring(16, 16, 0.02);

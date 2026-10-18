@@ -15,5 +15,11 @@ export const SAND_COLORS: Record<SandId, string> = {
 /** Los mismos colores como número 0xRRGGBB (horneado y partículas), en el orden de SAND_ORDER */
 export const SAND_COLOR_NUM: readonly number[] = SAND_ORDER.map(s => parseInt(SAND_COLORS[s].slice(1), 16));
 
+/**
+ * Arenas que tapan un manantial en cuanto caen encima, aunque aún no se hayan asentado
+ * (como echar arena sobre una fuente). Guardadas como índice de SAND_ORDER + 1, igual que chunk.pendingSand.
+ */
+export const BURYING_SANDS: ReadonlySet<number> = new Set((['duna', 'humus'] as SandId[]).map(s => SAND_ORDER.indexOf(s) + 1));
+
 /** Arenas sin masa: en la capa sin asentar se ven como destellos, no como granos */
 export const MASSLESS_SANDS: readonly SandId[] = ['despertar', 'afinidad'];

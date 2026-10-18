@@ -11,6 +11,7 @@ import {
 import { CellRef, TerrainGrid } from './terrain-grid';
 import { RULES_BY_MATERIAL } from './material-rules';
 import { SPRING_BURY_DEPTH, SPRING_FREEZE_COVER } from '../../config/sand-effects.config';
+import { BURYING_SANDS } from '../../config/sands.config';
 
 /** Estado de un manantial: mana, enterrado (Duna, desprendimientos) o helado (Escarcha, invierno) */
 export type SpringState = 'open' | 'buried' | 'frozen';
@@ -22,10 +23,14 @@ export interface SpringChange {
   readonly state: SpringState;
 }
 
-/** Estado actual de un manantial según lo que tiene encima */
+/**
+ * Estado actual de un manantial según lo que tiene encima. La arena que acaba de caer y aún se está asentando
+ * (Duna, Humus) ya lo tapa: no hay que esperar a que se asiente para cortar el agua.
+ */
 export function springState(chunk: ChunkData, k: number): SpringState {
   if (chunk.cover[k] >= SPRING_FREEZE_COVER) return 'frozen';
-  if (groundAt(chunk, k) - chunk.springBase[k] >= SPRING_BURY_DEPTH) return 'buried';
+  const pending = BURYING_SANDS.has(chunk.pendingSand[k]) ? chunk.pending[k] : 0;
+  if (groundAt(chunk, k) + pending - chunk.springBase[k] >= SPRING_BURY_DEPTH) return 'buried';
   return 'open';
 }
 
