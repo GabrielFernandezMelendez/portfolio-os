@@ -27,7 +27,8 @@
     "resume": "Volver a la isla",
     "devReveal": "Probar: descubrir terreno",
     "devSand": "Probar: montón de arena",
-    "devSpring": "Probar: manantial"
+    "devSpring": "Probar: manantial",
+    "devTileValues": "Probar: ver esencia y afinidad"
   },
   "lang": {
     "es": "Español",
@@ -59,6 +60,16 @@
       "marea": "La marea se ha asentado.",
       "despertar": "El despertar se ha asentado.",
       "afinidad": "La afinidad se ha asentado."
+    },
+    "outcome": {
+      "charred": "El fuego ha calcinado la tierra: nace Tierra Quemada.",
+      "springNew": "Brota un manantial nuevo.",
+      "springStronger": "Un manantial mana con más fuerza."
+    },
+    "spring": {
+      "buried": "Un manantial ha quedado sepultado.",
+      "frozen": "Un manantial se ha congelado.",
+      "open": "Un manantial vuelve a manar."
     }
   },
   "indicators": {

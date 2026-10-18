@@ -70,6 +70,8 @@ export class SandworldService implements OnDestroy {
   readonly chronicleEntries = signal<readonly ChronicleEntry[]>([]);
   readonly indicatorValues = signal<readonly IndicatorValue[]>([]);
   readonly islandLabel = signal(false);
+  /** Modo desarrollo: capa con la esencia y la afinidad de cada tile (los valores aún no tienen uso para el jugador) */
+  readonly devTileValues = signal(false);
   /** Lo que le queda al trazo en curso (1 = botella llena). La botella del estante lo muestra. */
   readonly strokeLeft = signal(1);
 
@@ -97,6 +99,7 @@ export class SandworldService implements OnDestroy {
       const changed = this.physics.minute();
       if (changed.length) this.events.emit('terrainChanged', changed);
       this.settlePours(t.minute);
+      this.reportWorldEvents();
     });
     this.events.on('dawn', () => this.log({ type: 'time', key: 'chronicle.dawn' }));
     this.events.on('dusk', () => this.log({ type: 'time', key: 'chronicle.dusk' }));
@@ -239,6 +242,20 @@ export class SandworldService implements OnDestroy {
     for (const s of settled) this.onSettled(s);
   }
 
+  /** Cuenta en la crónica lo que han provocado las arenas y los manantiales que se tapan o se abren */
+  private reportWorldEvents(): void {
+    const seen = new Set<string>();
+    for (const e of this.pours.events.splice(0)) {
+      const key = `${e.sand}:${e.outcome}`;
+      if (seen.has(key)) continue;          // un aviso por tipo y minuto, aunque pase en muchas celdas
+      seen.add(key);
+      this.log({ type: 'world', key: `chronicle.outcome.${e.outcome}`, priority: 6 });
+    }
+    for (const c of this.physics.takeSpringChanges()) {
+      this.log({ type: 'world', key: `chronicle.spring.${c.state}`, priority: 6 });
+    }
+  }
+
   private onSettled(s: SettledPour): void {
     this.events.emit('terrainChanged', chunksOf(s.cells));
     this.log({ type: 'world', key: `chronicle.settled.${s.sand}`, priority: 4 });
@@ -280,6 +297,11 @@ export class SandworldService implements OnDestroy {
       if (h > bestH) { bestH = h; best = k; }
     }
     if (best >= 0) this.physics.setSpring(best % C, Math.floor(best / C), 0.05);
+  }
+
+  /** TEMPORAL (modo desarrollo): muestra u oculta la esencia y la afinidad de cada tile */
+  toggleDevTileValues(): void {
+    this.devTileValues.update(v => !v);
   }
 
   showIslandLabel(): void {

@@ -14,9 +14,13 @@ import { WORLD } from './world.model';
  *   drain     agua que salió por el borde de la isla en el último minuto (para dibujar la cascada)
  *   ruleId / ruleTimer  regla de transformación en curso y días que lleva cumpliéndose
  *   pending / pendingSand  arena vertida que aún no se ha asentado (cantidad) y cuál (índice en SAND_ORDER + 1)
+ *   cover / coverMaterial  capa helada encima de todo (nieve o hielo, en niveles): cuenta en la altura y se funde
+ *   springBase  altura del terreno cuando nació el manantial: si se entierra por encima, el manantial se tapa
+ *   heat      calor acumulado por la Brasa (se disipa); en exceso calcina el suelo
  *
  * Rejilla ecológica (TILES × TILES):
- *   temperature, humidity, fertility, essence  (0..1)
+ *   temperature, humidity, fertility, essence, affinity  (0..1)
+ *   tempShift desvío temporal de temperatura (Brasa lo sube, Escarcha lo baja; vuelve solo a 0)
  *   biome     BiomeId
  */
 export interface ChunkData {
@@ -31,6 +35,10 @@ export interface ChunkData {
   readonly stagnant: Float32Array;
   readonly spring: Float32Array;
   readonly drain: Float32Array;
+  readonly cover: Float32Array;
+  readonly coverMaterial: Uint8Array;
+  readonly springBase: Float32Array;
+  readonly heat: Float32Array;
   /** Caudal de salida hacia las 4 vecinas (E, O, S, N) por celda: la inercia del agua que corre */
   readonly flux: Float32Array;
   readonly ruleId: Uint8Array;
@@ -42,6 +50,8 @@ export interface ChunkData {
   readonly humidity: Float32Array;
   readonly fertility: Float32Array;
   readonly essence: Float32Array;
+  readonly affinity: Float32Array;
+  readonly tempShift: Float32Array;
   readonly biome: Uint8Array;
 }
 
@@ -60,6 +70,10 @@ export function createChunkData(cx: number, cy: number): ChunkData {
     stagnant: new Float32Array(CELLS_TOTAL),
     spring: new Float32Array(CELLS_TOTAL),
     drain: new Float32Array(CELLS_TOTAL),
+    cover: new Float32Array(CELLS_TOTAL),
+    coverMaterial: new Uint8Array(CELLS_TOTAL),
+    springBase: new Float32Array(CELLS_TOTAL),
+    heat: new Float32Array(CELLS_TOTAL),
     flux: new Float32Array(CELLS_TOTAL * 4),
     ruleId: new Uint8Array(CELLS_TOTAL),
     ruleTimer: new Float32Array(CELLS_TOTAL),
@@ -69,6 +83,8 @@ export function createChunkData(cx: number, cy: number): ChunkData {
     humidity: new Float32Array(TILES_TOTAL),
     fertility: new Float32Array(TILES_TOTAL),
     essence: new Float32Array(TILES_TOTAL),
+    affinity: new Float32Array(TILES_TOTAL),
+    tempShift: new Float32Array(TILES_TOTAL),
     biome: new Uint8Array(TILES_TOTAL),
   };
 }
@@ -79,5 +95,8 @@ export const cellIndex = (ci: number, cj: number): number => cj * WORLD.CELLS + 
 /** Índice de un tile (i, j) dentro de los arrays ecológicos */
 export const tileIndex = (i: number, j: number): number => j * WORLD.TILES + i;
 
-/** Altura del terreno (roca + sedimento) de una celda */
-export const groundAt = (chunk: ChunkData, k: number): number => chunk.rock[k] + chunk.sediment[k];
+/** Altura del terreno (roca + sedimento + capa helada) de una celda */
+export const groundAt = (chunk: ChunkData, k: number): number => chunk.rock[k] + chunk.sediment[k] + chunk.cover[k];
+
+/** Temperatura efectiva de un tile: la del clima más el desvío temporal de las arenas */
+export const temperatureAt = (chunk: ChunkData, t: number): number => chunk.temperature[t] + chunk.tempShift[t];

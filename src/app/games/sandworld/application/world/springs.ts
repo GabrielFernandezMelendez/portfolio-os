@@ -43,6 +43,7 @@ export function placeNaturalSprings(chunk: ChunkData, seed: number): void {
     const far = placed.every(k => Math.hypot((k % C) - ci, Math.floor(k / C) - cj) >= MIN_SEPARATION);
     if (!far) continue;
     chunk.spring[p.k] = NATURAL_SPRING_RATE;
+    chunk.springBase[p.k] = p.h;
     placed.push(p.k);
   }
 }

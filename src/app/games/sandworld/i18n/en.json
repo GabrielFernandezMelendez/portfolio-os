@@ -27,7 +27,8 @@
     "resume": "Back to the island",
     "devReveal": "Test: uncover land",
     "devSand": "Test: sand pile",
-    "devSpring": "Test: spring"
+    "devSpring": "Test: spring",
+    "devTileValues": "Test: show essence and affinity"
   },
   "lang": {
     "es": "Español",
@@ -59,6 +60,16 @@
       "marea": "The tide has settled.",
       "despertar": "The awakening has settled.",
       "afinidad": "The affinity has settled."
+    },
+    "outcome": {
+      "charred": "Fire has scorched the earth: Burnt Land is born.",
+      "springNew": "A new spring wells up.",
+      "springStronger": "A spring flows stronger."
+    },
+    "spring": {
+      "buried": "A spring has been buried.",
+      "frozen": "A spring has frozen over.",
+      "open": "A spring flows again."
     }
   },
   "indicators": {

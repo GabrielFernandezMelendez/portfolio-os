@@ -4,6 +4,7 @@ import { TerrainLayer } from './rendering/terrain/terrain-layer';
 import { Camera, Rect } from './rendering/camera';
 import { BrushArea, CellCursor } from './rendering/cell-cursor';
 import { GrainParticles } from './rendering/sands/grain-particles';
+import { TileValuesOverlay } from './rendering/dev/tile-values-overlay';
 import { DaylightLayer } from './rendering/daylight-layer';
 import { CloudLayer } from './rendering/clouds/cloud-layer';
 import { RevealEffect } from './rendering/clouds/reveal-effect';
@@ -52,6 +53,7 @@ export class SandworldRuntime {
   private readonly camera = new Camera();
   private readonly cursor = new CellCursor();
   private readonly grains = new GrainParticles();
+  private tileValues: TileValuesOverlay | null = null;
   /** Punto de pantalla donde está el dedo que vierte, o null si no se está vertiendo */
   private brushPoint: { x: number; y: number } | null = null;
   private readonly terrains = new Map<string, TerrainLayer>();
@@ -66,6 +68,8 @@ export class SandworldRuntime {
   private destroyed = false;
   /** true cuando hay una arena seleccionada. Sin arena, 1 dedo mueve la cámara. */
   private brushEnabled = false;
+  /** Lo pidió el servicio antes de montar (el efecto de Angular puede llegar antes que Pixi) */
+  private tileValuesWanted = false;
 
   constructor(
     private readonly engine: TimeEngine,
@@ -80,7 +84,9 @@ export class SandworldRuntime {
 
     // Mar de nubes detrás de todo; la isla flota encima
     this.clouds = new CloudLayer(this.world.seed);
-    this.stage.world.addChild(this.clouds.back, this.cursor.view, this.grains.view);
+    this.tileValues = new TileValuesOverlay(this.world);
+    this.stage.world.addChild(this.clouds.back, this.cursor.view, this.grains.view, this.tileValues.view);
+    this.tileValues.setVisible(this.tileValuesWanted);
 
     // Chunks ya descubiertos (en la fase 5 vendrán de la partida guardada)
     for (const { cx, cy } of this.world.exploration.list()) {
@@ -146,6 +152,12 @@ export class SandworldRuntime {
     for (const c of chunks) this.dirty.add(chunkKey(c.cx, c.cy));
   }
 
+  /** Modo desarrollo: esencia y afinidad de cada tile encima de la isla */
+  setTileValuesVisible(visible: boolean): void {
+    this.tileValuesWanted = visible;
+    this.tileValues?.setVisible(visible);
+  }
+
   setBrushEnabled(enabled: boolean): void {
     this.brushEnabled = enabled;
     if (!enabled) this.cursor.hide();
@@ -185,6 +197,7 @@ export class SandworldRuntime {
     // El dedo que vierte sigue vertiendo aunque no se mueva (el tiempo encima de un bloque cuenta)
     if (this.brushPoint) this.pourUnderFinger(dt);
     this.grains.update(dt);
+    this.tileValues?.update(dt);
     this.clouds?.update(dt);
     // Apariciones en curso (en tiempo real: siguen aunque el juego esté en pausa)
     for (let i = this.reveals.length - 1; i >= 0; i--) {

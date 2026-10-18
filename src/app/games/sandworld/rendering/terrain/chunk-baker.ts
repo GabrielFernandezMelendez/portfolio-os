@@ -44,6 +44,9 @@ const DRAIN = 0.0005;
 const LAKE_MIN_DEPTH = 0.1;
 /** La lámina de un lago se dibuja este tanto por debajo de su terraza: queda una orilla de 1 px (se lee hundido) */
 const WATER_INSET = 0.2;
+/** Colores de las brasas que quedan encendidas */
+const EMBER = 0xd4553a;
+const EMBER_HOT = 0xffb054;
 /** Arena pendiente (en niveles) a partir de la cual la capa sin asentar se ve completamente cubierta */
 const PENDING_FULL = 0.6;
 /** Muestras de agua que oscurece la sombra de la orilla de atrás */
@@ -358,8 +361,11 @@ export class ChunkBaker {
         const biome = chunk.biome[bioTile[q]] as BiomeId;
         const tex = texture[q];
         // Sin sedimento encima, lo que se ve es la roca madre (roquedal, laderas lavadas)
-        const bareRock = chunk.sediment[cell - 1] <= MATERIAL_VISIBLE;
-        const material = bareRock ? Material.ROCK : chunk.material[cell - 1] as MaterialId;
+        // Nieve o hielo encima: se ve la capa helada
+        const covered = chunk.cover[cell - 1] > MATERIAL_VISIBLE;
+        const bareRock = !covered && chunk.sediment[cell - 1] <= MATERIAL_VISIBLE;
+        const material = covered ? chunk.coverMaterial[cell - 1] as MaterialId
+          : bareRock ? Material.ROCK : chunk.material[cell - 1] as MaterialId;
         const materialRamp = bareRock ? ROCK_RAMP : MATERIAL_RAMP[material];
 
         // Cara superior
@@ -398,6 +404,12 @@ export class ChunkBaker {
           }
           // Borde iluminado de la terraza
           if (frontLvl < lvl && frontLvl > -9) color = lighten(color, 0.22);
+        }
+        // Brasas: puntos encendidos donde queda calor de la arena Brasa
+        const heat = chunk.heat[cell - 1];
+        if (heat > 0.2 && !isWet && !isFilm) {
+          const r = hash2(px, py, 53);
+          if (r < Math.min(0.3, heat * 0.1)) color = r < heat * 0.03 ? EMBER_HOT : EMBER;
         }
         // Capa sin asentar: granos sueltos del color de la arena (o destellos si no tiene masa),
         // más densos cuanta más arena queda por asentar

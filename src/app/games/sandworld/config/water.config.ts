@@ -23,7 +23,7 @@ export const WATER_MIN = 0.003;
 export const EDGE_DRAIN_RATE = 0.16;
 
 /** Evaporación por minuto, multiplicada por la temperatura del tile (0..1) */
-export const EVAPORATION = 0.00015;
+export const EVAPORATION = 0.0003;
 
 /** Infiltración por minuto, multiplicada por la permeabilidad del material */
 export const INFILTRATION = 0.0015;

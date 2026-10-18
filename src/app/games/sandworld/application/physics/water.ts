@@ -1,4 +1,4 @@
-import { ChunkData, groundAt, tileIndex } from '../../domain/models/chunk.model';
+import { ChunkData, groundAt, temperatureAt, tileIndex } from '../../domain/models/chunk.model';
 import { MaterialId } from '../../domain/models/material.model';
 import { WORLD } from '../../domain/models/world.model';
 import { MATERIAL_DEFS } from '../../config/materials.config';
@@ -10,6 +10,24 @@ import {
 } from '../../config/water.config';
 import { CellRef, TerrainGrid } from './terrain-grid';
 import { RULES_BY_MATERIAL } from './material-rules';
+import { SPRING_BURY_DEPTH, SPRING_FREEZE_COVER } from '../../config/sand-effects.config';
+
+/** Estado de un manantial: mana, enterrado (Duna, desprendimientos) o helado (Escarcha, invierno) */
+export type SpringState = 'open' | 'buried' | 'frozen';
+
+/** Cambio de estado de un manantial (para la crónica) */
+export interface SpringChange {
+  readonly gx: number;
+  readonly gy: number;
+  readonly state: SpringState;
+}
+
+/** Estado actual de un manantial según lo que tiene encima */
+export function springState(chunk: ChunkData, k: number): SpringState {
+  if (chunk.cover[k] >= SPRING_FREEZE_COVER) return 'frozen';
+  if (groundAt(chunk, k) - chunk.springBase[k] >= SPRING_BURY_DEPTH) return 'buried';
+  return 'open';
+}
 
 const NEIGHBOURS: readonly [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
@@ -54,6 +72,10 @@ export class WaterSystem {
 
   /** Celdas cuyo material ha cambiado por una regla (para despertar desprendimientos) */
   readonly transformed: [number, number][] = [];
+  /** Manantiales que se han tapado o vuelto a abrir desde la última lectura */
+  readonly springChanges: SpringChange[] = [];
+  /** Último estado conocido de cada manantial */
+  private readonly springStates = new Map<number, SpringState>();
 
   constructor(
     private readonly grid: TerrainGrid,
@@ -70,6 +92,7 @@ export class WaterSystem {
       const gx = chunk.cx * C + (k % C), gy = chunk.cy * C + Math.floor(k / C);
       const key = TerrainGrid.key(gx, gy);
       if (chunk.water[k] > WATER_MIN || chunk.spring[k] > 0 || groundAt(chunk, k) < WATER_TABLE) this.wet.add(key);
+      if (chunk.spring[k] > 0) this.springStates.set(key, springState(chunk, k));
       this.shown.set(key, chunk.water[k]);
     }
   }
@@ -197,10 +220,20 @@ export class WaterSystem {
       }
       const c = cell.chunk, k = cell.k;
       const def = MATERIAL_DEFS[c.material[k] as MaterialId];
-      const temperature = c.temperature[tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G))];
+      const temperature = temperatureAt(c, tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G)));
 
-      // Manantial
-      if (c.spring[k] > 0) c.water[k] += c.spring[k];
+      // Manantial: solo mana si no está enterrado ni helado
+      if (c.spring[k] > 0) {
+        const state = springState(c, k);
+        const last = this.springStates.get(key);
+        if (last !== state) {
+          this.springStates.set(key, state);
+          if (last !== undefined) this.springChanges.push({ gx, gy, state });
+        }
+        if (state === 'open') c.water[k] += c.spring[k];
+      } else if (this.springStates.has(key)) {
+        this.springStates.delete(key);
+      }
 
       // Nivel freático: rellena despacio lo que está por debajo (lagos generados)
       if (this.options.recharge) {
@@ -244,7 +277,7 @@ export class WaterSystem {
       const c = cell.chunk, k = cell.k;
       if (c.moisture[k] <= 0) continue;
       const def = MATERIAL_DEFS[c.material[k] as MaterialId];
-      const temperature = c.temperature[tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G))];
+      const temperature = temperatureAt(c, tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G)));
       c.moisture[k] = Math.max(0, c.moisture[k] - SOIL_DRYING * (1 - def.retention) * (0.5 + temperature));
     }
   }
@@ -303,7 +336,7 @@ export class WaterSystem {
       stagnant: c.stagnant[k],
       deepNeighbour: deep,
       belowTable: this.grid.ground(cell) < WATER_TABLE,
-      temperature: c.temperature[t],
+      temperature: temperatureAt(c, t),
     };
   }
 

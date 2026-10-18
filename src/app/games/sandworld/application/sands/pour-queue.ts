@@ -4,7 +4,7 @@ import { RandomSource } from '../../domain/ports/random-source.port';
 import { POUR_DAYS_MAX, POUR_DAYS_MIN, POUR_MERGE_EXTENSION } from '../../config/pour.config';
 import { TerrainPhysics } from '../physics/terrain-physics';
 import { TerrainGrid } from '../physics/terrain-grid';
-import { SAND_EFFECTS } from './sand-effects';
+import { PouredCell, SAND_EFFECTS, SandOutcome } from './sand-effects';
 import { Stroke } from './stroke';
 
 const C = WORLD.CELLS;
@@ -23,10 +23,18 @@ export interface Pour {
   elapsed: number;
 }
 
-/** Aviso de vertido asentado: arena y celdas */
+/** Aviso de vertido asentado: arena y celdas con lo que recibió cada una */
 export interface SettledPour {
   readonly sand: SandId;
-  readonly cells: readonly [number, number][];
+  readonly cells: readonly PouredCell[];
+}
+
+/** Suceso de una arena (calcinar el suelo, nuevo manantial...) en una celda */
+export interface PourEvent {
+  readonly sand: SandId;
+  readonly outcome: SandOutcome;
+  readonly gx: number;
+  readonly gy: number;
 }
 
 /**
@@ -38,6 +46,8 @@ export interface SettledPour {
 export class PourQueue {
   private readonly pours: Pour[] = [];
   private nextId = 1;
+  /** Sucesos desde la última lectura (la crónica los cuenta) */
+  readonly events: PourEvent[] = [];
 
   constructor(
     private readonly physics: TerrainPhysics,
@@ -108,7 +118,8 @@ export class PourQueue {
         const step = last ? left : Math.min(left, total / pour.duration);
         pour.remaining.set(key, left - step);
         const [gx, gy] = TerrainGrid.fromKey(key);
-        effect.apply(this.physics, gx, gy, step);
+        const outcome = effect.apply(this.physics, gx, gy, step);
+        if (outcome) this.events.push({ sand: pour.sand, outcome, gx, gy });
         const cell = this.physics.grid.cell(gx, gy);
         if (cell) {
           cell.chunk.pending[cell.k] = Math.max(0, cell.chunk.pending[cell.k] - step);
@@ -119,8 +130,12 @@ export class PourQueue {
         }
       }
       if (last) {
-        const cells = [...pour.total.keys()].map(k => TerrainGrid.fromKey(k));
-        effect.settled?.(this.physics, cells);
+        const cells: PouredCell[] = [...pour.total].map(([k, amount]) => {
+          const [gx, gy] = TerrainGrid.fromKey(k);
+          return [gx, gy, amount];
+        });
+        const outcome = effect.settled?.(this.physics, cells);
+        if (outcome) this.events.push({ sand: pour.sand, outcome, gx: cells[0][0], gy: cells[0][1] });
         settled.push({ sand: pour.sand, cells });
         this.pours.splice(i, 1);
       }

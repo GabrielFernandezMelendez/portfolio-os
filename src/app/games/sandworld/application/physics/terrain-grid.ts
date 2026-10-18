@@ -38,6 +38,13 @@ export class TerrainGrid {
     this.onHeightChange?.(c.cx * C + (ref.k % C), c.cy * C + Math.floor(ref.k / C));
   }
 
+  /** Cambia el espesor de la capa helada (nieve o hielo) de una celda y avisa */
+  setCover(ref: CellRef, cover: number): void {
+    const c = ref.chunk;
+    c.cover[ref.k] = Math.max(0, cover);
+    this.onHeightChange?.(c.cx * C + (ref.k % C), c.cy * C + Math.floor(ref.k / C));
+  }
+
   /** Clave numérica única de una celda global (para conjuntos de celdas activas) */
   static key(gx: number, gy: number): number {
     return (gx + 32768) * 65536 + (gy + 32768);
