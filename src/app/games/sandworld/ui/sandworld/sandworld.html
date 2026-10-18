@@ -1,0 +1,9 @@
+<div class="stage" #stage></div>
+
+@if (!game.isReady()) {
+  <div class="loading" aria-hidden="true">
+    <span></span><span></span><span></span>
+  </div>
+} @else {
+  <sw-hud (exit)="exit.emit()" />
+}

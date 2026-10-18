@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { GithubMobile } from './github-mobile';
+import { GithubMobileComponent } from './github-mobile';
 
-describe('GithubMobile', () => {
-  let component: GithubMobile;
-  let fixture: ComponentFixture<GithubMobile>;
+describe('GithubMobileComponent', () => {
+  let component: GithubMobileComponent;
+  let fixture: ComponentFixture<GithubMobileComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [GithubMobile],
+      imports: [GithubMobileComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(GithubMobile);
+    fixture = TestBed.createComponent(GithubMobileComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

@@ -1,8 +1,16 @@
 export interface MobileApp {
-  id:       string;
-  title:    string;
-  icon:     string;  // ← emoji (fallback)
-  iconSvg?: string;  // ← ruta SVG (opcional, para cuando exista)
+  id:          string;
+  title:       string;
+  icon:        string;
+  iconSvg?:    string;
+  isFolder?:   boolean;
+  apps?:       MobileApp[];
+  folderName?: string;
+}
+
+export interface MobilePage {
+  id:   string;
+  apps: MobileApp[];
 }
 
 export type MobileView = 'home' | 'app' | 'notifications' | 'recents';

@@ -1,60 +1,98 @@
-import { Component, input, output, signal, OnInit,
-         OnDestroy, HostListener, inject, computed } from '@angular/core';
+import {
+  Component,
+  input,
+  output,
+  signal,
+  OnInit,
+  OnDestroy,
+  HostListener,
+  inject,
+  computed,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { I18nService } from '../../i18n/i18n.service';
 
 export interface MobileNotification {
-  id:           string;
-  icon:         string;
-  title:        string;
-  message:      string;
-  time:         string;
+  id: string;
+  icon: string;
+  title: string;
+  message: string;
+  time: string;
   dismissable?: boolean;
 }
 
 @Component({
-  selector:    'app-notification-panel',
-  standalone:  true,
+  selector: 'app-notification-panel',
+  standalone: true,
   templateUrl: './notification-panel.html',
-  styleUrl:    './notification-panel.css',
+  changeDetection: ChangeDetectionStrategy.Eager,
+  styleUrl: './notification-panel.css',
 })
 export class NotificationPanelComponent implements OnInit, OnDestroy {
-
-  isDark         = input<boolean>(true);
-  golPaused      = input<boolean>(false);
-  onClose        = output<void>();
-  onToggleTheme  = output<void>();
-  onToggleGol    = output<void>();
+  isDark = input<boolean>(true);
+  golPaused = input<boolean>(false);
+  onClose = output<void>();
+  onToggleTheme = output<void>();
+  onToggleGol = output<void>();
   onOpenSettings = output<void>();
 
-  i18n       = inject(I18nService);
-  lang       = computed(() => this.i18n.currentLang());
+  i18n = inject(I18nService);
+  lang = computed(() => this.i18n.currentLang());
 
   currentTime = signal('');
   currentDate = signal('');
-  closing     = signal(false);
-  dismissing  = signal(false);
+  closing = signal(false);
+  dismissing = signal(false);
   swipeOffset = signal(0);
-  isSwiping   = signal(false);
+  isSwiping = signal(false);
   tipDismissed = signal(sessionStorage.getItem('tip-dismissed') === 'true');
 
-  private touchStartX      = 0;
-  private touchStartY      = 0;
+  private touchStartX = 0;
+  private touchStartY = 0;
   private panelTouchStartY = 0;
-  private clockInterval:   any;
+  private clockInterval: any;
 
-  readonly DAYS_ES   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  readonly DAYS_EN   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  readonly MONTHS_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  readonly MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  readonly DAYS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  readonly DAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  readonly MONTHS_ES = [
+    'Ene',
+    'Feb',
+    'Mar',
+    'Abr',
+    'May',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dic',
+  ];
+  readonly MONTHS_EN = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
 
   get notifications(): MobileNotification[] {
-    return [{
-      id:      'available',
-      icon:    '💼',
-      title:   this.i18n.t('notification.available_title'),
-      message: this.i18n.t('notification.available_message'),
-      time:    this.i18n.t('notification.available_time'),
-    }];
+    return [
+      {
+        id: 'available',
+        icon: '💼',
+        title: this.i18n.t('notification.available_title'),
+        message: this.i18n.t('notification.available_message'),
+        time: this.i18n.t('notification.available_time'),
+      },
+    ];
   }
 
   ngOnInit() {
@@ -67,11 +105,11 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
   }
 
   updateClock() {
-    const now    = new Date();
-    const h      = String(now.getHours()).padStart(2, '0');
-    const m      = String(now.getMinutes()).padStart(2, '0');
-    const isEn   = this.i18n.currentLang() === 'en';
-    const days   = isEn ? this.DAYS_EN   : this.DAYS_ES;
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const isEn = this.i18n.currentLang() === 'en';
+    const days = isEn ? this.DAYS_EN : this.DAYS_ES;
     const months = isEn ? this.MONTHS_EN : this.MONTHS_ES;
     this.currentTime.set(`${h}:${m}`);
     this.currentDate.set(`${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`);
@@ -96,7 +134,9 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
     }, 280);
   }
 
-  closePanel() { this.dismiss(); }
+  closePanel() {
+    this.dismiss();
+  }
 
   onTipTouchStart(e: TouchEvent) {
     e.stopPropagation();
@@ -109,7 +149,10 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
     e.stopPropagation();
     const deltaX = e.touches[0].clientX - this.touchStartX;
     const deltaY = Math.abs(e.touches[0].clientY - this.touchStartY);
-    if (deltaY > 20) { this.swipeOffset.set(0); return; }
+    if (deltaY > 20) {
+      this.swipeOffset.set(0);
+      return;
+    }
     this.swipeOffset.set(deltaX);
   }
 
@@ -137,8 +180,8 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
   }
 
   resetSwipe() {
-  if (this.swipeOffset() !== 0) {
-    this.swipeOffset.set(0);
+    if (this.swipeOffset() !== 0) {
+      this.swipeOffset.set(0);
+    }
   }
-}
 }

@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { EducationMobile } from './education-mobile';
+import { EducationMobileComponent } from './education-mobile';
 
-describe('EducationMobile', () => {
-  let component: EducationMobile;
-  let fixture: ComponentFixture<EducationMobile>;
+describe('EducationMobileComponent', () => {
+  let component: EducationMobileComponent;
+  let fixture: ComponentFixture<EducationMobileComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EducationMobile],
+      imports: [EducationMobileComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(EducationMobile);
+    fixture = TestBed.createComponent(EducationMobileComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

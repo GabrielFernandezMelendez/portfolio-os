@@ -1,18 +1,39 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Window } from './window';
+import { WindowComponent } from './window';
+import { OsWindow } from '../interfaces/window.interface';
 
-describe('Window', () => {
-  let component: Window;
-  let fixture: ComponentFixture<Window>;
+// Ventana de prueba con todos los campos obligatorios de OsWindow
+const MOCK_WINDOW: OsWindow = {
+  id: 'about',
+  title: 'Sobre mí',
+  icon: '👤',
+  filename: 'about.exe',
+  isOpen: true,
+  isMinimized: false,
+  x: 100,
+  y: 80,
+  zIndex: 1,
+  width: 480,
+  height: 360,
+  onDesktop: true,
+  desktopX: 20,
+  desktopY: 20,
+};
+
+describe('WindowComponent', () => {
+  let component: WindowComponent;
+  let fixture: ComponentFixture<WindowComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Window],
+      imports: [WindowComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(Window);
+    fixture = TestBed.createComponent(WindowComponent);
     component = fixture.componentInstance;
+    // Los input.required() necesitan valor antes del primer ciclo de detección de cambios
+    fixture.componentRef.setInput('win', MOCK_WINDOW);
     await fixture.whenStable();
   });
 

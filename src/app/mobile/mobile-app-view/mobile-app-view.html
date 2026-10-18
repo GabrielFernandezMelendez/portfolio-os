@@ -28,6 +28,12 @@
         <app-github-mobile [isDark]="isDark()" />
       }
       @case ('settings') { <app-settings-mobile [isDark]="isDark()" /> }
+      @case ('racing') {
+        @defer (on immediate) { <app-racing /> }
+      }
+      @case ('sandworld') {
+        @defer (on immediate) { <app-sandworld (exit)="exitRequest.emit()" /> }
+      }
     }
   </div>
 </div>
