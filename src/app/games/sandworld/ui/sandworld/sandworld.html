@@ -5,6 +5,5 @@
     <span></span><span></span><span></span>
   </div>
 } @else {
-  <!-- TEMPORAL: el HUD de madera y pergamino sustituye esta línea en el bloque 4 -->
-  <div class="debug">{{ debugLine() }}</div>
+  <sw-hud (exit)="exit.emit()" />
 }

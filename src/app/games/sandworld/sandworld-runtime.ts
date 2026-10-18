@@ -6,10 +6,16 @@ import { CellCursor } from './rendering/cell-cursor';
 import { DaylightLayer } from './rendering/daylight-layer';
 import { PointerInput } from './infrastructure/input/pointer-input';
 import { TimeEngine } from './application/time/time-engine';
-import { generateChunk } from './application/world/chunk-generator';
-import { computeClimate } from './application/world/climate';
-import { DEFAULT_SEED } from './config/world.config';
+import { World } from './application/world/world';
 import { BRUSH_CELLS } from './config/brush.config';
+
+/** Avisos del runtime hacia fuera (el componente los conecta con el servicio) */
+export interface RuntimeHooks {
+  /** Cada frame, con el tiempo real actual en ms */
+  frame?(nowMs: number): void;
+  /** Toque sobre la isla sin arena seleccionada */
+  islandTap?(): void;
+}
 
 /**
  * Raíz de composición del juego en marcha: une motor de tiempo, render, cámara y entrada.
@@ -27,18 +33,20 @@ export class SandworldRuntime {
   /** true cuando hay una arena seleccionada (fase 2 / HUD del bloque 4). Sin arena, 1 dedo mueve la cámara. */
   private brushEnabled = false;
 
-  constructor(private readonly engine: TimeEngine) {}
+  constructor(
+    private readonly engine: TimeEngine,
+    private readonly world: World,
+    private readonly hooks: RuntimeHooks = {},
+  ) {}
 
   /** Devuelve false si se destruyó antes de terminar de cargar */
   async mount(host: HTMLElement): Promise<boolean> {
     const app = await this.stage.mount(host, (w, h) => this.camera.setViewport(w, h));
     if (!app || this.destroyed) return false;
 
-    // Chunk inicial (0,0): física → clima → horneado
-    const chunk = generateChunk(DEFAULT_SEED, 0, 0);
-    computeClimate(chunk, DEFAULT_SEED);
-    this.terrain = new TerrainLayer(DEFAULT_SEED);
-    this.terrain.render(chunk);
+    // Chunk inicial (0,0), ya generado por el mundo
+    this.terrain = new TerrainLayer(this.world.seed);
+    this.terrain.render(this.world.chunk(0, 0));
     this.stage.world.addChild(this.terrain.view, this.cursor.view);
 
     this.camera.setViewport(app.screen.width, app.screen.height);
@@ -54,7 +62,9 @@ export class SandworldRuntime {
         else this.pointAt(x, y);
       },
       hover: (x, y) => this.pointAt(x, y),
-      tap: (x, y) => this.pointAt(x, y),
+      tap: (x, y) => {
+        if (this.pointAt(x, y)) this.hooks.islandTap?.();
+      },
       leave: () => this.cursor.hide(),
       pan: (dx, dy) => this.camera.panBy(dx, dy),
       fling: (vx, vy) => this.camera.fling(vx, vy),
@@ -95,15 +105,16 @@ export class SandworldRuntime {
     this.stage.world.scale.set(this.camera.scale);
     this.stage.world.position.set(this.camera.offsetX, this.camera.offsetY);
     this.daylight?.apply(this.engine.exactMinuteOfDay);
+    this.hooks.frame?.(ticker.lastTime);
   };
 
-  /** Coloca el cursor sobre el bloque del pincel bajo un punto de pantalla */
-  private pointAt(sx: number, sy: number): void {
+  /** Coloca el cursor sobre el bloque del pincel bajo un punto de pantalla. Devuelve si hay isla ahí. */
+  private pointAt(sx: number, sy: number): boolean {
     const w = this.camera.screenToWorld(sx, sy);
     const cell = this.terrain?.pick(w.x, w.y) ?? null;
     if (!cell) {
       this.cursor.hide();
-      return;
+      return false;
     }
     this.cursor.show({
       cx: cell.cx,
@@ -112,5 +123,6 @@ export class SandworldRuntime {
       cj: Math.floor(cell.cj / BRUSH_CELLS) * BRUSH_CELLS,
       surface: cell.surface,
     });
+    return true;
   }
 }

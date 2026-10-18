@@ -1,0 +1,76 @@
+{
+  "hud": {
+    "day": "Day {day}",
+    "dayShort": "D{day}",
+    "speed": "x{speed}",
+    "pause": "Pause",
+    "play": "Resume",
+    "paused": "Paused",
+    "settings": "Settings",
+    "island": "Living island · Level {level}"
+  },
+  "season": {
+    "0": "Spring",
+    "1": "Summer",
+    "2": "Autumn",
+    "3": "Winter"
+  },
+  "planks": {
+    "sands": "Sands",
+    "balance": "Balance",
+    "decisions": "Decisions"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "exit": "Exit Sandworld",
+    "resume": "Back to the island"
+  },
+  "lang": {
+    "es": "Español",
+    "en": "English"
+  },
+  "chronicle": {
+    "title": "Island chronicle",
+    "open": "Open the chronicle",
+    "empty": "Nothing worth telling has happened yet.",
+    "close": "Close",
+    "times": "×{count}",
+    "start": "The island wakes up. The Flying Spaghetti Monster watches with interest.",
+    "dawn": "Dawn breaks over the island.",
+    "dusk": "Night falls over the island.",
+    "newDay": "Day {day} begins.",
+    "newSeason": {
+      "0": "Spring arrives: the island stretches.",
+      "1": "Summer arrives: the sun bears down.",
+      "2": "Autumn arrives: the leaves turn.",
+      "3": "Winter arrives: the cold creeps down from the peaks."
+    }
+  },
+  "indicators": {
+    "water": "Water",
+    "vegetation": "Vegetation"
+  },
+  "balance": {
+    "title": "Balance",
+    "hint": "This is how the island is doing right now. Wildlife joins once the animals arrive."
+  },
+  "decisions": {
+    "title": "Decisions",
+    "empty": "No letters from the Flying Spaghetti Monster yet. It will write; it always does."
+  },
+  "sands": {
+    "title": "Sands",
+    "hint": "Pick a sand and drag one finger over the island. Two fingers move the camera.",
+    "soon": "Sands don't fall yet: they arrive in the next phase.",
+    "drop": "Put the sand away",
+    "brasa":     { "name": "Ember",    "desc": "Heat and ash. It can set dry plants alight." },
+    "duna":      { "name": "Dune",     "desc": "Lots of sand: raises the ground and diverts rivers." },
+    "humus":     { "name": "Humus",    "desc": "Fertile soil that holds water." },
+    "manantial": { "name": "Spring",   "desc": "Creates a permanent water source." },
+    "escarcha":  { "name": "Frost",    "desc": "Snow. Cools the area and freezes water." },
+    "despertar": { "name": "Awakening","desc": "Massless. Awakens the essence of life." },
+    "marea":     { "name": "Tide",     "desc": "Dissolves sediment: digs wells and canals." },
+    "afinidad":  { "name": "Affinity", "desc": "Massless. More offspring, less aggression." }
+  }
+}

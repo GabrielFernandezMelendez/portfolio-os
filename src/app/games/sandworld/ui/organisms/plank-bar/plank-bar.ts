@@ -14,7 +14,7 @@ import { TPipe } from '../../../i18n/t.pipe';
   host: { '[style.--planks]': 'planks().length' },
   template: `
     @for (p of planks(); track p.id) {
-      <button swWood class="plank" [active]="panel() === p.id" (click)="toggle.emit(p.id)">
+      <button swWood variant="plank" class="plank" [active]="panel() === p.id" (click)="toggle.emit(p.id)">
         <sw-icon [name]="p.icon" [scale]="2" [liquid]="p.liquid?.(state())" />
         <span>{{ p.labelKey | t }}</span>
       </button>
@@ -23,6 +23,7 @@ import { TPipe } from '../../../i18n/t.pipe';
   styles: `
     /* Estante de madera de lado a lado, pegado al borde inferior (no flota) */
     :host {
+      position: relative;
       display: grid;
       grid-template-columns: repeat(var(--planks, 3), minmax(0, 1fr));
       gap: 4px;
@@ -33,12 +34,23 @@ import { TPipe } from '../../../i18n/t.pipe';
       border-top: 2px solid var(--sw-edge);
       box-shadow: inset 0 2px 0 var(--sw-wood-dk-soft), 0 -2px 0 rgb(46 26 13 / 0.25);
     }
+    /* Clavos del estante en las dos esquinas superiores */
+    :host::before, :host::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      width: 2px;
+      height: 2px;
+      background: #c9c2b0;
+      box-shadow: 1px 1px 0 #4f2a15;
+    }
+    :host::before { left: 2px; }
+    :host::after { right: 3px; }
     .plank {
       flex-direction: column;
-      gap: 4px;
-      min-height: 58px;
-      padding: 2px;
-      font-size: 10px;
+      gap: 3px;
+      min-height: 62px;
+      padding: 0 2px 2px;
     }
     .plank span {
       max-width: 100%;
