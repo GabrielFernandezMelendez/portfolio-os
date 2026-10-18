@@ -13,6 +13,8 @@ describe('MobileAppViewComponent', () => {
 
     fixture = TestBed.createComponent(MobileAppViewComponent);
     component = fixture.componentInstance;
+    // Abre una app sencilla del CV para que el @switch tenga contenido
+    fixture.componentRef.setInput('appId', 'about');
     await fixture.whenStable();
   });
 

@@ -14,10 +14,11 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', async () => {
+  it('should render without errors', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, portfolio-os');
+    // El portfolio siempre pinta algo (escritorio o layout móvil); nunca debe quedar vacío
+    expect(compiled.children.length).toBeGreaterThan(0);
   });
 });
