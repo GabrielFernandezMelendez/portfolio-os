@@ -3,7 +3,7 @@ import { Material } from '../../domain/models/material.model';
 import { tileIndex } from '../../domain/models/chunk.model';
 import { WORLD } from '../../domain/models/world.model';
 import { TerrainPhysics } from '../physics/terrain-physics';
-import { POUR_MAX_DUNE, POUR_MAX_MASS, POUR_MAX_MASSLESS } from '../../config/pour.config';
+import { LAYER_SWITCH_PROGRESS, POUR_MAX_DUNE, POUR_MAX_MASS, POUR_MAX_MASSLESS } from '../../config/pour.config';
 import {
   AFINIDAD_AFFINITY, BRASA_ASH, BRASA_DRY, BRASA_EVAPORATE, BRASA_HEAT, BRASA_MELT, BRASA_WARM, CHAR_HEAT,
   DESPERTAR_ESSENCE, ESCARCHA_CHILL, ESCARCHA_FREEZE, ESCARCHA_SNOW, HUMUS_DEPOSIT, HUMUS_FERTILITY, HUMUS_MOISTURE,
@@ -17,11 +17,17 @@ export type SandOutcome = 'charred' | 'springNew' | 'springStronger';
 export type PouredCell = readonly [gx: number, gy: number, amount: number];
 
 /**
+ * Regla común: toda arena tarda de 1 a 2 días en asentarse.
+ * - Arenas de capa (Duna, Humus, Brasa, Escarcha): el efecto crece minuto a minuto y el suelo cambia de color
+ *   a mitad del asentamiento (LAYER_SWITCH_PROGRESS); la Escarcha se ve cuando ya hay una capa de nieve de verdad.
+ * - Arenas de suceso (Manantial; Despertar + Afinidad → Claro): no se ve nada hasta que terminan de asentarse.
+ * - Única excepción inmediata: Duna o Humus caídos sobre un manantial lo tapan al momento (física, no efecto).
+ *
  * Efecto de una arena. Cada arena se registra aquí con:
  * - maxPerCell: cuánto puede caer en una celda en un trazo (niveles, o intensidad 0..1 si no tiene masa)
  * - massless:   no cambia la altura (Despertar, Afinidad)
- * - apply:      se llama cada minuto mientras el vertido se asienta, con la parte de la cantidad de ese minuto.
- *               Puede devolver un suceso para la crónica.
+ * - apply:      se llama cada minuto mientras el vertido se asienta, con la parte de la cantidad de ese minuto
+ *               y cuánto lleva asentado el vertido (0..1). Puede devolver un suceso para la crónica.
  * - settled:    opcional, al terminar el vertido (con lo que recibió cada celda)
  * Añadir o cambiar una arena = tocar solo su entrada; el pincel y la cola no saben nada de cada arena.
  */
@@ -29,7 +35,7 @@ export interface SandEffect {
   readonly sand: SandId;
   readonly maxPerCell: number;
   readonly massless: boolean;
-  apply(physics: TerrainPhysics, gx: number, gy: number, amount: number): SandOutcome | void;
+  apply(physics: TerrainPhysics, gx: number, gy: number, amount: number, progress: number): SandOutcome | void;
   settled?(physics: TerrainPhysics, cells: readonly PouredCell[]): SandOutcome | void;
 }
 
@@ -51,8 +57,8 @@ export const SAND_EFFECTS: Readonly<Record<SandId, SandEffect>> = {
     sand: Sand.DUNA,
     maxPerCell: POUR_MAX_DUNE,
     massless: false,
-    apply: (physics, gx, gy, amount) => {
-      physics.deposit(gx, gy, Material.SAND, amount);
+    apply: (physics, gx, gy, amount, progress) => {
+      physics.deposit(gx, gy, Material.SAND, amount, progress >= LAYER_SWITCH_PROGRESS);
     },
   },
 
@@ -71,8 +77,8 @@ export const SAND_EFFECTS: Readonly<Record<SandId, SandEffect>> = {
     sand: Sand.HUMUS,
     maxPerCell: POUR_MAX_MASS,
     massless: false,
-    apply: (physics, gx, gy, amount) => {
-      physics.deposit(gx, gy, Material.HUMUS, amount * HUMUS_DEPOSIT);
+    apply: (physics, gx, gy, amount, progress) => {
+      physics.deposit(gx, gy, Material.HUMUS, amount * HUMUS_DEPOSIT, progress >= LAYER_SWITCH_PROGRESS);
       const cell = physics.grid.cell(gx, gy);
       if (cell) cell.chunk.moisture[cell.k] = Math.min(1, cell.chunk.moisture[cell.k] + amount * HUMUS_MOISTURE);
       addToTile(physics, gx, gy, 'fertility', amount * HUMUS_FERTILITY);
@@ -115,7 +121,7 @@ export const SAND_EFFECTS: Readonly<Record<SandId, SandEffect>> = {
     sand: Sand.BRASA,
     maxPerCell: POUR_MAX_MASS,
     massless: false,
-    apply: (physics, gx, gy, amount) => {
+    apply: (physics, gx, gy, amount, progress) => {
       physics.thermal.shiftTemperature(gx, gy, amount * BRASA_WARM);
       const charred = physics.scorch(gx, gy, {
         evaporate: amount * BRASA_EVAPORATE,
@@ -123,6 +129,7 @@ export const SAND_EFFECTS: Readonly<Record<SandId, SandEffect>> = {
         melt: amount * BRASA_MELT,
         heat: amount * BRASA_HEAT,
         ash: amount * BRASA_ASH,
+        ashVisible: progress >= LAYER_SWITCH_PROGRESS,
         charAt: CHAR_HEAT,
       });
       return charred ? 'charred' : undefined;

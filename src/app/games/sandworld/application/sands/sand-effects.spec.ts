@@ -120,6 +120,19 @@ describe('Efectos de las arenas', () => {
     expect(springs()[0][0]).toBeGreaterThan(rate);
   });
 
+  it('arenas de capa: el suelo cambia de color a mitad del asentamiento, no al empezar', () => {
+    const { physics, queue, chunk } = setup();
+    const s = new Stroke(Sand.HUMUS);
+    queue.preview(s.sand, s.pour(16, 16, 3));
+    const p = queue.commit(s)!;
+    const half = Math.floor(p.duration / 2) - 5;
+    for (let i = 0; i < half; i++) { queue.minute(); physics.minute(); }
+    expect(chunk.material[k]).toBe(Material.SOIL);
+    expect(chunk.sediment[k]).toBeGreaterThan(1.1);        // el humus ya se está sumando
+    for (let i = 0; i < 20; i++) { queue.minute(); physics.minute(); }
+    expect(chunk.material[k]).toBe(Material.HUMUS);
+  });
+
   it('Humus sube la fertilidad y la humedad', () => {
     const { physics, queue, chunk } = setup();
     const t = tileIndex(4, 4);

@@ -85,13 +85,14 @@ export class TerrainPhysics {
    * Añade `amount` niveles de material en la celda global (gx, gy) y despierta los desprendimientos.
    * Devuelve lo que se ha depositado de verdad (el terreno tiene un techo de altura).
    */
-  deposit(gx: number, gy: number, material: MaterialId, amount: number): number {
+  deposit(gx: number, gy: number, material: MaterialId, amount: number, relabel = true): number {
     const cell = this.grid.cell(gx, gy);
     if (!cell || amount <= 0) return 0;
     const room = Math.max(0, MAX_GROUND - this.grid.ground(cell));
     const added = Math.min(room, amount);
     this.grid.setSediment(cell, cell.chunk.sediment[cell.k] + added);
-    cell.chunk.material[cell.k] = material;
+    // relabel = false: el material se suma pero el suelo aún no cambia de color (arenas a medio asentar)
+    if (relabel) cell.chunk.material[cell.k] = material;
     this.landslides.wake(gx, gy);
     return added;
   }
@@ -146,7 +147,7 @@ export class TerrainPhysics {
    * Brasa: evapora el agua, seca el suelo (y el barro), funde lo helado y acumula calor.
    * Devuelve true si el calor acumulado ha calcinado el suelo en este paso.
    */
-  scorch(gx: number, gy: number, opts: { evaporate: number; dry: number; melt: number; heat: number; ash: number; charAt: number }): boolean {
+  scorch(gx: number, gy: number, opts: { evaporate: number; dry: number; melt: number; heat: number; ash: number; ashVisible?: boolean; charAt: number }): boolean {
     const cell = this.grid.cell(gx, gy);
     if (!cell) return false;
     const c = cell.chunk, k = cell.k;
@@ -165,7 +166,7 @@ export class TerrainPhysics {
       this.landslides.wake(gx, gy);
       return before < opts.charAt;
     }
-    if (opts.ash > 0) this.deposit(gx, gy, Material.ASH, opts.ash);
+    if (opts.ash > 0) this.deposit(gx, gy, Material.ASH, opts.ash, opts.ashVisible ?? true);
     return false;
   }
 

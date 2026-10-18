@@ -107,6 +107,8 @@ const ROCK_RAMP: Ramp = RAMPS[MATERIAL_DEFS[Material.ROCK].ramp ?? 'gravel'];
 
 /** Sedimento mínimo (en niveles) para que se vea el color del material */
 const MATERIAL_VISIBLE = 0.02;
+/** Nieve o hielo (en niveles) a partir de los que se ven: un polvo de nieve no tapa el suelo */
+const COVER_VISIBLE = 0.15;
 
 /** Rejillas que solo dependen de la semilla: se calculan una vez y se reutilizan en cada horneado */
 interface StaticGrids {
@@ -358,7 +360,7 @@ export class ChunkBaker {
         const tex = texture[q];
         // Sin sedimento encima, lo que se ve es la roca madre (roquedal, laderas lavadas)
         // Nieve o hielo encima: se ve la capa helada
-        const covered = chunk.cover[cell - 1] > MATERIAL_VISIBLE;
+        const covered = chunk.cover[cell - 1] > COVER_VISIBLE;
         const bareRock = !covered && chunk.sediment[cell - 1] <= MATERIAL_VISIBLE;
         const material = covered ? chunk.coverMaterial[cell - 1] as MaterialId
           : bareRock ? Material.ROCK : chunk.material[cell - 1] as MaterialId;

@@ -118,7 +118,7 @@ export class PourQueue {
         const step = last ? left : Math.min(left, total / pour.duration);
         pour.remaining.set(key, left - step);
         const [gx, gy] = TerrainGrid.fromKey(key);
-        const outcome = effect.apply(this.physics, gx, gy, step);
+        const outcome = effect.apply(this.physics, gx, gy, step, Math.min(1, pour.elapsed / pour.duration));
         if (outcome) this.events.push({ sand: pour.sand, outcome, gx, gy });
         const cell = this.physics.grid.cell(gx, gy);
         if (cell) {

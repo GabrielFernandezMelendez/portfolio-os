@@ -24,5 +24,11 @@ export const POUR_EDGE_BAND = 40;
 
 /** La capa sin asentar se vuelve a dibujar cada este número de minutos de juego */
 export const PENDING_REDRAW_MINUTES = 10;
+/**
+ * Arenas de capa (Duna, Humus, Brasa): el suelo cambia de color (de material) cuando el vertido lleva
+ * esta parte asentada. Antes solo se ven los granos sin asentar encima; así no hay saltos de color.
+ */
+export const LAYER_SWITCH_PROGRESS = 0.5;
+
 /** Un toque corto (sin arrastrar) vierte como si el dedo hubiera estado este tiempo encima */
 export const POUR_TAP_SECONDS = 0.15;
