@@ -1,0 +1,30 @@
+<div class="racing-container">
+  <canvas #gameCanvas class="game-canvas"></canvas>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-left">
+      <span class="hud-label">TIME</span>
+      <span class="hud-value">{{ formatTime(raceTime()) }}</span>
+    </div>
+    <div class="hud-center">
+      <span class="hud-label">LAP</span>
+      <span class="hud-value">{{ formatTime(lapTime()) }}</span>
+    </div>
+    <div class="hud-right">
+      <span class="hud-lap">{{ currentLap() + 1 }} / {{ totalLaps() }}</span>
+      <button class="hud-pause" (click)="togglePause()">⏸</button>
+    </div>
+  </div>
+
+  <!-- Pause overlay -->
+  @if (isPaused()) {
+    <div class="pause-overlay">
+      <div class="pause-modal">
+        <span class="pause-title">PAUSED</span>
+        <button class="pause-btn" (click)="togglePause()">Continue</button>
+        <button class="pause-btn menu" (click)="goToMenu()">Menu</button>
+      </div>
+    </div>
+  }
+</div>

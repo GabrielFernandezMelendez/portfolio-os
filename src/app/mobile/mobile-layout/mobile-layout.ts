@@ -6,7 +6,7 @@ import { MobileHomeComponent }        from '../mobile-home/mobile-home';
 import { MobileAppViewComponent }     from '../mobile-app-view/mobile-app-view';
 import { MobileRecentsComponent }     from '../mobile-recents/mobile-recents';
 import { MobileNavbarComponent }      from '../mobile-navbar/mobile-navbar';
-import { MobileApp, MobileView }      from '../mobile.interfaces';
+import { MobileApp, MobilePage, MobileView } from '../mobile.interfaces';
 
 @Component({
   selector:    'app-mobile-layout',
@@ -33,7 +33,9 @@ export class MobileLayoutComponent {
   activeApp  = signal<string | null>(null);
   openedApps = signal<MobileApp[]>([]);
 
-  apps: MobileApp[] = [
+  private readonly PAGES_KEY = 'portfolio-pages-layout';
+
+  readonly ALL_APPS: MobileApp[] = [
     { id: 'about',      title: 'Sobre mí',    icon: '👤', iconSvg: 'mobile-design/Icons/Perfil.svg' },
     { id: 'experience', title: 'Experiencia', icon: '💼', iconSvg: 'mobile-design/Icons/experiencia.svg' },
     { id: 'skills',     title: 'Habilidades', icon: '🛠', iconSvg: 'mobile-design/Icons/skills.svg' },
@@ -42,7 +44,49 @@ export class MobileLayoutComponent {
     { id: 'contact',    title: 'Contacto',    icon: '📬', iconSvg: 'mobile-design/Icons/contact.svg' },
     { id: 'github',     title: 'GitHub',      icon: '🐙', iconSvg: 'mobile-design/Icons/github.svg' },
     { id: 'settings',   title: 'Ajustes',     icon: '⚙️', iconSvg: 'mobile-design/Icons/settings.svg' },
+    { id: 'racing', title: 'RaceTime', icon: '🏎️' },
   ];
+
+readonly DEFAULT_PAGES: MobilePage[] = [
+  { id: 'page-cv',    apps: this.ALL_APPS.filter(a => a.id !== 'racing') },
+  { id: 'page-games', apps: this.ALL_APPS.filter(a => a.id === 'racing') },
+];
+
+  pages       = signal<MobilePage[]>(this.loadPages());
+  currentPage = signal<number>(0);
+
+  private loadPages(): MobilePage[] {
+    try {
+      const saved = localStorage.getItem(this.PAGES_KEY);
+      if (saved) {
+        const parsed: MobilePage[] = JSON.parse(saved);
+        const cleaned = parsed.filter((p, i) => i === 0 || p.apps.length > 0);
+        return cleaned.length > 0 ? cleaned : this.DEFAULT_PAGES;
+      }
+    } catch { }
+    return this.DEFAULT_PAGES;
+  }
+
+  private savePages() {
+    localStorage.setItem(this.PAGES_KEY, JSON.stringify(this.pages()));
+  }
+
+  addPage() {
+    if (this.pages().length >= this.ALL_APPS.length) return;
+    this.pages.update(p => [...p, { id: `page-${Date.now()}`, apps: [] }]);
+    this.savePages();
+  }
+
+  removePage(pageId: string) {
+    if (this.pages().length <= 1) return;
+    this.pages.update(p => p.filter(page => page.id !== pageId));
+    if (this.currentPage() >= this.pages().length) {
+      this.currentPage.set(this.pages().length - 1);
+    }
+    this.savePages();
+  }
+
+  goToPage(index: number) { this.currentPage.set(index); }
 
   toggleTheme() { this.isDark.update((v: boolean) => !v); }
   toggleGol()   { this.golPaused.update((v: boolean) => !v); }
@@ -54,9 +98,7 @@ export class MobileLayoutComponent {
     this.mobileView.set('notifications');
   }
 
-  closeNotifications() {
-    this.mobileView.set(this.previousView);
-  }
+  closeNotifications() { this.mobileView.set(this.previousView); }
 
   openApp(app: MobileApp) {
     this.activeApp.set(app.id);
@@ -106,9 +148,7 @@ export class MobileLayoutComponent {
     }
   }
 
-  goRecents() {
-    this.mobileView.set('recents');
-  }
+  goRecents() { this.mobileView.set('recents'); }
 
   private swipeStartX = 0;
   private swipeStartY = 0;
@@ -130,4 +170,109 @@ export class MobileLayoutComponent {
     this.closeNotifications();
     this.openApp({ id: 'settings', title: 'Ajustes', icon: '⚙️' });
   }
+
+moveAppToPage(event: { app: MobileApp; fromPageId: string; toPageIndex: number }) {
+  const { app, fromPageId, toPageIndex } = event;
+  const targetPage = this.pages()[toPageIndex];
+
+  if (!targetPage || targetPage.id === fromPageId) return;
+
+  const targetPageId = targetPage.id;
+
+  this.pages.update(pages => {
+    return pages.map(page => {
+      if (page.id === fromPageId) {
+        return { ...page, apps: page.apps.filter(a => a.id !== app.id) };
+      }
+      if (page.id === targetPageId) {
+        if (page.apps.some(a => a.id === app.id)) return page;
+        return { ...page, apps: [...page.apps, app] };
+      }
+      return page;
+    });
+  });
+
+  this.savePages();
+}
+
+moveAppToNewPage(event: { app: MobileApp; fromPageId: string }) {
+  const { app, fromPageId } = event;
+
+  const updated = this.pages().map(page =>
+    page.id === fromPageId
+      ? { ...page, apps: page.apps.filter(a => a.id !== app.id) }
+      : { ...page, apps: [...page.apps] }
+  );
+
+  this.pages.set([...updated, { id: `page-${Date.now()}`, apps: [app] }]);
+
+  setTimeout(() => {
+    this.currentPage.set(this.pages().length - 1);
+  }, 50);
+
+  this.savePages();
+}
+
+// ── Carpetas ──────────────────────────────────
+createFolder(app1: MobileApp, app2: MobileApp, pageId: string) {
+  const folder: MobileApp = {
+    id:         `folder-${Date.now()}`,
+    title:      'Carpeta',
+    icon:       '📁',
+    isFolder:   true,
+    folderName: 'Carpeta',
+    apps:       [app1, app2]
+  };
+
+  this.pages.update(pages => {
+    return pages.map(page => {
+      if (page.id !== pageId) return { ...page, apps: [...page.apps] };
+
+      const newApps = page.apps
+        .filter(a => a.id !== app1.id && a.id !== app2.id);
+
+      // Insertar la carpeta en la posición de app2
+      const app2Index = page.apps.findIndex(a => a.id === app2.id);
+      newApps.splice(Math.min(app2Index, newApps.length), 0, folder);
+
+      return { ...page, apps: newApps };
+    });
+  });
+
+  this.savePages();
+}
+
+addAppToFolder(app: MobileApp, folderId: string, fromPageId: string) {
+  this.pages.update(pages => {
+    return pages.map(page => {
+      if (page.id === fromPageId) {
+        return {
+          ...page,
+          apps: page.apps.map(a => {
+            if (a.id === folderId && a.isFolder) {
+              return { ...a, apps: [...(a.apps || []), app] };
+            }
+            return a;
+          }).filter(a => a.id !== app.id || a.id === folderId)
+        };
+      }
+      return { ...page, apps: [...page.apps] };
+    });
+  });
+
+  this.savePages();
+}
+
+renameFolder(folderId: string, newName: string) {
+  this.pages.update(pages => {
+    return pages.map(page => ({
+      ...page,
+      apps: page.apps.map(a =>
+        a.id === folderId ? { ...a, folderName: newName, title: newName } : a
+      )
+    }));
+  });
+
+  this.savePages();
+}
 }

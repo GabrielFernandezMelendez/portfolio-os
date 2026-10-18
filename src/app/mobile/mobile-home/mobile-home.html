@@ -1,16 +1,149 @@
-<div class="home-container" [class.light]="!isDark()">
-  <div class="apps-grid">
-    @for (app of apps(); track app.id) {
-      <div class="app-icon" (click)="onOpenApp.emit(app)">
-        <div class="app-bubble">
-          @if (app.iconSvg) {
-            <img [src]="app.iconSvg" [alt]="getTitle(app)" class="app-svg-icon" />
-          } @else {
-            <span class="app-emoji">{{ app.icon }}</span>
+<div class="home-container"
+  [class.light]="!isDark()"
+  [class.dragging-mode]="isDragging()"
+  (touchstart)="onTouchStart($event)"
+  (touchend)="onTouchEnd($event)">
+
+  <div class="pages-wrapper"
+    [style.transform]="'translateX(-' + (currentPage() * 100) + '%)'">
+
+    @for (page of pages(); track $index) {
+      <div class="page">
+        <div class="apps-grid">
+
+          @for (app of page.apps; track app.id) {
+            <div class="app-icon"
+              [attr.data-app-id]="app.id"
+              [class.is-dragging]="draggingApp()?.id === app.id"
+              [class.drop-target]="dropTargetId() === app.id"
+              (click)="onAppClick($event, app)"
+              (touchstart)="onAppTouchStart($event, app, page.id)"
+              (touchmove)="onAppTouchMove($event)"
+              (touchend)="onAppTouchEnd($event)">
+
+              @if (app.isFolder) {
+                <div class="app-bubble folder-bubble">
+                  <div class="folder-preview">
+                    @for (subApp of app.apps || []; track subApp.id; let j = $index) {
+                      @if (j < 4) {
+                        <div class="folder-mini-icon">
+                          @if (subApp.iconSvg) {
+                            <img [src]="subApp.iconSvg" class="folder-mini-svg" draggable="false" />
+                          } @else {
+                            <span class="folder-mini-emoji">{{ subApp.icon }}</span>
+                          }
+                        </div>
+                      }
+                    }
+                  </div>
+                </div>
+              } @else {
+                <div class="app-bubble">
+                  @if (app.iconSvg) {
+                    <img [src]="app.iconSvg" [alt]="getTitle(app)" class="app-svg-icon" draggable="false" />
+                  } @else {
+                    <span class="app-emoji">{{ app.icon }}</span>
+                  }
+                </div>
+              }
+
+              <span class="app-label">{{ getTitle(app) }}</span>
+            </div>
           }
+
+          @if (page.apps.length === 0) {
+            <div class="page-empty">
+              <span class="empty-icon">📱</span>
+              <span class="empty-text">Página vacía</span>
+            </div>
+          }
+
         </div>
-        <span class="app-label">{{ getTitle(app) }}</span>
       </div>
     }
+
   </div>
+
+  <div class="page-indicator">
+    @for (page of pages(); track $index; let i = $index) {
+      <div class="dot"
+        [class.active]="i === currentPage()"
+        (click)="onPageChange.emit(i)">
+      </div>
+    }
+    <button class="dot dot-add" (click)="confirmAddPage()">+</button>
+  </div>
+
+  @if (isDragging() && draggingApp()) {
+    <div class="drag-ghost"
+      [style.left.px]="ghostX()"
+      [style.top.px]="ghostY()">
+      <div class="app-bubble ghost-bubble">
+        @if (draggingApp()!.iconSvg) {
+          <img [src]="draggingApp()!.iconSvg" class="app-svg-icon" alt="" draggable="false" />
+        } @else {
+          <span class="app-emoji">{{ draggingApp()!.icon }}</span>
+        }
+      </div>
+    </div>
+  }
+
+  @if (showNewPageHint()) {
+    <div class="new-page-hint">
+      <div class="new-page-circle">
+        <span class="new-page-plus">+</span>
+      </div>
+    </div>
+  }
+
+  @if (openFolder()) {
+    <div class="folder-overlay"
+      [class.closing]="closingFolder()"
+      (click)="closeFolder()">
+      <div class="folder-modal"
+        [class.light]="!isDark()"
+        [class.closing]="closingFolder()"
+        (click)="$event.stopPropagation()">
+
+        <input class="folder-name-input"
+          [class.light]="!isDark()"
+          [value]="folderEditName()"
+          (input)="folderEditName.set($any($event.target).value)"
+          (blur)="onRenameFolder()"
+          (keydown.enter)="$any($event.target).blur()"
+          maxlength="20"
+          spellcheck="false" />
+
+        <div class="folder-apps-grid">
+          @for (app of openFolder()!.apps || []; track app.id) {
+            <div class="folder-app-icon" (click)="openAppFromFolder(app)">
+              <div class="app-bubble">
+                @if (app.iconSvg) {
+                  <img [src]="app.iconSvg" [alt]="getTitle(app)" class="app-svg-icon" draggable="false" />
+                } @else {
+                  <span class="app-emoji">{{ app.icon }}</span>
+                }
+              </div>
+              <span class="folder-app-label">{{ getTitle(app) }}</span>
+            </div>
+          }
+        </div>
+
+      </div>
+    </div>
+  }
+
+  @if (showConfirm()) {
+    <div class="confirm-overlay" [class.light]="!isDark()" (click)="onCancel()">
+      <div class="confirm-dialog" [class.light]="!isDark()" (click)="$event.stopPropagation()">
+        <p class="confirm-title">Nueva página</p>
+        <p class="confirm-msg">¿Quieres crear una nueva página en el inicio?</p>
+        <div class="confirm-actions">
+          <button class="confirm-btn cancel" (click)="onCancel()">Cancelar</button>
+          <button class="confirm-btn create" (click)="onConfirm()">Crear</button>
+        </div>
+      </div>
+    </div>
+  }
+
 </div>
