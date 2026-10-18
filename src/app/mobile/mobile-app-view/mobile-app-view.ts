@@ -7,7 +7,7 @@ import { ProjectsMobileComponent }   from '../mobile-apps/cv/projects-mobile/pro
 import { ContactMobileComponent }    from '../mobile-apps/cv/contact-mobile/contact-mobile';
 import { GithubMobileComponent }     from '../mobile-apps/cv/github-mobile/github-mobile';
 import { SettingsMobileComponent }   from '../mobile-apps/settings/settings-mobile/settings-mobile';
-
+import { RacingComponent } from '..//../games/racetime/racing/racing';
 @Component({
   selector:    'app-mobile-app-view',
   standalone:  true,
@@ -19,7 +19,9 @@ import { SettingsMobileComponent }   from '../mobile-apps/settings/settings-mobi
     ProjectsMobileComponent,
     ContactMobileComponent,
     GithubMobileComponent,
-    SettingsMobileComponent
+    SettingsMobileComponent,
+    //games
+    RacingComponent
   ],
   templateUrl: './mobile-app-view.html',
   styleUrl:    './mobile-app-view.css',
