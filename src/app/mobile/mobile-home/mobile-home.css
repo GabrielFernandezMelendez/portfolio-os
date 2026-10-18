@@ -29,27 +29,38 @@
   gap:                   1.8rem 1rem;
 }
 
-/* ── Icono individual ── */
-.app-icon {
+/* ── Icono individual (base compartida con los iconos de carpeta abierta) ── */
+.app-icon,
+.folder-app-icon {
   display:        flex;
   flex-direction: column;
   align-items:    center;
-  gap:            0.5rem;
   cursor:         pointer;
   transition:     transform 0.15s;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+.app-icon {
+  gap:            0.5rem;
   touch-action: none;
 }
 
-.app-icon:active { transform: scale(0.9); }
+.app-icon:active,
+.folder-app-icon:active { transform: scale(0.9); }
+
+/* Burbujas de 72 px: app, carpeta y fantasma del arrastre */
+.app-bubble,
+.folder-bubble,
+.ghost-bubble {
+  width:         72px;
+  height:        72px;
+  border-radius: 18px;
+}
 
 .app-bubble {
-  width:           72px;
-  height:          72px;
-  border-radius:   18px;
   background:      rgba(99,102,241,0.15);
   border:          1px solid rgba(99,102,241,0.3);
   display:         flex;
@@ -57,9 +68,6 @@
   justify-content: center;
   transition:      all 0.2s;
   box-shadow:      0 4px 15px rgba(99,102,241,0.15);
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
 }
 
 .app-icon:active .app-bubble {
@@ -72,12 +80,17 @@
   pointer-events:  none;
 }
 
-.app-svg-icon {
-  width:           44px;
-  height:          44px;
+/* Iconos SVG (app y miniatura de carpeta): no se arrastran como imagen */
+.app-svg-icon,
+.folder-mini-svg {
   object-fit:      contain;
   pointer-events:  none;
   -webkit-user-drag: none;
+}
+
+.app-svg-icon {
+  width:           44px;
+  height:          44px;
 }
 
 .app-label {
@@ -166,8 +179,9 @@
 .home-container.light .dot.active { background: var(--color-accent); }
 .home-container.light .dot-add    { border-color: rgba(0,0,0,0.2); color: rgba(0,0,0,0.3); }
 
-/* ── Popup confirmación ── */
-.confirm-overlay {
+/* ── Popup confirmación (el velo comparte base con el de las carpetas) ── */
+.confirm-overlay,
+.folder-overlay {
   position:        fixed;
   inset:           0;
   background:      rgba(0,0,0,0.6);
@@ -175,13 +189,16 @@
   align-items:     center;
   justify-content: center;
   z-index:         100;
+}
+
+.confirm-overlay {
   backdrop-filter: blur(4px);
   animation:       fadeIn 0.15s ease;
 }
 
+/* Las animaciones de entrada omiten el "to": vuelven solas al estado normal del elemento */
 @keyframes fadeIn {
   from { opacity: 0; }
-  to   { opacity: 1; }
 }
 
 .confirm-dialog {
@@ -199,7 +216,6 @@
 
 @keyframes slideUp {
   from { transform: scale(0.9); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
 }
 
 .confirm-title {
@@ -297,9 +313,6 @@
 }
 
 .ghost-bubble {
-  width:         72px;
-  height:        72px;
-  border-radius: 18px;
   background:    rgba(99,102,241,0.3);
   border:        2px solid var(--color-accent);
   box-shadow:    0 8px 30px rgba(99,102,241,0.4);
@@ -358,9 +371,6 @@
 
 /* ── Carpeta cerrada: mini-preview 2x2 ── */
 .folder-bubble {
-  width:           72px;
-  height:          72px;
-  border-radius:   18px;
   background:      rgba(99,102,241,0.12);
   border:          1px solid rgba(99,102,241,0.35);
   display:         flex;
@@ -392,9 +402,6 @@
 .folder-mini-svg {
   width:              20px;
   height:             20px;
-  object-fit:         contain;
-  pointer-events:     none;
-  -webkit-user-drag:  none;
 }
 
 .folder-mini-emoji {
@@ -404,15 +411,8 @@
 
 /* ── Modal carpeta abierta ── */
 .folder-overlay {
-  position:        fixed;
-  inset:           0;
-  background:      rgba(0,0,0,0.6);
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  z-index:         100;
   backdrop-filter: blur(8px);
-  animation:       fadeIn 0.2s ease;
+  animation:       fadeIn 0.3s ease;
 }
 
 .folder-modal {
@@ -426,12 +426,11 @@
   flex-direction: column;
   align-items:    center;
   gap:            1.2rem;
-  animation:      folderOpen 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation:      folderOpen 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes folderOpen {
   from { transform: scale(0.8); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
 }
 
 .folder-name-input {
@@ -461,17 +460,7 @@
   padding:               0.5rem 0;
 }
 
-.folder-app-icon {
-  display:        flex;
-  flex-direction: column;
-  align-items:    center;
-  gap:            0.4rem;
-  cursor:         pointer;
-  transition:     transform 0.15s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.folder-app-icon:active { transform: scale(0.9); }
+.folder-app-icon { gap: 0.4rem; }
 
 .folder-app-icon .app-bubble {
   width:  56px;
@@ -517,24 +506,6 @@
 
 .folder-name-input.light:focus {
   border-color: var(--color-accent);
-}
-
-.folder-overlay {
-  animation: fadeIn 0.3s ease;
-}
-
-.folder-modal {
-  animation: folderOpen 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
-
-@keyframes folderClose {
-  from { transform: scale(1);   opacity: 1; }
-  to   { transform: scale(0.8); opacity: 0; }
 }
 
 /* ── Cierre carpeta ── */

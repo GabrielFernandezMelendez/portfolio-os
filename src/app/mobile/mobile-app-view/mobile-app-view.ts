@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   input,
+  output,
   signal,
   effect,
   ElementRef,
@@ -44,6 +45,9 @@ export class MobileAppViewComponent {
   isDark = input<boolean>(true);
   visible = signal(false);
   closing = signal(false);
+
+  /** Una app pide cerrarse desde dentro (p. ej. "Salir" en Sandworld). El layout la cierra como con el botón de inicio. */
+  exitRequest = output<void>();
 
   private el = inject(ElementRef);
 

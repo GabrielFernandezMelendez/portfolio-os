@@ -22,10 +22,12 @@
     }
 
     @if (activeApp()) {
+      <!-- exitRequest: la app pide cerrarse desde dentro (p. ej. "Salir" en Sandworld): vuelve al inicio y la cierra -->
       <app-mobile-app-view
         [appId]="activeApp()!"
         [isDark]="isDark()"
         [class.hidden-view]="mobileView() !== 'app'"
+        (exitRequest)="goHome(); closeApp(activeApp()!)"
       >
       </app-mobile-app-view>
     }
