@@ -25,7 +25,7 @@ export class CellCursor {
       .poly([0, -hh, hw, 0, 0, hh, -hw, 0])
       .fill({ color: 0xffffff, alpha: 0.35 })
       .stroke({ width: 1, color: 0xfff0cf, alpha: 0.9, alignment: 0.5 });
-    this.view.zIndex = 10;
+    this.view.zIndex = 10_001;
     this.view.visible = false;
   }
 

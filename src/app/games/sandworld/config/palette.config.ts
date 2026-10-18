@@ -38,3 +38,9 @@ export const TERRAIN_WALLS = {
 
 /** Espuma de las cascadas */
 export const WATERFALL = [0xe8fbff, 0xa6e4f2, 0x5fc0e0] as const;
+
+/** Nubes: rampa de 5 tonos (sombra → luz) con tramado, como el terreno */
+export const CLOUD_RAMP = [0x8ea3c6, 0xaebfdb, 0xcbd8ea, 0xe3ebf6, 0xf7faff] as const;
+
+/** Sombra de la isla proyectada sobre las nubes */
+export const CLOUD_SHADOW = 0x6f86ad;

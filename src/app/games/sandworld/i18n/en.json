@@ -24,7 +24,8 @@
     "title": "Settings",
     "language": "Language",
     "exit": "Exit Sandworld",
-    "resume": "Back to the island"
+    "resume": "Back to the island",
+    "devReveal": "Test: uncover land"
   },
   "lang": {
     "es": "Español",
@@ -45,7 +46,8 @@
       "1": "Summer arrives: the sun bears down.",
       "2": "Autumn arrives: the leaves turn.",
       "3": "Winter arrives: the cold creeps down from the peaks."
-    }
+    },
+    "reveal": "The clouds part: the island grows to level {level}."
   },
   "indicators": {
     "water": "Water",
@@ -64,13 +66,37 @@
     "hint": "Pick a sand and drag one finger over the island. Two fingers move the camera.",
     "soon": "Sands don't fall yet: they arrive in the next phase.",
     "drop": "Put the sand away",
-    "brasa":     { "name": "Ember",    "desc": "Heat and ash. It can set dry plants alight." },
-    "duna":      { "name": "Dune",     "desc": "Lots of sand: raises the ground and diverts rivers." },
-    "humus":     { "name": "Humus",    "desc": "Fertile soil that holds water." },
-    "manantial": { "name": "Spring",   "desc": "Creates a permanent water source." },
-    "escarcha":  { "name": "Frost",    "desc": "Snow. Cools the area and freezes water." },
-    "despertar": { "name": "Awakening","desc": "Massless. Awakens the essence of life." },
-    "marea":     { "name": "Tide",     "desc": "Dissolves sediment: digs wells and canals." },
-    "afinidad":  { "name": "Affinity", "desc": "Massless. More offspring, less aggression." }
+    "brasa": {
+      "name": "Ember",
+      "desc": "Heat and ash. It can set dry plants alight."
+    },
+    "duna": {
+      "name": "Dune",
+      "desc": "Lots of sand: raises the ground and diverts rivers."
+    },
+    "humus": {
+      "name": "Humus",
+      "desc": "Fertile soil that holds water."
+    },
+    "manantial": {
+      "name": "Spring",
+      "desc": "Creates a permanent water source."
+    },
+    "escarcha": {
+      "name": "Frost",
+      "desc": "Snow. Cools the area and freezes water."
+    },
+    "despertar": {
+      "name": "Awakening",
+      "desc": "Massless. Awakens the essence of life."
+    },
+    "marea": {
+      "name": "Tide",
+      "desc": "Dissolves sediment: digs wells and canals."
+    },
+    "afinidad": {
+      "name": "Affinity",
+      "desc": "Massless. More offspring, less aggression."
+    }
   }
 }

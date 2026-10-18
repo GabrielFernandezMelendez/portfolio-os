@@ -1,5 +1,11 @@
 import { GameTime } from '../models/time.model';
 
+/** Coordenadas de un chunk */
+export interface ChunkCoord {
+  cx: number;
+  cy: number;
+}
+
 /**
  * Catálogo de eventos del juego (nombre → carga útil).
  * Irá creciendo: crónica, cartas del Dios Espagueti, nacimientos, catástrofes...
@@ -11,4 +17,6 @@ export interface GameEvents {
   dusk: GameTime;
   newDay: GameTime;
   newSeason: GameTime;
+  /** Se ha descubierto un chunk: el render lo hace emerger de las nubes */
+  chunkRevealed: ChunkCoord;
 }

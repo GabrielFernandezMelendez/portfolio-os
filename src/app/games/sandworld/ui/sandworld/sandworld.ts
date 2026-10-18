@@ -55,6 +55,8 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
     });
     // Con una arena elegida, 1 dedo es pincel; sin arena, mueve la cámara
     effect(() => this.runtime.setBrushEnabled(this.game.selectedSand() !== null));
+    // Chunk descubierto → emerge de las nubes
+    this.game.events.on('chunkRevealed', c => this.runtime.showChunk(c.cx, c.cy));
   }
 
   ngAfterViewInit(): void {

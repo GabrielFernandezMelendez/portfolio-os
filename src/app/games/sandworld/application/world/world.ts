@@ -1,6 +1,7 @@
 import { ChunkData } from '../../domain/models/chunk.model';
 import { generateChunk } from './chunk-generator';
 import { computeClimate } from './climate';
+import { ExplorationMap } from './exploration';
 
 /**
  * El mundo de una partida: semilla y chunks cargados.
@@ -11,6 +12,9 @@ export class World {
 
   /** Nivel de la isla: sube con la expansión (fase 7) */
   level = 1;
+
+  /** Chunks descubiertos; el resto está bajo las nubes */
+  readonly exploration = new ExplorationMap();
 
   constructor(readonly seed: number) {}
 

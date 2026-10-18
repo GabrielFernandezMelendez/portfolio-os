@@ -24,6 +24,7 @@ const EDGE_SPEED = 0.45;
 /** Constantes de tiempo (ms) de la animación de zoom y del frenado de la inercia */
 const ZOOM_TAU = 70;
 const FRICTION_TAU = 220;
+const GLIDE_TAU = 380;
 
 export class Camera {
   cx = 0;
@@ -38,6 +39,7 @@ export class Camera {
   private vw = 1;
   private vh = 1;
   private bounds: Rect = { x: -1, y: -1, w: 2, h: 2 };
+  private glide: { x: number; y: number } | null = null;
 
   get zoomLevel(): number {
     return this.zoomIndex;
@@ -84,8 +86,14 @@ export class Camera {
     };
   }
 
+  /** Desliza la cámara con suavidad hasta centrar (x, y). El jugador la interrumpe al arrastrar. */
+  glideTo(x: number, y: number): void {
+    this.glide = { x, y };
+  }
+
   /** Arrastre: mueve la cámara tantos píxeles de pantalla como se ha movido el dedo */
   panBy(dsx: number, dsy: number): void {
+    this.glide = null;
     this.cx -= dsx / this.scale;
     this.cy -= dsy / this.scale;
     this.vx = this.vy = 0;
@@ -130,6 +138,13 @@ export class Camera {
       this.vx *= f;
       this.vy *= f;
       if (Math.hypot(this.vx, this.vy) * this.scale < 0.01) this.vx = this.vy = 0;
+    }
+
+    if (this.glide) {
+      const k = 1 - Math.exp(-dtMs / GLIDE_TAU);
+      this.cx += (this.glide.x - this.cx) * k;
+      this.cy += (this.glide.y - this.cy) * k;
+      if (Math.hypot(this.glide.x - this.cx, this.glide.y - this.cy) * this.scale < 0.5) this.glide = null;
     }
 
     if (edge.x !== 0 || edge.y !== 0) {

@@ -24,7 +24,8 @@
     "title": "Ajustes",
     "language": "Idioma",
     "exit": "Salir de Sandworld",
-    "resume": "Volver a la isla"
+    "resume": "Volver a la isla",
+    "devReveal": "Probar: descubrir terreno"
   },
   "lang": {
     "es": "Español",
@@ -45,7 +46,8 @@
       "1": "Llega el verano: el sol aprieta.",
       "2": "Llega el otoño: las hojas cambian de color.",
       "3": "Llega el invierno: el frío baja de las cumbres."
-    }
+    },
+    "reveal": "Las nubes se abren: la isla crece hasta el nivel {level}."
   },
   "indicators": {
     "water": "Agua",
@@ -64,13 +66,37 @@
     "hint": "Elige una arena y arrastra un dedo sobre la isla. Con dos dedos mueves la cámara.",
     "soon": "Las arenas aún no caen: llegan en la siguiente fase.",
     "drop": "Soltar arena",
-    "brasa":     { "name": "Brasa",     "desc": "Calor y ceniza. Puede prender la vegetación seca." },
-    "duna":      { "name": "Duna",      "desc": "Mucha arena: eleva el terreno y desvía los ríos." },
-    "humus":     { "name": "Humus",     "desc": "Tierra fértil que retiene el agua." },
-    "manantial": { "name": "Manantial", "desc": "Crea una fuente permanente." },
-    "escarcha":  { "name": "Escarcha",  "desc": "Nieve. Enfría la zona y congela el agua." },
-    "despertar": { "name": "Despertar", "desc": "Sin masa. Despierta la esencia de la vida." },
-    "marea":     { "name": "Marea",     "desc": "Disuelve el sedimento: excava pozos y canales." },
-    "afinidad":  { "name": "Afinidad",  "desc": "Sin masa. Más crías y menos agresividad." }
+    "brasa": {
+      "name": "Brasa",
+      "desc": "Calor y ceniza. Puede prender la vegetación seca."
+    },
+    "duna": {
+      "name": "Duna",
+      "desc": "Mucha arena: eleva el terreno y desvía los ríos."
+    },
+    "humus": {
+      "name": "Humus",
+      "desc": "Tierra fértil que retiene el agua."
+    },
+    "manantial": {
+      "name": "Manantial",
+      "desc": "Crea una fuente permanente."
+    },
+    "escarcha": {
+      "name": "Escarcha",
+      "desc": "Nieve. Enfría la zona y congela el agua."
+    },
+    "despertar": {
+      "name": "Despertar",
+      "desc": "Sin masa. Despierta la esencia de la vida."
+    },
+    "marea": {
+      "name": "Marea",
+      "desc": "Disuelve el sedimento: excava pozos y canales."
+    },
+    "afinidad": {
+      "name": "Afinidad",
+      "desc": "Sin masa. Más crías y menos agresividad."
+    }
   }
 }

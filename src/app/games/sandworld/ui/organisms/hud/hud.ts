@@ -56,7 +56,13 @@ import { HUD_PLANKS } from './hud-planks';
 
     @switch (game.menu()) {
       @case ('settings') {
-        <sw-settings-menu [lang]="game.lang()" (langChange)="game.setLang($event)" (close)="game.closeMenu()" (exit)="exit.emit()" />
+        <sw-settings-menu
+          [lang]="game.lang()"
+          (langChange)="game.setLang($event)"
+          (close)="game.closeMenu()"
+          (exit)="exit.emit()"
+          (devReveal)="game.closeMenu(); game.revealNextChunk()"
+        />
       }
       @case ('chronicle') {
         <sw-chronicle-book [entries]="game.chronicleEntries()" (close)="game.closeMenu()" />

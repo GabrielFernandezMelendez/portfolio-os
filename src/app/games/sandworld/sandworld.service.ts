@@ -10,6 +10,7 @@ import { Chronicle } from './application/chronicle/chronicle';
 import { IndicatorRegistry, IndicatorValue } from './application/indicators/indicator-registry';
 import { registerWorldIndicators } from './application/indicators/world-indicators';
 import { World } from './application/world/world';
+import { nextChunkToReveal } from './application/world/expansion';
 import { Translator } from './i18n/translator';
 import { SETTINGS_STORAGE } from './infrastructure/settings-storage.token';
 import { DEFAULT_SEED } from './config/world.config';
@@ -161,6 +162,21 @@ export class SandworldService implements OnDestroy {
   /** Elegir una arena activa el pincel; elegir la misma otra vez la suelta */
   selectSand(sand: SandId | null): void {
     this.selectedSand.update(s => (s === sand ? null : sand));
+  }
+
+  /**
+   * Descubre el siguiente chunk bajo las nubes y sube el nivel de la isla.
+   * Hoy lo dispara el botón de prueba de Ajustes; en la fase 7, las reglas de expansión.
+   */
+  revealNextChunk(): void {
+    const next = nextChunkToReveal(this.world.exploration);
+    if (!next || !this.world.exploration.reveal(next.cx, next.cy)) return;
+    this.world.chunk(next.cx, next.cy);
+    this.world.level++;
+    this.events.emit('chunkRevealed', next);
+    this.log({ type: 'world', key: 'chronicle.reveal', params: { level: this.world.level }, priority: 8 });
+    this.refreshIndicators();
+    this.showIslandLabel();
   }
 
   showIslandLabel(): void {
