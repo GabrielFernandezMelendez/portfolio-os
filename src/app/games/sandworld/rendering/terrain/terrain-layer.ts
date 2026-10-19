@@ -5,7 +5,7 @@ import { BAKE_HEIGHT, BAKE_ORIGIN_X, BAKE_ORIGIN_Y, BAKE_WIDTH, ChunkBaker } fro
 import { Rect } from '../camera';
 import { VegetationLayer } from '../vegetation/vegetation-layer';
 import { GameTime } from '../../domain/models/time.model';
-import { PlantInstance } from '../../application/vegetation/plant-layout';
+import { PlantInstance, RevealedFn, invalidateLayout } from '../../application/vegetation/plant-layout';
 
 /** Celda seleccionada: chunk + índice local + altura visible */
 export interface PickedCell {
@@ -73,9 +73,14 @@ export class TerrainLayer {
     return this.chunk ? { cx: this.chunk.cx, cy: this.chunk.cy } : null;
   }
 
-  /** Vuelve a colocar las plantas (tras cambiar la vegetación o el terreno) */
-  layoutPlants(time: GameTime): void {
-    if (this.chunk) this.plants.layout(this.chunk, (ci, cj) => this.cellTop(ci, cj), time);
+  /**
+   * Vuelve a colocar las plantas. `terrainChanged`: el agua o las alturas han cambiado y hay que volver a mirar
+   * dónde caben (no solo cuántas hay).
+   */
+  layoutPlants(time: GameTime, revealed: RevealedFn, terrainChanged = false): void {
+    if (!this.chunk) return;
+    if (terrainChanged) invalidateLayout(this.chunk);
+    this.plants.layout(this.chunk, (ci, cj) => this.cellTop(ci, cj), time, revealed);
   }
 
   /** Actualiza el aspecto de estación de las plantas (otoño, caída de hojas, nieve) */

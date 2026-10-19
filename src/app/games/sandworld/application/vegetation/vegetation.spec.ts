@@ -1,6 +1,6 @@
 import { World } from '../world/world';
 import { VegetationSystem, plantCapacity, rootsAt } from './vegetation';
-import { invalidateLayout, layoutOf } from './plant-layout';
+import { canGrowAt, invalidateLayout, layoutOf } from './plant-layout';
 import { tileContext } from '../world/tile-context';
 import { TerrainPhysics } from '../physics/terrain-physics';
 import { SeededRandom } from '../../infrastructure/seeded-random';
@@ -79,11 +79,38 @@ describe('Vegetación', () => {
     const { chunk } = emptyForest();
     chunk.plants[tileIndex(3, 3) * PLANT_SLOTS + byKey('oak').id] = 1;
     chunk.plants[tileIndex(3, 3) * PLANT_SLOTS + byKey('grass').id] = 1;
-    const a = layoutOf(chunk).map(p => `${p.plant}:${p.ci},${p.cj}`);
+    const all = () => true;
+    const a = layoutOf(chunk, all).map(p => `${p.plant}:${p.ci},${p.cj}`);
     invalidateLayout(chunk);
-    const b = layoutOf(chunk).map(p => `${p.plant}:${p.ci},${p.cj}`);
+    const b = layoutOf(chunk, all).map(p => `${p.plant}:${p.ci},${p.cj}`);
     expect(b).toEqual(a);
-    const oak = layoutOf(chunk).find(p => p.plant === byKey('oak').id)!;
-    for (const p of layoutOf(chunk)) if (p !== oak) expect(Math.max(Math.abs(p.ci - oak.ci), Math.abs(p.cj - oak.cj))).toBeGreaterThan(2);
+    const oak = layoutOf(chunk, all).find(p => p.plant === byKey('oak').id)!;
+    for (const p of layoutOf(chunk, all)) if (p !== oak) expect(Math.max(Math.abs(p.ci - oak.ci), Math.abs(p.cj - oak.cj))).toBeGreaterThan(2);
+  });
+
+  it('solo en suelo llano y seco: nada en el agua (salvo juncos), ni en el borde de una terraza, ni junto al precipicio', () => {
+    const { chunk } = emptyForest();
+    const only00 = (cx: number, cy: number) => cx === 0 && cy === 0;
+    // Un lago en el centro y una terraza a la derecha
+    for (let cj = 12; cj < 20; cj++) for (let ci = 12; ci < 20; ci++) chunk.water[cellIndex(ci, cj)] = 0.4;
+    for (let cj = 0; cj < 32; cj++) for (let ci = 24; ci < 32; ci++) chunk.rock[cellIndex(ci, cj)] = 3;
+    expect(canGrowAt(chunk, 15, 15, 'bush', false, only00)).toBe(false);   // en el lago
+    expect(canGrowAt(chunk, 11, 15, 'bush', false, only00)).toBe(false);   // en la orilla (vecina con agua)
+    expect(canGrowAt(chunk, 11, 15, 'small', true, only00)).toBe(true);    // el junco sí
+    for (let cj = 12; cj < 20; cj++) for (let ci = 12; ci < 20; ci++) chunk.water[cellIndex(ci, cj)] = 0.08;
+    expect(canGrowAt(chunk, 12, 15, 'small', true, only00)).toBe(true);    // junco en la orilla del agua poco honda
+    expect(canGrowAt(chunk, 15, 15, 'small', true, only00)).toBe(false);   // pero no en medio
+    for (let cj = 12; cj < 20; cj++) for (let ci = 12; ci < 20; ci++) chunk.water[cellIndex(ci, cj)] = 0.4;
+    expect(canGrowAt(chunk, 23, 5, 'small', false, only00)).toBe(false);   // al pie de la terraza
+    expect(canGrowAt(chunk, 0, 5, 'small', false, only00)).toBe(false);    // en el borde de la isla
+    expect(canGrowAt(chunk, 1, 5, 'tree', false, only00)).toBe(false);     // los árboles necesitan más margen
+    expect(canGrowAt(chunk, 0, 5, 'small', false, () => true)).toBe(true); // si el vecino está descubierto, no es borde
+    expect(canGrowAt(chunk, 6, 6, 'tree', false, only00)).toBe(true);
+    // Y el reparto lo respeta
+    for (let t = 0; t < 64; t++) for (const p of PLANT_DEFS) chunk.plants[t * PLANT_SLOTS + p.id] = p.biomes['forest'] ? 1 : 0;
+    invalidateLayout(chunk);
+    for (const p of layoutOf(chunk, only00)) {
+      expect(canGrowAt(chunk, p.ci, p.cj, PLANT_DEFS[p.plant].kind, !!PLANT_DEFS[p.plant].shore, only00)).toBe(true);
+    }
   });
 });

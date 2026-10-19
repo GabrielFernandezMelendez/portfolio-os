@@ -2,7 +2,7 @@ import { Container, Sprite } from 'pixi.js';
 import { ChunkData, cellIndex } from '../../domain/models/chunk.model';
 import { GameTime } from '../../domain/models/time.model';
 import { PLANT_DEFS } from '../../config/plants.config';
-import { PlantInstance, layoutOf } from '../../application/vegetation/plant-layout';
+import { PlantInstance, RevealedFn, layoutOf } from '../../application/vegetation/plant-layout';
 import { plantLook } from './plant-look';
 import { plantSize, plantTexture } from './plant-sprites';
 
@@ -32,10 +32,10 @@ export class VegetationLayer {
    * Coloca las plantas del chunk. `cellTop` da el punto (local al contenedor del chunk) de la cara superior
    * de una celda: ahí va el pie de la planta.
    */
-  layout(chunk: ChunkData, cellTop: (ci: number, cj: number) => { x: number; y: number }, time: GameTime): void {
+  layout(chunk: ChunkData, cellTop: (ci: number, cj: number) => { x: number; y: number }, time: GameTime, revealed: RevealedFn): void {
     for (const p of this.placed) p.sprite.destroy();
     this.placed = [];
-    for (const inst of layoutOf(chunk)) {
+    for (const inst of layoutOf(chunk, revealed)) {
       const def = PLANT_DEFS[inst.plant];
       const size = plantSize(def.key);
       const top = cellTop(inst.ci, inst.cj);

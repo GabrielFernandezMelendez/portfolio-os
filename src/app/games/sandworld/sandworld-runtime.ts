@@ -94,6 +94,8 @@ export class SandworldRuntime {
   /** Lo pidió el servicio antes de montar (el efecto de Angular puede llegar antes que Pixi) */
   private devViewWanted: DevTileView | null = null;
   private plantClock = 0;
+  /** ¿Está descubierto el chunk? (para saber qué bordes son precipicio) */
+  private readonly revealed = (cx: number, cy: number): boolean => this.world.exploration.isRevealed(cx, cy);
 
   constructor(
     private readonly engine: TimeEngine,
@@ -190,6 +192,10 @@ export class SandworldRuntime {
   showChunk(cx: number, cy: number): void {
     if (!this.clouds || this.terrains.has(chunkKey(cx, cy))) return;
     this.addChunk(cx, cy, true);
+    // Los vecinos ya no tienen precipicio por ese lado: sus plantas pueden llegar hasta el borde compartido
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+      this.terrains.get(chunkKey(cx + dx, cy + dy))?.layoutPlants(this.engine.time, this.revealed);
+    }
     this.camera.setBounds(this.discoveredBounds(CLOUD_CAMERA_MARGIN));
     const N = WORLD.TILES;
     const c = isoToWorld(cx * N + N / 2 - 0.5, cy * N + N / 2 - 0.5);
@@ -199,7 +205,7 @@ export class SandworldRuntime {
   /** El terreno de estos chunks ha cambiado: se re-hornearán en los próximos frames */
   /** La vegetación de estos chunks ha cambiado: se recolocan sus plantas */
   refreshPlants(chunks: readonly ChunkCoord[]): void {
-    for (const c of chunks) this.terrains.get(chunkKey(c.cx, c.cy))?.layoutPlants(this.engine.time);
+    for (const c of chunks) this.terrains.get(chunkKey(c.cx, c.cy))?.layoutPlants(this.engine.time, this.revealed);
   }
 
   markDirty(chunks: readonly ChunkCoord[]): void {
@@ -287,7 +293,7 @@ export class SandworldRuntime {
       if (this.now - (this.lastBake.get(key) ?? -Infinity) < REBAKE_INTERVAL_MS) continue;
       const [cx, cy] = key.split(',').map(Number);
       layer.render(this.world.chunk(cx, cy));
-      layer.layoutPlants(this.engine.time);
+      layer.layoutPlants(this.engine.time, this.revealed, true);
       this.lastBake.set(key, this.now);
       this.dirty.delete(key);
     }
@@ -298,7 +304,7 @@ export class SandworldRuntime {
     const clouds = this.clouds!;
     const layer = new TerrainLayer(this.world.seed);
     layer.render(this.world.chunk(cx, cy));
-    layer.layoutPlants(this.engine.time);
+    layer.layoutPlants(this.engine.time, this.revealed, true);
     layer.view.zIndex = cx + cy;                   // de atrás hacia delante en isométrica
     this.terrains.set(chunkKey(cx, cy), layer);
     this.stage.world.addChild(layer.view);
