@@ -18,6 +18,8 @@ export interface CellRef {
 export class TerrainGrid {
   /** Se llama cuando cambia la altura de una celda (el agua de alrededor tiene que volver a moverse) */
   onHeightChange: ((gx: number, gy: number) => void) | null = null;
+  /** Talud extra de una celda (raíces de las plantas); lo pone quien conoce la vegetación */
+  reposeBonus: ((ref: CellRef) => number) | null = null;
 
   constructor(private readonly world: World) {}
 

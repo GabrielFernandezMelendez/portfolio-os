@@ -68,6 +68,8 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
     this.game.events.on('chunkRevealed', c => this.runtime.showChunk(c.cx, c.cy));
     // Terreno cambiado (desprendimientos, vertidos) → re-horneado
     this.game.events.on('terrainChanged', cs => this.runtime.markDirty(cs));
+    // Vegetación cambiada → se recolocan las plantas
+    this.game.events.on('vegetationChanged', cs => this.runtime.refreshPlants(cs));
   }
 
   ngAfterViewInit(): void {

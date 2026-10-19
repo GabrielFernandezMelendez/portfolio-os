@@ -21,4 +21,6 @@ export interface GameEvents {
   chunkRevealed: ChunkCoord;
   /** El terreno de estos chunks ha cambiado (desprendimientos, vertidos...): hay que volver a hornearlos */
   terrainChanged: readonly ChunkCoord[];
+  /** La vegetación de estos chunks ha cambiado de forma visible: hay que recolocar sus plantas */
+  vegetationChanged: readonly ChunkCoord[];
 }

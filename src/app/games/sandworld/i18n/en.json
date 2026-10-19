@@ -33,7 +33,8 @@
       "nextSeason": "Test: next season",
       "glade": "Test: Awakened Glade",
       "viewValues": "Show essence and affinity",
-      "viewBiomes": "Show biomes"
+      "viewBiomes": "Show biomes",
+      "discoverPlants": "Test: know all plants"
     }
   },
   "lang": {
@@ -162,5 +163,32 @@
     "rain": "Rain",
     "snow": "Snow",
     "clear": "Clear"
+  },
+  "plant": {
+    "grass": "Common grass",
+    "clover": "Clover",
+    "rockMoss": "Rock moss",
+    "reed": "Reed",
+    "thistle": "Thistle",
+    "sage": "Sage",
+    "swampShroom": "Swamp mushroom",
+    "snowLichen": "Snow lichen",
+    "glowFlower": "Glowflower",
+    "redBerries": "Red berries",
+    "blueberry": "Blueberry",
+    "shadeBerries": "Shade berries",
+    "bramble": "Bramble",
+    "vine": "Creeping vine",
+    "cactus": "Cactus",
+    "oak": "Oak",
+    "pine": "Pine",
+    "appleTree": "Wild apple tree",
+    "willow": "Willow",
+    "deadTree": "Dead tree",
+    "unknown": {
+      "small": "Undiscovered plant",
+      "bush": "Undiscovered shrub",
+      "tree": "Undiscovered tree"
+    }
   }
 }

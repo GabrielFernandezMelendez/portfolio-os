@@ -38,7 +38,7 @@ import { TPipe } from '../../../i18n/t.pipe';
 
     <!-- Al tocar un tile: su bioma (o agua) junto al dedo. Cada toque crea una etiqueta nueva -->
     @for (info of game.inspected(); track info.id) {
-      <sw-tile-tag class="tag" [style.left.px]="info.x" [style.top.px]="info.y" [label]="'biome.' + info.key | t" />
+      <sw-tile-tag class="tag" [style.left]="'clamp(100px, ' + info.x + 'px, calc(100% - 100px))'" [style.top.px]="info.y" [label]="info.labelKey | t" />
     }
 
     @if (game.islandLabel()) {

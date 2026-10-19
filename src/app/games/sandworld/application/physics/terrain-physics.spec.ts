@@ -29,6 +29,7 @@ function settle(physics: TerrainPhysics, maxMinutes = 2000): number {
 describe('TerrainPhysics · desprendimientos', () => {
   it('un montón de arena se desmorona hasta respetar el talud de la arena', () => {
     const world = new World(11);
+    world.chunk(0, 0).plants.fill(0);         // sin raíces que sujeten (eso tiene su propia prueba)
     const physics = new TerrainPhysics(world);
     physics.deposit(16, 16, Material.SAND, 4);
     expect(settle(physics)).toBeLessThan(2000);

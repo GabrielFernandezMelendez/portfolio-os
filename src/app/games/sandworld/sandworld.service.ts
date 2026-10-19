@@ -29,6 +29,8 @@ import type { TappedTile } from './sandworld-runtime';
 import { Season } from './domain/models/time.model';
 import { DevTileView } from './rendering/dev/dev-tile-overlay';
 import { DevAction } from './config/dev.config';
+import { VegetationSystem } from './application/vegetation/vegetation';
+import { PLANT_DEFS, VEGETATION_CHECK_MINUTES } from './config/plants.config';
 import { SAND_COLOR_NUM } from './config/sands.config';
 import { PENDING_REDRAW_MINUTES } from './config/pour.config';
 import { Translator } from './i18n/translator';
@@ -70,6 +72,8 @@ export class SandworldService implements OnDestroy {
   readonly pours = new PourQueue(this.physics, new SeededRandom(this.world.seed * 7919 + 13));
   /** Biomas vivos: cambian con el estado del terreno; el Claro Despierto nace raro y crece despacio */
   readonly biomes = new BiomeSystem(this.world, new SeededRandom(this.world.seed * 104729 + 7));
+  /** Vegetación por tile: crece, compite, se extiende y se entierra */
+  readonly vegetation = new VegetationSystem(this.world, new SeededRandom(this.world.seed * 6151 + 11));
   /** Tiempo atmosférico: lluvia (o nieve), repartida al azar en cada estación según el registro de fenómenos */
   readonly weatherSystem = new WeatherSystem(this.physics, new SeededRandom(this.world.seed * 7907 + 3));
   /** Trazo en curso mientras el dedo vierte */
@@ -96,7 +100,7 @@ export class SandworldService implements OnDestroy {
    * Tile tocado sin arena: qué es (bioma, o agua) y dónde enseñarlo. Es una lista de 0 o 1 elementos con un id
    * nuevo en cada toque: así la etiqueta se vuelve a crear (y a animar) aunque se toque el mismo tile seguido.
    */
-  readonly inspected = signal<readonly { readonly id: number; readonly key: string; readonly x: number; readonly y: number }[]>([]);
+  readonly inspected = signal<readonly { readonly id: number; readonly labelKey: string; readonly x: number; readonly y: number }[]>([]);
   private inspectId = 0;
   private inspectTimer: ReturnType<typeof setTimeout> | null = null;
   /** Lo que le queda al trazo en curso (1 = botella llena). La botella del estante lo muestra. */
@@ -130,6 +134,7 @@ export class SandworldService implements OnDestroy {
       this.settlePours(t.minute);
       this.reportWorldEvents();
       if (t.minute % BIOME_CHECK_MINUTES === 0) this.updateBiomes();
+      if (t.minute % VEGETATION_CHECK_MINUTES === 0) this.updateVegetation(t.season);
     });
     this.events.on('newSeason', t => {
       this.biomes.newSeason();
@@ -305,6 +310,14 @@ export class SandworldService implements OnDestroy {
     }
   }
 
+  /** Revisa la vegetación: recoloca las plantas de los chunks que cambian y actualiza la barra de Vegetación */
+  private updateVegetation(season: number): void {
+    const changes = this.vegetation.update(VEGETATION_CHECK_MINUTES / 1440, season as 0 | 1 | 2 | 3);
+    if (changes.length === 0) return;
+    this.events.emit('vegetationChanged', changes);
+    this.refreshIndicators();
+  }
+
   /** Revisa los biomas: redibuja los chunks que cambian y lo cuenta en la crónica (un aviso por bioma nuevo) */
   private updateBiomes(): void {
     const changes = this.biomes.update(BIOME_CHECK_MINUTES / 1440);
@@ -379,6 +392,7 @@ export class SandworldService implements OnDestroy {
       case 'glade': return this.debugGlade();
       case 'viewValues': return this.toggleDevView('values');
       case 'viewBiomes': return this.toggleDevView('biomes');
+      case 'discoverPlants': return this.debugDiscoverPlants();
     }
   }
 
@@ -387,20 +401,35 @@ export class SandworldService implements OnDestroy {
     this.devView.update(v => (v === view ? null : view));
   }
 
+  /** TEMPORAL (modo desarrollo): el jugador conoce todas las plantas (o ninguna, si ya las conocía) */
+  debugDiscoverPlants(): void {
+    const all = this.world.discoveredPlants.size === PLANT_DEFS.length;
+    this.world.discoveredPlants.clear();
+    if (!all) for (const p of PLANT_DEFS) this.world.discoveredPlants.add(p.id);
+  }
+
   /** TEMPORAL (modo desarrollo): salta a la estación siguiente */
   debugNextSeason(): void {
     this.engine.skipToNextSeason();
   }
 
   /**
-   * Toque en un tile sin arena: muestra un momento junto al dedo su bioma, o "Agua" si se ha tocado un lago
-   * o un río (el humedal ya es un bioma de agua y sale con su nombre).
+   * Toque en un tile sin arena: muestra un momento junto al dedo qué hay ahí.
+   * - Una planta: su nombre si el jugador ya la conoce (la crónica contó que una especie se la come);
+   *   si no, "Árbol / Arbusto / Planta por descubrir".
+   * - Un lago o un río: "Agua" (el humedal ya es un bioma de agua y sale con su nombre).
+   * - Si no, el bioma.
    */
   inspectTile(t: TappedTile): void {
     const chunk = this.world.chunk(t.cx, t.cy);
     const biome = chunk.biome[tileIndex(t.i, t.j)] as BiomeId;
     const water = chunk.water[cellIndex(t.ci, t.cj)] > INSPECT_WATER && biome !== Biome.WETLAND;
-    this.inspected.set([{ id: ++this.inspectId, key: water ? 'water' : BIOME_BY_ID[biome].key, x: t.screenX, y: t.screenY }]);
+    let labelKey = water ? 'biome.water' : `biome.${BIOME_BY_ID[biome].key}`;
+    if (t.plant !== null) {
+      const plant = PLANT_DEFS[t.plant];
+      labelKey = this.world.discoveredPlants.has(plant.id) ? `plant.${plant.key}` : `plant.unknown.${plant.kind}`;
+    }
+    this.inspected.set([{ id: ++this.inspectId, labelKey, x: t.screenX, y: t.screenY }]);
     if (this.inspectTimer) clearTimeout(this.inspectTimer);
     this.inspectTimer = setTimeout(() => this.inspected.set([]), INSPECT_MS);
   }

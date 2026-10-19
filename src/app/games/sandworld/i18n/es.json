@@ -33,7 +33,8 @@
       "nextSeason": "Probar: siguiente estación",
       "glade": "Probar: Claro Despierto",
       "viewValues": "Ver esencia y afinidad",
-      "viewBiomes": "Ver biomas"
+      "viewBiomes": "Ver biomas",
+      "discoverPlants": "Probar: conocer las plantas"
     }
   },
   "lang": {
@@ -162,5 +163,32 @@
     "rain": "Lluvia",
     "snow": "Nieve",
     "clear": "Despejado"
+  },
+  "plant": {
+    "grass": "Hierba común",
+    "clover": "Trébol",
+    "rockMoss": "Musgo de roca",
+    "reed": "Junco",
+    "thistle": "Cardo",
+    "sage": "Salvia",
+    "swampShroom": "Seta del pantano",
+    "snowLichen": "Liquen de nieve",
+    "glowFlower": "Flor luminosa",
+    "redBerries": "Bayas rojas",
+    "blueberry": "Arándano azul",
+    "shadeBerries": "Bayas de sombra",
+    "bramble": "Zarza espinosa",
+    "vine": "Enredadera invasora",
+    "cactus": "Cactus",
+    "oak": "Roble",
+    "pine": "Pino",
+    "appleTree": "Manzano silvestre",
+    "willow": "Sauce",
+    "deadTree": "Árbol seco",
+    "unknown": {
+      "small": "Planta por descubrir",
+      "bush": "Arbusto por descubrir",
+      "tree": "Árbol por descubrir"
+    }
   }
 }

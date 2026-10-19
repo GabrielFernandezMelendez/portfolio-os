@@ -16,6 +16,7 @@ export const DEV_ACTIONS = [
   'glade',         // despertar un Claro sin sorteo
   'viewValues',    // ver esencia y afinidad de cada tile
   'viewBiomes',    // ver el bioma de cada tile
+  'discoverPlants', // conocer todas las plantas (sus nombres al tocarlas)
 ] as const;
 
 export type DevAction = (typeof DEV_ACTIONS)[number];

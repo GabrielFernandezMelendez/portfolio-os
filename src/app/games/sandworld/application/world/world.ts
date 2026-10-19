@@ -3,6 +3,8 @@ import { generateChunk } from './chunk-generator';
 import { computeClimate } from './climate';
 import { ExplorationMap } from './exploration';
 import { placeNaturalSprings } from './springs';
+import { VegetationSystem } from '../vegetation/vegetation';
+import { SeededRandom } from '../../infrastructure/seeded-random';
 
 /**
  * El mundo de una partida: semilla y chunks cargados.
@@ -17,6 +19,9 @@ export class World {
   /** Chunks descubiertos; el resto está bajo las nubes */
   readonly exploration = new ExplorationMap();
 
+  /** Plantas que el jugador ya conoce (las descubre al ver en la crónica que una especie se las come) */
+  readonly discoveredPlants = new Set<number>();
+
   constructor(readonly seed: number) {}
 
   /** Devuelve el chunk (cx, cy), generándolo la primera vez */
@@ -27,6 +32,7 @@ export class World {
       c = generateChunk(this.seed, cx, cy);
       computeClimate(c, this.seed);
       placeNaturalSprings(c, this.seed);
+      VegetationSystem.seed(c, new SeededRandom(this.seed * 31 + cx * 7919 + cy * 104729));
       this.chunks.set(key, c);
     }
     return c;

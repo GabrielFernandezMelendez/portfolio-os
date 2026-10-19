@@ -58,7 +58,7 @@ export class LandslideSystem {
 
       const material = cell.chunk.material[cell.k] as MaterialId;
       // El material mojado aguanta más pendiente (arena de playa); el barro ya tiene su talud bajo
-      const repose = MATERIALS[material].repose + cell.chunk.moisture[cell.k] * WET_REPOSE_BONUS;
+      const repose = MATERIALS[material].repose + cell.chunk.moisture[cell.k] * WET_REPOSE_BONUS + (this.grid.reposeBonus?.(cell) ?? 0);
       if (!Number.isFinite(repose)) continue;
 
       const h = this.grid.ground(cell);

@@ -8,6 +8,7 @@ import { LandslideSystem } from './landslides';
 import { SpringChange, WaterOptions, WaterSystem } from './water';
 import { ThermalSystem } from './thermal';
 import { ClimateState } from '../climate/climate-state';
+import { rootsAt } from '../vegetation/vegetation';
 import { FREEZE_RATE, FREEZE_TEMPERATURE, SNOW_PER_RAIN, SNOW_TEMPERATURE } from '../../config/climate.config';
 import { SOIL_WATER_CAPACITY, WATER_MIN } from '../../config/water.config';
 import { temperatureAt, tileIndex } from '../../domain/models/chunk.model';
@@ -40,6 +41,8 @@ export class TerrainPhysics {
     this.thermal = new ThermalSystem(this.grid, (gx, gy, water) => this.addWater(gx, gy, water), offset);
     // Si cambia la altura de una celda, su agua y la de alrededor vuelven a moverse
     this.grid.onHeightChange = (gx, gy) => this.water.wake(gx, gy);
+    // Las raíces de árboles y sauces sujetan el terreno: aguanta pendientes más fuertes
+    this.grid.reposeBonus = ref => rootsAt(ref.chunk, ref.k);
     for (const { cx, cy } of world.exploration.list()) {
       this.water.addChunk(world.chunk(cx, cy));
       this.thermal.addChunk(world.chunk(cx, cy));

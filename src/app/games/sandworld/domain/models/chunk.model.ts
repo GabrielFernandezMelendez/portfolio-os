@@ -25,6 +25,8 @@ import { WORLD } from './world.model';
  *   biome     BiomeId
  *   biomeNext / biomeTimer  bioma al que tiende el tile y días que lleva cumpliendo sus condiciones
  *   glade     1 si el tile tiene un Claro Despierto; gladeWait  días que faltan para poder volver a intentarlo
+ *   plants    biomasa (0..1) de cada planta del registro: PLANT_SLOTS valores por tile (tile × PLANT_SLOTS + id)
+ *   vegGround altura media del tile en la última revisión de la vegetación (si sube de golpe, la arena entierra plantas)
  */
 export interface ChunkData {
   readonly cx: number;
@@ -61,7 +63,12 @@ export interface ChunkData {
   readonly biomeTimer: Float32Array;
   readonly glade: Uint8Array;
   readonly gladeWait: Float32Array;
+  readonly plants: Float32Array;
+  readonly vegGround: Float32Array;
 }
+
+/** Plantas distintas que caben en un tile (el registro puede crecer hasta aquí sin cambiar el formato) */
+export const PLANT_SLOTS = 32;
 
 const CELLS_TOTAL = WORLD.CELLS * WORLD.CELLS;
 const TILES_TOTAL = WORLD.TILES * WORLD.TILES;
@@ -99,6 +106,8 @@ export function createChunkData(cx: number, cy: number): ChunkData {
     biomeTimer: new Float32Array(TILES_TOTAL),
     glade: new Uint8Array(TILES_TOTAL),
     gladeWait: new Float32Array(TILES_TOTAL),
+    plants: new Float32Array(TILES_TOTAL * PLANT_SLOTS),
+    vegGround: new Float32Array(TILES_TOTAL),
   };
 }
 

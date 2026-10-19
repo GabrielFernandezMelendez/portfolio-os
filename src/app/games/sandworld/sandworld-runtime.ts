@@ -45,6 +45,8 @@ export interface TappedTile {
   readonly cj: number;
   readonly screenX: number;
   readonly screenY: number;
+  /** Planta tocada (id del registro), si el dedo cayó sobre una */
+  readonly plant: number | null;
 }
 
 /** Lo que el runtime necesita del servicio para verter: el runtime sabe dónde está el dedo; el servicio, qué cae */
@@ -60,6 +62,8 @@ export interface PourHooks {
 }
 
 const chunkKey = (cx: number, cy: number): string => `${cx},${cy}`;
+/** Cada cuántos ms se revisa el aspecto de estación de las plantas */
+const PLANT_LOOK_MS = 500;
 
 /**
  * Raíz de composición del juego en marcha: une motor de tiempo, render, cámara y entrada.
@@ -89,6 +93,7 @@ export class SandworldRuntime {
   private brushEnabled = false;
   /** Lo pidió el servicio antes de montar (el efecto de Angular puede llegar antes que Pixi) */
   private devViewWanted: DevTileView | null = null;
+  private plantClock = 0;
 
   constructor(
     private readonly engine: TimeEngine,
@@ -145,12 +150,24 @@ export class SandworldRuntime {
       },
       hover: (x, y) => this.pointAt(x, y),
       tap: (x, y) => {
+        const G = WORLD.CELLS_PER_TILE;
+        // Primero, ¿hay una planta bajo el dedo? (su copa puede tapar celdas de detrás)
+        const w = this.camera.screenToWorld(x, y);
+        for (const layer of [...this.terrains.values()].sort((a, b) => b.view.zIndex - a.view.zIndex)) {
+          const plant = layer.plantAt(w.x, w.y);
+          const coords = layer.coords;
+          if (!plant || !coords) continue;
+          this.hooks.tileTap?.({
+            cx: coords.cx, cy: coords.cy, i: Math.floor(plant.ci / G), j: Math.floor(plant.cj / G),
+            ci: plant.ci, cj: plant.cj, screenX: x, screenY: y, plant: plant.plant,
+          });
+          return;
+        }
         const area = this.areaAt(x, y);
         if (area) {
-          const G = WORLD.CELLS_PER_TILE;
           this.hooks.tileTap?.({
             cx: area.cx, cy: area.cy, i: Math.floor(area.ci / G), j: Math.floor(area.cj / G),
-            ci: area.ci, cj: area.cj, screenX: x, screenY: y,
+            ci: area.ci, cj: area.cj, screenX: x, screenY: y, plant: null,
           });
         }
       },
@@ -180,6 +197,11 @@ export class SandworldRuntime {
   }
 
   /** El terreno de estos chunks ha cambiado: se re-hornearán en los próximos frames */
+  /** La vegetación de estos chunks ha cambiado: se recolocan sus plantas */
+  refreshPlants(chunks: readonly ChunkCoord[]): void {
+    for (const c of chunks) this.terrains.get(chunkKey(c.cx, c.cy))?.layoutPlants(this.engine.time);
+  }
+
   markDirty(chunks: readonly ChunkCoord[]): void {
     for (const c of chunks) this.dirty.add(chunkKey(c.cx, c.cy));
   }
@@ -230,6 +252,12 @@ export class SandworldRuntime {
     if (this.brushPoint) this.pourUnderFinger(dt);
     this.grains.update(dt);
     this.devOverlay?.update(dt);
+    // Aspecto de estación de las plantas (cambia en días de juego: basta con mirarlo dos veces por segundo)
+    this.plantClock += dt;
+    if (this.plantClock >= PLANT_LOOK_MS) {
+      this.plantClock = 0;
+      for (const t of this.terrains.values()) t.updatePlants(this.engine.time);
+    }
     this.clouds?.update(dt);
     // Apariciones en curso (en tiempo real: siguen aunque el juego esté en pausa)
     for (let i = this.reveals.length - 1; i >= 0; i--) {
@@ -259,6 +287,7 @@ export class SandworldRuntime {
       if (this.now - (this.lastBake.get(key) ?? -Infinity) < REBAKE_INTERVAL_MS) continue;
       const [cx, cy] = key.split(',').map(Number);
       layer.render(this.world.chunk(cx, cy));
+      layer.layoutPlants(this.engine.time);
       this.lastBake.set(key, this.now);
       this.dirty.delete(key);
     }
@@ -269,6 +298,7 @@ export class SandworldRuntime {
     const clouds = this.clouds!;
     const layer = new TerrainLayer(this.world.seed);
     layer.render(this.world.chunk(cx, cy));
+    layer.layoutPlants(this.engine.time);
     layer.view.zIndex = cx + cy;                   // de atrás hacia delante en isométrica
     this.terrains.set(chunkKey(cx, cy), layer);
     this.stage.world.addChild(layer.view);

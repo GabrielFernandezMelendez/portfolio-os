@@ -1,7 +1,7 @@
 import { IndicatorRegistry } from './indicator-registry';
 import { World } from '../world/world';
-import { BiomeId } from '../../domain/models/biome.model';
-import { BIOME_BY_ID } from '../../config/biomes.config';
+import { PLANT_SLOTS } from '../../domain/models/chunk.model';
+import { PLANT_DEFS, PLANT_SPACE } from '../../config/plants.config';
 
 /** Fracción de agua a partir de la cual la isla se considera bien abastecida (barra llena) */
 const WATER_FULL = 0.2;
@@ -16,19 +16,25 @@ export function waterLevel(world: World): number {
   return total ? wet / total / WATER_FULL : 0;
 }
 
+/** Biomasa por tile (espacio ocupado) con la que la barra se considera llena: 1 = todo el sitio ocupado */
+const VEGETATION_FULL = 1;
+
 /**
- * Vegetación PROVISIONAL: fertilidad media de los tiles con vida vegetal posible.
- * En la fase 4 pasa a medir la biomasa real de las plantas.
+ * Vegetación: biomasa media de los tiles descubiertos (cada planta pesa según el espacio que ocupa:
+ * un árbol cuenta más que una mata de hierba), relativa a VEGETATION_FULL.
  */
 export function vegetationLevel(world: World): number {
   let sum = 0, total = 0;
-  for (const c of world.loadedChunks) {
+  for (const { cx, cy } of world.exploration.list()) {
+    const c = world.chunk(cx, cy);
     for (let t = 0; t < c.biome.length; t++) {
       total++;
-      sum += c.fertility[t] * BIOME_BY_ID[c.biome[t] as BiomeId].vegetation;
+      let b = 0;
+      for (const p of PLANT_DEFS) b += c.plants[t * PLANT_SLOTS + p.id] * PLANT_SPACE[p.kind];
+      sum += Math.min(1, b);
     }
   }
-  return total ? sum / total : 0;
+  return total ? sum / total / VEGETATION_FULL : 0;
 }
 
 /** Indicadores de la fase 1. La fauna se registra en la fase 4. */
