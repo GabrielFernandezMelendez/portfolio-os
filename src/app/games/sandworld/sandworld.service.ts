@@ -89,7 +89,10 @@ export class SandworldService implements OnDestroy {
   readonly panel = signal<HudPanel | null>(null);
   readonly menu = signal<HudMenu | null>(null);
   readonly selectedSand = signal<SandId | null>(null);
+  /** Libro de la crónica (todo, en orden de tiempo de juego) */
   readonly chronicleEntries = signal<readonly ChronicleEntry[]>([]);
+  /** Franja de arriba (con ritmo: lo que va saliendo de la cola) */
+  readonly chronicleStrip = signal<readonly ChronicleEntry[]>([]);
   readonly indicatorValues = signal<readonly IndicatorValue[]>([]);
   readonly islandLabel = signal(false);
   /** Modo desarrollo: capa de esencia y afinidad o de biomas sobre la isla (null = ninguna) */
@@ -166,6 +169,7 @@ export class SandworldService implements OnDestroy {
     if (this.chronicle.revision !== this.chronicleRevision) {
       this.chronicleRevision = this.chronicle.revision;
       this.chronicleEntries.set([...this.chronicle.entries]);
+      this.chronicleStrip.set([...this.chronicle.strip]);
     }
   }
 

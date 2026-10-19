@@ -6,7 +6,7 @@ import { WORLD } from '../../domain/models/world.model';
 import { RandomSource } from '../../domain/ports/random-source.port';
 import { BIOME_BY_ID } from '../../config/biomes.config';
 import {
-  BURY_KILL, CROP_CAPACITY_BONUS, CROP_CARE_DAYS, CROP_GROWTH_BONUS, CROP_REGROW_FROM, PLANT_DEFS, PLANT_MIN, PLANT_SPACE,
+  CROP_CAPACITY_BONUS, CROP_CARE_DAYS, CROP_GROWTH_BONUS, CROP_REGROW_FROM, PLANT_DEFS, PLANT_MIN, PLANT_SPACE,
   SEASON_GROWTH, SEEDLING,
 } from '../../config/plants.config';
 import { World } from '../world/world';
@@ -196,16 +196,8 @@ export class VegetationSystem {
     const biome = chunk.biome[t] as BiomeId;
     const before = this.signature(chunk, base);
 
-    // Arena que entierra o tierra que se va (Duna, Marea, desprendimientos)
-    const ground = tileGround(chunk, i, j);
-    const change = ground - chunk.vegGround[t];
-    if (Math.abs(change) > 0.05) {
-      for (const p of PLANT_DEFS) {
-        const k = base + p.id;
-        chunk.plants[k] *= Math.max(0, 1 - Math.abs(change) / BURY_KILL[p.kind]);
-      }
-      chunk.vegGround[t] = ground;
-    }
+    // Arena que entierra o tierra que se va: lo resuelve cada planta en su celda (plant-layout: mueren allí mismo)
+    chunk.vegGround[t] = tileGround(chunk, i, j);
 
     const growth = SEASON_GROWTH[season];
     let vine = 0;

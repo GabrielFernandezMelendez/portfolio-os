@@ -54,17 +54,66 @@ describe('Vegetación', () => {
     expect(tiles).toBeGreaterThan(2);
   });
 
-  it('la arena que cae de golpe mata la hierba antes que un árbol', () => {
-    const { world, chunk } = emptyForest();
-    const v = new VegetationSystem(world, new SeededRandom(1));
-    const physics = new TerrainPhysics(world);
+  it('la arena que cae de golpe mata la hierba en su sitio antes que un árbol', () => {
+    const { chunk } = emptyForest();
+    const all = () => true;
     chunk.plants[tileIndex(2, 2) * PLANT_SLOTS + byKey('grass').id] = 0.9;
     chunk.plants[tileIndex(2, 2) * PLANT_SLOTS + byKey('oak').id] = 0.9;
+    const before = layoutOf(chunk, all);
+    expect(before.some(p => p.plant === byKey('grass').id)).toBe(true);
     for (let dj = 0; dj < 4; dj++) for (let di = 0; di < 4; di++) chunk.sediment[cellIndex(8 + di, 8 + dj)] += 0.5;
-    physics.minute();
-    v.update(1 / 24, Season.SUMMER);
+    invalidateLayout(chunk);
+    const after = layoutOf(chunk, all);
+    expect(after.some(p => p.plant === byKey('grass').id)).toBe(false);
     expect(at(chunk, 2, 2, 'grass')).toBeLessThan(0.1);
+    const oak = before.find(p => p.plant === byKey('oak').id)!;
+    expect(after).toContain(oak);
     expect(at(chunk, 2, 2, 'oak')).toBeGreaterThan(0.4);
+  });
+
+  it('una planta inundada muere en su celda: no salta a otra y su biomasa baja', () => {
+    const { chunk } = emptyForest();
+    const all = () => true;
+    const slot = tileIndex(3, 3) * PLANT_SLOTS + byKey('oak').id;
+    chunk.plants[slot] = 1;
+    const oak = layoutOf(chunk, all).find(p => p.plant === byKey('oak').id)!;
+    // Se inunda la celda del roble (y sus vecinas)
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) chunk.water[cellIndex(oak.ci + dx, oak.cj + dy)] = 0.4;
+    invalidateLayout(chunk);
+    const flooded = layoutOf(chunk, all);
+    expect(flooded.some(p => p.plant === byKey('oak').id)).toBe(false);
+    expect(chunk.plants[slot]).toBe(0);
+    // Al retirarse el agua no aparece otro en otra celda (solo nacerá si la biomasa vuelve a crecer)
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) chunk.water[cellIndex(oak.ci + dx, oak.cj + dy)] = 0;
+    invalidateLayout(chunk);
+    expect(layoutOf(chunk, all).some(p => p.plant === byKey('oak').id)).toBe(false);
+  });
+
+  it('el agua que aparece o se va alrededor no mueve las plantas que siguen vivas', () => {
+    const { chunk } = emptyForest();
+    const all = () => true;
+    for (let t = 0; t < 64; t++) chunk.plants[t * PLANT_SLOTS + byKey('oak').id] = 1;
+    const before = layoutOf(chunk, all).map(p => `${p.ci},${p.cj}`);
+    // Un lago en una esquina: mueren los de dentro, los de fuera no se mueven
+    for (let cj = 0; cj < 10; cj++) for (let ci = 0; ci < 10; ci++) chunk.water[cellIndex(ci, cj)] = 0.5;
+    invalidateLayout(chunk);
+    const during = layoutOf(chunk, all).map(p => `${p.ci},${p.cj}`);
+    expect(during.length).toBeLessThan(before.length);
+    for (const p of during) expect(before).toContain(p);
+    // Se seca (Duna tapa el manantial): los supervivientes siguen exactamente donde estaban
+    for (let cj = 0; cj < 10; cj++) for (let ci = 0; ci < 10; ci++) chunk.water[cellIndex(ci, cj)] = 0;
+    invalidateLayout(chunk);
+    expect(layoutOf(chunk, all).map(p => `${p.ci},${p.cj}`)).toEqual(during);
+  });
+
+  it('un charco de lluvia no mata una planta ya nacida', () => {
+    const { chunk } = emptyForest();
+    const all = () => true;
+    chunk.plants[tileIndex(3, 3) * PLANT_SLOTS + byKey('oak').id] = 1;
+    const oak = layoutOf(chunk, all).find(p => p.plant === byKey('oak').id)!;
+    chunk.water[cellIndex(oak.ci, oak.cj)] = 0.03;
+    invalidateLayout(chunk);
+    expect(layoutOf(chunk, all)).toContain(oak);
   });
 
   it('las raíces de los árboles dan talud extra al terreno', () => {

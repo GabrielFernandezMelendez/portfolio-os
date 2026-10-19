@@ -40,6 +40,13 @@ export class TerrainGrid {
     this.onHeightChange?.(c.cx * C + (ref.k % C), c.cy * C + Math.floor(ref.k / C));
   }
 
+  /** Cambia la altura de la roca madre de una celda (solo la Marea la rebaja) y avisa */
+  setRock(ref: CellRef, rock: number): void {
+    const c = ref.chunk;
+    c.rock[ref.k] = rock;
+    this.onHeightChange?.(c.cx * C + (ref.k % C), c.cy * C + Math.floor(ref.k / C));
+  }
+
   /** Cambia el espesor de la capa helada (nieve o hielo) de una celda y avisa */
   setCover(ref: CellRef, cover: number): void {
     const c = ref.chunk;

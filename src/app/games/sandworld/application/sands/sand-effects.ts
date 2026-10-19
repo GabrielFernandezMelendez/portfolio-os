@@ -7,7 +7,7 @@ import { LAYER_SWITCH_PROGRESS, POUR_MAX_DUNE, POUR_MAX_MASS, POUR_MAX_MASSLESS 
 import {
   AFINIDAD_AFFINITY, BRASA_ASH, BRASA_DRY, BRASA_EVAPORATE, BRASA_HEAT, BRASA_MELT, BRASA_WARM, CHAR_HEAT,
   DESPERTAR_ESSENCE, ESCARCHA_CHILL, ESCARCHA_FREEZE, ESCARCHA_SNOW, HUMUS_DEPOSIT, HUMUS_FERTILITY, HUMUS_MOISTURE,
-  MANANTIAL_BASE_RATE, MANANTIAL_MAX_RATE, MANANTIAL_MERGE_DISTANCE, MANANTIAL_RATE_PER_UNIT, MAREA_DIG,
+  MANANTIAL_BASE_RATE, MANANTIAL_MAX_RATE, MANANTIAL_MERGE_DISTANCE, MANANTIAL_RATE_PER_UNIT, MAREA_DIG, MAREA_ROCK_DIG, MAREA_ROCK_FLOOR,
 } from '../../config/sand-effects.config';
 
 /** Algo que ha pasado al aplicar una arena y merece aviso (la crónica lo cuenta) */
@@ -62,13 +62,13 @@ export const SAND_EFFECTS: Readonly<Record<SandId, SandEffect>> = {
     },
   },
 
-  // Marea: excava (primero nieve o hielo, después sedimento). Destapa los manantiales enterrados.
+  // Marea: excava (primero nieve o hielo, después sedimento y, más despacio, roca). Abre canales y destapa manantiales.
   [Sand.MAREA]: {
     sand: Sand.MAREA,
     maxPerCell: POUR_MAX_MASS,
     massless: false,
     apply: (physics, gx, gy, amount) => {
-      physics.dig(gx, gy, amount * MAREA_DIG);
+      physics.dig(gx, gy, amount * MAREA_DIG, MAREA_ROCK_DIG, MAREA_ROCK_FLOOR);
     },
   },
 

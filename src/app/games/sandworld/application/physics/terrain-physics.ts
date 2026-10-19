@@ -120,18 +120,28 @@ export class TerrainPhysics {
     this.water.wake(gx, gy);
   }
 
-  /** Quita hasta `amount` niveles de capa helada y luego de sedimento (Marea). Devuelve lo que se ha quitado. */
-  dig(gx: number, gy: number, amount: number): number {
+  /**
+   * Marea: quita hasta `amount` niveles de capa helada y luego de sedimento; lo que sobre excava roca
+   * a `rockRate` por nivel sobrante (más lenta), sin bajar nunca de `rockFloor`. Devuelve lo que se ha quitado.
+   */
+  dig(gx: number, gy: number, amount: number, rockRate = 0, rockFloor = 0): number {
     const cell = this.grid.cell(gx, gy);
     if (!cell || amount <= 0) return 0;
     const fromCover = Math.min(cell.chunk.cover[cell.k], amount);
     if (fromCover > 0) this.grid.setCover(cell, cell.chunk.cover[cell.k] - fromCover);
     const removed = Math.min(cell.chunk.sediment[cell.k], amount - fromCover);
     if (removed > 0) this.grid.setSediment(cell, cell.chunk.sediment[cell.k] - removed);
+    // Con la tierra ya quitada, la roca cede más despacio (así se abren canales entre lagos)
+    const left = amount - fromCover - removed;
+    let carved = 0;
+    if (left > 0 && rockRate > 0) {
+      carved = Math.min(left * rockRate, Math.max(0, cell.chunk.rock[cell.k] - rockFloor));
+      if (carved > 0) this.grid.setRock(cell, cell.chunk.rock[cell.k] - carved);
+    }
     this.landslides.wake(gx, gy);
     // Excavar alrededor también hace que se deslice lo de las vecinas hacia el hoyo
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) this.landslides.wake(gx + dx, gy + dy);
-    return fromCover + removed;
+    return fromCover + removed + carved;
   }
 
   /** Escarcha: nieve encima y el agua de la celda (hasta `freeze` niveles) se congela en hielo */

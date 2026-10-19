@@ -29,7 +29,7 @@ import { TPipe } from '../../../i18n/t.pipe';
       class="top"
       [time]="game.time()"
       [weather]="game.weather().look"
-      [entries]="game.chronicleEntries()"
+      [entries]="game.chronicleStrip()"
       [indicators]="game.indicatorValues()"
       (settings)="game.openMenu('settings')"
       (balance)="game.togglePanel('balance')"

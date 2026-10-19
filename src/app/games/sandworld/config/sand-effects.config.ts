@@ -2,8 +2,15 @@
 // Las cantidades son por unidad de arena asentada (una celda recibe hasta 1 por trazo; Duna, hasta 1,5).
 
 // ── Marea ──
-/** Sedimento que excava por unidad (la roca solo la erosiona a ritmo de años: aquí no se toca) */
+/** Niveles que excava por unidad: primero nieve o hielo, después sedimento */
 export const MAREA_DIG = 1.0;
+/**
+ * Lo que sobra tras quitar la tierra excava roca, más despacio: por cada nivel sobrante, MAREA_ROCK_DIG de roca.
+ * Un trazo normal (1 por celda) sobre tierra fina rebaja de 0,25 a 0,5 niveles de roca: 2-3 trazos abren un canal.
+ */
+export const MAREA_ROCK_DIG = 0.5;
+/** La roca nunca baja de aquí (lo mismo que el mínimo con el que se genera la isla): no se atraviesa la isla */
+export const MAREA_ROCK_FLOOR = 0.2;
 
 // ── Manantial ──
 /** Caudal (niveles/minuto) de un manantial nuevo y lo que suma cada unidad vertida; tope de caudal */
