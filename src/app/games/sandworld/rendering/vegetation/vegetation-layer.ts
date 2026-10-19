@@ -15,6 +15,8 @@ import { plantStress } from '../../application/vegetation/vegetation';
 import { ArtLook, FRESH } from './plant-art';
 import { plantLook } from './plant-look';
 import { fallTexture, lookStep, plantSize, plantTexture, shadowTexture } from './plant-sprites';
+import { frontOrder } from '../../application/fire/fire';
+import { FLAME_FRAMES, flameTexture } from '../fire/fire-sprites';
 
 /** Nieve (en niveles) en la celda a partir de la que la planta se ve nevada: de nevada o de Escarcha */
 const SNOWY_SEASONAL = 0.03;
@@ -39,7 +41,13 @@ interface PlacedPlant {
   stage: Stage;
   /** ms que le quedan a un saltito (nace o cambia de etapa) */
   bounce: number;
+  /** Llamas encima mientras arde (el frente del fuego del suelo ha llegado a su celda) */
+  flame: { sprite: Sprite; w: number; h: number; frame: number } | null;
 }
+
+/** Cada cuánto se mira qué plantas arden y cada cuánto parpadean sus llamas (ms reales) */
+const FIRE_SCAN_MS = 250;
+const FLICKER_MS = 110;
 
 /** Una animación en curso (muerte, nacimiento o partículas). update devuelve true al terminar. */
 interface Anim {
@@ -63,6 +71,8 @@ export class VegetationLayer {
   private readonly waiting = new Set<PlantInstance>();
   private readonly anims: Anim[] = [];
   private chunk: ChunkData | null = null;
+  private fireScan = 0;
+  private flicker = 0;
   private cellTop: CellTop | null = null;
   private revealed: RevealedFn | null = null;
 
@@ -164,6 +174,48 @@ export class VegetationLayer {
       p.bounce -= dtMs;
       this.place(p);
     }
+    this.burnPlants(dtMs);
+  }
+
+  /** Llamas sobre las plantas a las que ha llegado el fuego del suelo (arden de abajo arriba) */
+  private burnPlants(dtMs: number): void {
+    const chunk = this.chunk;
+    if (!chunk) return;
+    this.fireScan -= dtMs;
+    if (this.fireScan <= 0) {
+      this.fireScan = FIRE_SCAN_MS;
+      for (const p of this.placed.values()) {
+        const i = Math.floor(p.inst.ci / G), j = Math.floor(p.inst.cj / G);
+        const t = i + j * WORLD.TILES;
+        let burning = false;
+        if (chunk.fire[t] > 0) {
+          const n = frontOrder(i, j, chunk.fireFrom[t]).indexOf(cellIndex(p.inst.ci, p.inst.cj));
+          burning = n <= chunk.fireAge[t] * G * G + 1;
+        }
+        if (burning && !p.flame) {
+          const size = plantSize(p.artKey || 'grass', p.young);
+          const w = Math.max(3, Math.round(size.w * 0.8)), h = Math.max(4, Math.round(size.h * 0.95));
+          const sprite = new Sprite(flameTexture(w, h, 0));
+          this.view.addChild(sprite);
+          p.flame = { sprite, w, h, frame: 0 };
+        } else if (!burning && p.flame) {
+          p.flame.sprite.destroy();
+          p.flame = null;
+        }
+        if (p.flame) {
+          p.flame.sprite.position.set(p.foot.x - Math.floor(p.flame.w / 2), p.foot.y - p.flame.h);
+          p.flame.sprite.zIndex = p.foot.y + 0.1;
+        }
+      }
+    }
+    this.flicker -= dtMs;
+    if (this.flicker > 0) return;
+    this.flicker = FLICKER_MS;
+    for (const p of this.placed.values()) {
+      if (!p.flame) continue;
+      p.flame.frame = (p.flame.frame + 1) % FLAME_FRAMES;
+      p.flame.sprite.texture = flameTexture(p.flame.w, p.flame.h, p.flame.frame);
+    }
   }
 
   /** Planta bajo un punto (local al contenedor del chunk), la de delante si hay varias */
@@ -198,7 +250,7 @@ export class VegetationLayer {
     shadow.alpha = 1;
     const sprite = new Sprite();
     this.view.addChild(shadow, sprite);
-    return { inst, sprite, shadow, foot, artKey: '', young: false, look: '', lastLook: FRESH, stage: Stage.ADULT, bounce: 0 };
+    return { inst, sprite, shadow, foot, artKey: '', young: false, look: '', lastLook: FRESH, stage: Stage.ADULT, bounce: 0, flame: null };
   }
 
   /** Pone el sprite con el pie en su punto (y su sombra debajo) */
@@ -216,6 +268,7 @@ export class VegetationLayer {
   private removePlaced(p: PlacedPlant): void {
     p.sprite.destroy();
     p.shadow.destroy();
+    p.flame?.sprite.destroy();
   }
 
   private addTilled(foot: { x: number; y: number }): void {
@@ -287,6 +340,8 @@ export class VegetationLayer {
     const def = PLANT_DEFS[p.inst.plant];
     const sprite = p.sprite;
     p.shadow.destroy();
+    p.flame?.sprite.destroy();
+    p.flame = null;
     this.waiting.add(p.inst);
     const done = () => {
       this.waiting.delete(p.inst);

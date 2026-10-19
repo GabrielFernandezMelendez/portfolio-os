@@ -6,6 +6,7 @@ import { BrushArea, CellCursor } from './rendering/cell-cursor';
 import { GrainParticles } from './rendering/sands/grain-particles';
 import { DevTileOverlay, DevTileView } from './rendering/dev/dev-tile-overlay';
 import { Precipitation } from './rendering/weather/precipitation';
+import { Lightning } from './rendering/weather/lightning';
 import { SeasonBlend } from './rendering/daylight-layer';
 import { WeatherState } from './domain/models/weather.model';
 import { DaylightLayer } from './rendering/daylight-layer';
@@ -77,6 +78,7 @@ export class SandworldRuntime {
   private readonly grains = new GrainParticles();
   private devOverlay: DevTileOverlay | null = null;
   private readonly precipitation = new Precipitation();
+  private readonly lightning = new Lightning();
   /** Punto de pantalla donde está el dedo que vierte, o null si no se está vertiendo */
   private brushPoint: { x: number; y: number } | null = null;
   private readonly terrains = new Map<string, TerrainLayer>();
@@ -108,6 +110,7 @@ export class SandworldRuntime {
     const app = await this.stage.mount(host, (w, h) => {
       this.camera.setViewport(w, h);
       this.precipitation.resize(w, h);
+      this.lightning.resize(w, h);
     });
     if (!app || this.destroyed) return false;
 
@@ -119,6 +122,11 @@ export class SandworldRuntime {
     // Lluvia y nieve por encima del mundo, en coordenadas de pantalla
     app.stage.addChild(this.precipitation.view);
     this.precipitation.resize(app.screen.width, app.screen.height);
+    // Rayos: el rayo dentro del mundo (encima de todo) y el destello sobre toda la pantalla
+    this.lightning.view.zIndex = 1e6;
+    this.stage.world.addChild(this.lightning.view);
+    app.stage.addChild(this.lightning.flash);
+    this.lightning.resize(app.screen.width, app.screen.height);
 
     // Chunks ya descubiertos (en la fase 5 vendrán de la partida guardada)
     for (const { cx, cy } of this.world.exploration.list()) {
@@ -208,6 +216,25 @@ export class SandworldRuntime {
     for (const c of chunks) this.terrains.get(chunkKey(c.cx, c.cy))?.layoutPlants(this.engine.time, this.revealed);
   }
 
+  /** Cae un rayo en la celda global (gx, gy): rayo con ramas y destello */
+  strike(gx: number, gy: number): void {
+    const p = this.cellWorld(gx, gy);
+    if (p) this.lightning.strike(p.x, p.y);
+  }
+
+  /** Lleva la cámara hasta la celda global (gx, gy) */
+  focusCell(gx: number, gy: number): void {
+    const p = this.cellWorld(gx, gy);
+    if (p) this.camera.glideTo(p.x, p.y);
+  }
+
+  /** Punto del mundo de una celda global (null si su chunk no está dibujado) */
+  private cellWorld(gx: number, gy: number): { x: number; y: number } | null {
+    const C = WORLD.CELLS;
+    const cx = Math.floor(gx / C), cy = Math.floor(gy / C);
+    return this.terrains.get(chunkKey(cx, cy))?.cellPoint(gx - cx * C, gy - cy * C) ?? null;
+  }
+
   markDirty(chunks: readonly ChunkCoord[]): void {
     for (const c of chunks) this.dirty.add(chunkKey(c.cx, c.cy));
   }
@@ -241,6 +268,7 @@ export class SandworldRuntime {
     this.terrains.clear();
     this.clouds?.destroy();
     this.clouds = null;
+    this.lightning.destroy();
     this.stage.destroy();
   }
 
@@ -260,6 +288,7 @@ export class SandworldRuntime {
     this.devOverlay?.update(dt);
     // Aspecto de estación de las plantas (cambia en días de juego: basta con mirarlo dos veces por segundo)
     for (const t of this.terrains.values()) t.animatePlants(dt);
+    this.lightning.update(dt);
     this.plantClock += dt;
     if (this.plantClock >= PLANT_LOOK_MS) {
       this.plantClock = 0;

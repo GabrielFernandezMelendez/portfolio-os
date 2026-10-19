@@ -24,7 +24,7 @@ import { BIOME_BY_ID, BIOME_CHECK_MINUTES } from './config/biomes.config';
 import { WeatherNews, WeatherSystem } from './application/climate/weather';
 import { CLEAR_WEATHER, WeatherState } from './domain/models/weather.model';
 import { Biome, BiomeId } from './domain/models/biome.model';
-import { cellIndex, tileIndex } from './domain/models/chunk.model';
+import { ChunkData, cellIndex, tileIndex } from './domain/models/chunk.model';
 import type { TappedTile } from './sandworld-runtime';
 import { Season } from './domain/models/time.model';
 import { DevTileView } from './rendering/dev/dev-tile-overlay';
@@ -133,7 +133,12 @@ export class SandworldService implements OnDestroy {
     this.events.on('minute', t => {
       this.physics.climate.update(t);
       this.reportWeather(this.weatherSystem.minute(t));
+      const w = this.weatherSystem.current;
+      this.physics.fire.conditions.season = t.season;
+      this.physics.fire.conditions.droughtDays = this.weatherSystem.droughtDays(t.totalMinutes);
+      this.physics.fire.conditions.rain = w.look !== 'none' ? w.intensity : 0;
       const changed = this.physics.minute();
+      this.reportFire();
       if (changed.length) this.events.emit('terrainChanged', changed);
       this.settlePours(t.minute);
       this.reportWorldEvents();
@@ -315,6 +320,30 @@ export class SandworldService implements OnDestroy {
     }
   }
 
+  /** Cuenta el fuego en la crónica (un aviso por tipo y minuto) y pasa los rayos al dibujo */
+  private reportFire(): void {
+    const news = this.physics.fire.news.splice(0);
+    if (!news.length) return;
+    const told = new Set<string>();
+    const tell = (key: string, priority: number) => {
+      if (told.has(key)) return;
+      told.add(key);
+      this.log({ type: 'world', key, priority });
+    };
+    for (const n of news) {
+      switch (n.type) {
+        case 'strike':
+          this.events.emit('lightning', { gx: n.gx, gy: n.gy });
+          tell(n.ignited ? 'chronicle.fire.lightningFire' : 'chronicle.fire.lightning', n.ignited ? 8 : 4);
+          break;
+        case 'ignite': if (n.cause === 'brasa') tell('chronicle.fire.brasa', 7); break;
+        case 'out': tell('chronicle.fire.out', 5); break;
+        case 'burntLand': tell('chronicle.fire.burntLand', 9); break;
+        case 'remit': tell('chronicle.fire.remit', 6); break;
+      }
+    }
+  }
+
   /** Revisa la vegetación: recoloca las plantas de los chunks que cambian y actualiza la barra de Vegetación */
   private updateVegetation(season: number): void {
     const changes = this.vegetation.update(VEGETATION_CHECK_MINUTES / 1440, season as 0 | 1 | 2 | 3);
@@ -361,26 +390,97 @@ export class SandworldService implements OnDestroy {
     this.showIslandLabel();
   }
 
-  /** TEMPORAL (prueba del bloque 1): deja caer un montón de arena en el centro de la isla inicial */
+  /** TEMPORAL (prueba del bloque 1): deja caer un montón de arena en un sitio al azar de la isla */
   debugSandPile(): void {
-    for (const [x, y] of [[15, 15], [16, 15], [15, 16], [16, 16]]) this.physics.deposit(x, y, Material.SAND, 4);
-    this.events.emit('terrainChanged', [{ cx: 0, cy: 0 }]);
+    const at = this.randomCell((c, k) => c.water[k] < 0.05, 3);
+    if (!at) return;
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) this.physics.deposit(at.gx + dx, at.gy + dy, Material.SAND, 4);
+    this.events.emit('terrainChanged', [{ cx: at.cx, cy: at.cy }]);
+    this.focus(at.gx, at.gy);
   }
 
-  /** TEMPORAL (prueba del bloque 2): manantial en la cumbre más alta lejos de los que ya hay */
+  /** TEMPORAL (prueba del bloque 2): manantial en una cumbre o ladera al azar, lejos de los que ya hay */
   debugSpring(): void {
-    const chunk = this.world.chunk(0, 0);
-    const C = Math.round(Math.sqrt(chunk.spring.length));
-    const existing = [...chunk.spring].map((v, k) => (v > 0 ? k : -1)).filter(k => k >= 0);
-    let best = -1, bestH = -Infinity;
-    for (let k = 0; k < chunk.spring.length; k++) {
+    const C = WORLD.CELLS;
+    const at = this.randomCell((c, k) => {
+      if (c.water[k] > 0.05 || c.spring[k] > 0) return false;
       const x = k % C, y = Math.floor(k / C);
-      if (x < 2 || y < 2 || x > C - 3 || y > C - 3) continue;
-      if (existing.some(e => Math.hypot((e % C) - x, Math.floor(e / C) - y) < 10)) continue;
-      const h = chunk.rock[k] + chunk.sediment[k];
-      if (h > bestH) { bestH = h; best = k; }
+      // Algo de altura respecto a la media del chunk y sin otro manantial cerca
+      let mean = 0;
+      for (let n = 0; n < C * C; n += 7) mean += c.rock[n] + c.sediment[n];
+      mean /= Math.ceil((C * C) / 7);
+      if (c.rock[k] + c.sediment[k] < mean) return false;
+      for (let n = 0; n < C * C; n++) if (c.spring[n] > 0 && Math.hypot((n % C) - x, Math.floor(n / C) - y) < 8) return false;
+      return true;
+    }, 2);
+    if (!at) return;
+    this.physics.setSpring(at.gx, at.gy, 0.05);
+    this.focus(at.gx, at.gy);
+  }
+
+  /** TEMPORAL (modo desarrollo): Tierra Quemada de 3 × 3 tiles en un sitio al azar con tierra (no agua) */
+  debugBurntLand(): void {
+    const N = WORLD.TILES, G = WORLD.CELLS_PER_TILE;
+    const chunks = this.world.exploration.list();
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const { cx, cy } = chunks[Math.floor(Math.random() * chunks.length)];
+      const gi = cx * N + Math.floor(Math.random() * N), gj = cy * N + Math.floor(Math.random() * N);
+      let ok = true;
+      for (let dj = 0; dj < 3 && ok; dj++) for (let di = 0; di < 3 && ok; di++) {
+        const tcx = Math.floor((gi + di) / N), tcy = Math.floor((gj + dj) / N);
+        if (!this.world.exploration.isRevealed(tcx, tcy)) { ok = false; break; }
+        const c = this.world.chunk(tcx, tcy);
+        const i = gi + di - tcx * N, j = gj + dj - tcy * N;
+        let wet = 0;
+        for (let y = 0; y < G; y++) for (let x = 0; x < G; x++) if (c.water[cellIndex(i * G + x, j * G + y)] > 0.05) wet++;
+        if (wet > 4) ok = false;
+      }
+      if (!ok) continue;
+      this.physics.fire.makeBurntLand(gi, gj);
+      this.reportFire();
+      this.updateBiomes();
+      this.events.emit('vegetationChanged', this.world.exploration.list());
+      this.events.emit('terrainChanged', this.world.exploration.list());
+      this.focus((gi + 1.5) * G, (gj + 1.5) * G);
+      return;
     }
-    if (best >= 0) this.physics.setSpring(best % C, Math.floor(best / C), 0.05);
+  }
+
+  /** TEMPORAL (modo desarrollo): prende fuego a un tile con vegetación al azar (aunque no esté seco) */
+  debugIgnite(): void {
+    const N = WORLD.TILES, G = WORLD.CELLS_PER_TILE;
+    const chunks = this.world.exploration.list();
+    let best: { gx: number; gy: number } | null = null, bestFuel = 0;
+    for (let n = 0; n < 40; n++) {
+      const { cx, cy } = chunks[Math.floor(Math.random() * chunks.length)];
+      const i = Math.floor(Math.random() * N), j = Math.floor(Math.random() * N);
+      const fuel = this.physics.fire.fuel(this.world.chunk(cx, cy), i, j);
+      if (fuel > bestFuel) { bestFuel = fuel; best = { gx: (cx * N + i) * G + 2, gy: (cy * N + j) * G + 2 }; }
+    }
+    if (!best || !this.physics.fire.igniteAtCell(best.gx, best.gy, 'dev', true)) return;
+    this.log({ type: 'world', key: 'chronicle.fire.dev', priority: 7 });
+    this.focus(best.gx, best.gy);
+  }
+
+  /**
+   * Celda al azar en cualquier chunk descubierto que cumpla `ok`, lejos del borde de la isla `margin` celdas.
+   * Sirve a los botones de prueba para repartir las pruebas por toda la isla.
+   */
+  private randomCell(ok: (c: ChunkData, k: number) => boolean, margin: number): { cx: number; cy: number; gx: number; gy: number } | null {
+    const C = WORLD.CELLS;
+    const chunks = this.world.exploration.list();
+    for (let attempt = 0; attempt < 400; attempt++) {
+      const { cx, cy } = chunks[Math.floor(Math.random() * chunks.length)];
+      const ci = margin + Math.floor(Math.random() * (C - 2 * margin)), cj = margin + Math.floor(Math.random() * (C - 2 * margin));
+      const c = this.world.chunk(cx, cy);
+      if (ok(c, cellIndex(ci, cj))) return { cx, cy, gx: cx * C + ci, gy: cy * C + cj };
+    }
+    return null;
+  }
+
+  /** Lleva la cámara hasta una celda global (lo que acaba de hacer un botón de prueba) */
+  private focus(gx: number, gy: number): void {
+    this.events.emit('focus', { gx, gy });
   }
 
   /** TEMPORAL (modo desarrollo): despierta un claro sin sorteo en el tile sano más cercano al centro de la isla inicial */
@@ -403,6 +503,13 @@ export class SandworldService implements OnDestroy {
       case 'garden': return this.debugGarden();
       case 'eatFruit': return this.debugEatFruit();
       case 'fruitAllYear': plantDevFlags.fruitAllYear = !plantDevFlags.fruitAllYear; return;
+      case 'storm': return this.weatherSystem.forceNow('storm', this.engine.time.totalMinutes);
+      case 'dryStorm': return this.weatherSystem.forceNow('dryStorm', this.engine.time.totalMinutes);
+      case 'ignite': return this.debugIgnite();
+      case 'burntLand': return this.debugBurntLand();
+      case 'drainLife':
+        if (this.physics.fire.drainLife() > 0) this.log({ type: 'world', key: 'chronicle.fire.drained', priority: 6 });
+        return;
     }
   }
 
@@ -419,30 +526,38 @@ export class SandworldService implements OnDestroy {
   }
 
   /**
-   * TEMPORAL (modo desarrollo): siembra un huerto en la isla inicial, como lo haría una especie evolucionada
-   * (fase 6): 4 × 2 casillas de bayas rojas (una por casilla) y dos manzanos a los lados, con una casilla libre
-   * entre árboles. Busca el sitio llano más cercano al centro.
+   * TEMPORAL (modo desarrollo): siembra un huerto en un sitio llano al azar de la isla, como lo haría una especie
+   * evolucionada (fase 6): 4 × 2 casillas de bayas rojas (una por casilla) y dos manzanos a los lados, con una
+   * casilla libre entre árboles.
    */
   debugGarden(): void {
     const revealed = (cx: number, cy: number) => this.world.exploration.isRevealed(cx, cy);
     const berries = PLANT_DEFS.find(p => p.key === 'redBerries')!.id;
     const apple = PLANT_DEFS.find(p => p.key === 'appleTree')!.id;
     const B = 2;   // celdas por casilla (BRUSH_CELLS)
-    const spots: [number, number][] = [];
-    for (let y = 4; y < 26; y += B) for (let x = 6; x < 22; x += B) spots.push([x, y]);
-    spots.sort((a, b) => Math.hypot(a[0] - 15, a[1] - 15) - Math.hypot(b[0] - 15, b[1] - 15));
-    const chunk = this.world.chunk(0, 0);
-    for (const [x, y] of spots) {
+    const C = WORLD.CELLS;
+    const spots: [number, number, number, number][] = [];
+    for (const { cx, cy } of this.world.exploration.list()) {
+      for (let y = 4; y < 26; y += B) for (let x = 6; x < 22; x += B) spots.push([cx, cy, cx * C + x, cy * C + y]);
+    }
+    // Al azar (Fisher-Yates)
+    for (let i = spots.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [spots[i], spots[j]] = [spots[j], spots[i]];
+    }
+    for (const [cx, cy, x, y] of spots) {
+      const chunk = this.world.chunk(cx, cy);
       const saved = chunk.crop.slice();
       const blocks: [number, number][] = [];
       for (let by = 0; by < 2; by++) for (let bx = 0; bx < 4; bx++) blocks.push([x + bx * B, y + by * B]);
-      if (!blocks.every(([cx, cy]) => this.vegetation.sow(berries, cx, cy, revealed))) {
+      if (!blocks.every(([gx, gy]) => this.vegetation.sow(berries, gx, gy, revealed))) {
         chunk.crop.set(saved);
         continue;
       }
       this.vegetation.sow(apple, x - B, y, revealed);
       this.vegetation.sow(apple, x + 4 * B, y + B, revealed);
-      this.events.emit('vegetationChanged', [{ cx: 0, cy: 0 }]);
+      this.events.emit('vegetationChanged', [{ cx, cy }]);
+      this.focus(x + 4, y + 2);
       return;
     }
   }

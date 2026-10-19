@@ -9,6 +9,9 @@ import { SpringChange, WaterOptions, WaterSystem } from './water';
 import { ThermalSystem } from './thermal';
 import { ClimateState } from '../climate/climate-state';
 import { rootsAt } from '../vegetation/vegetation';
+import { FireSystem } from '../fire/fire';
+import { FIRE_CHECK_MINUTES } from '../../config/fire.config';
+import { SeededRandom } from '../../infrastructure/seeded-random';
 import { FREEZE_RATE, FREEZE_TEMPERATURE, SNOW_PER_RAIN, SNOW_TEMPERATURE } from '../../config/climate.config';
 import { SOIL_WATER_CAPACITY, WATER_MIN } from '../../config/water.config';
 import { temperatureAt, tileIndex } from '../../domain/models/chunk.model';
@@ -28,6 +31,8 @@ export class TerrainPhysics {
   readonly grid: TerrainGrid;
   readonly water: WaterSystem;
   readonly thermal: ThermalSystem;
+  /** Fuego y Tierra Quemada (arden las plantas; el suelo se chamusca o se calcina) */
+  readonly fire: FireSystem;
   /** Estación y hora: desvío global de temperatura (lo actualiza quien lleva el reloj) */
   readonly climate = new ClimateState();
   private minutes = 0;
@@ -35,6 +40,7 @@ export class TerrainPhysics {
 
   constructor(private readonly world: World, private readonly waterOptions?: WaterOptions) {
     this.grid = new TerrainGrid(world);
+    this.fire = new FireSystem(world, new SeededRandom(world.seed * 48271 + 17));
     this.landslides = new LandslideSystem(this.grid);
     const offset = () => this.climate.offset;
     this.water = new WaterSystem(this.grid, waterOptions, offset);
@@ -72,6 +78,7 @@ export class TerrainPhysics {
     this.minutes++;
     this.thermal.minute(changed);
     this.water.minute(changed);
+    if (this.minutes % FIRE_CHECK_MINUTES === 0) this.fire.update(FIRE_CHECK_MINUTES, changed);
     if (this.waterOptions?.freezing !== false && this.minutes % FREEZE_CHECK_MINUTES === 0) this.freezeStillWater(changed);
     // Material cambiado por una regla (p. ej. barro, de talud bajo): puede volver a deslizarse
     for (const [gx, gy] of this.water.transformed.splice(0)) {
@@ -157,12 +164,12 @@ export class TerrainPhysics {
   }
 
   /**
-   * Brasa: evapora el agua, seca el suelo (y el barro), funde lo helado y acumula calor.
-   * Devuelve true si el calor acumulado ha calcinado el suelo en este paso.
+   * Brasa: evapora el agua, seca el suelo (y el barro), funde lo helado, acumula calor y chamusca el suelo
+   * (motas de ceniza, hasta `scorchMax`). Devuelve el calor acumulado en la celda (con mucho, prende la vegetación).
    */
-  scorch(gx: number, gy: number, opts: { evaporate: number; dry: number; melt: number; heat: number; ash: number; ashVisible?: boolean; charAt: number }): boolean {
+  scorch(gx: number, gy: number, opts: { evaporate: number; dry: number; melt: number; heat: number; scorch: number; scorchMax: number }): number {
     const cell = this.grid.cell(gx, gy);
-    if (!cell) return false;
+    if (!cell) return 0;
     const c = cell.chunk, k = cell.k;
     c.water[k] = Math.max(0, c.water[k] - opts.evaporate);
     c.moisture[k] = Math.max(0, c.moisture[k] - opts.dry);
@@ -170,17 +177,8 @@ export class TerrainPhysics {
     // Lo que se funde se evapora con el calor (no se suma agua)
     const melted = Math.min(c.cover[k], opts.melt);
     if (melted > 0) this.grid.setCover(cell, c.cover[k] - melted);
-    const before = c.heat[k];
-    const heat = this.thermal.addHeat(gx, gy, opts.heat);
-    if (c.material[k] === Material.CHARRED || c.sediment[k] <= 0.02) return false;
-    if (heat >= opts.charAt) {
-      c.material[k] = Material.CHARRED;
-      this.water.wake(gx, gy);
-      this.landslides.wake(gx, gy);
-      return before < opts.charAt;
-    }
-    if (opts.ash > 0) this.deposit(gx, gy, Material.ASH, opts.ash, opts.ashVisible ?? true);
-    return false;
+    c.scorch[k] = Math.max(c.scorch[k], Math.min(opts.scorchMax, c.scorch[k] + opts.scorch));
+    return this.thermal.addHeat(gx, gy, opts.heat);
   }
 
   /**
@@ -216,6 +214,11 @@ export class TerrainPhysics {
       }
     }
     return snowed > rained;
+  }
+
+  /** Tormenta eléctrica: lo resuelve el fuego (dónde cae el rayo y si prende) */
+  strike(chance: number): void {
+    this.fire.strike(chance);
   }
 
   /** Invierno: el agua de las celdas frías se va congelando (hielo de temporada, se funde al subir la temperatura) */

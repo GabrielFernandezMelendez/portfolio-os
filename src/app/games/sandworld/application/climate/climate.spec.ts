@@ -37,7 +37,7 @@ describe('Clima', () => {
   it('cada estación tiene entre min y max episodios, sin solaparse, y se aplican', () => {
     for (let seed = 1; seed <= 20; seed++) {
       const { def, minutes } = testEvent([0, 10]);
-      const w = new WeatherSystem({ precipitate: () => false }, new SeededRandom(seed), [def]);
+      const w = new WeatherSystem({ precipitate: () => false, strike: () => undefined }, new SeededRandom(seed), [def]);
       w.planSeason(Season.SPRING, 0);
       let starts = 0, prevKey: string | null = null;
       for (let m = 0; m < SEASON; m++) {
@@ -53,12 +53,12 @@ describe('Clima', () => {
 
   it('una estación con [0, 0] episodios no tiene ninguno; con [3, 3], tres como mucho (los solapados se descartan)', () => {
     const none = testEvent([0, 0]);
-    const w0 = new WeatherSystem({ precipitate: () => false }, new SeededRandom(3), [none.def]);
+    const w0 = new WeatherSystem({ precipitate: () => false, strike: () => undefined }, new SeededRandom(3), [none.def]);
     w0.planSeason(Season.SUMMER, 0);
     for (let m = 0; m < SEASON; m++) w0.minute(toGameTime(m));
     expect(none.minutes()).toBe(0);
     const three = testEvent([3, 3]);
-    const w3 = new WeatherSystem({ precipitate: () => false }, new SeededRandom(3), [three.def]);
+    const w3 = new WeatherSystem({ precipitate: () => false, strike: () => undefined }, new SeededRandom(3), [three.def]);
     w3.planSeason(Season.SUMMER, 0);
     for (let m = 0; m < SEASON; m++) w3.minute(toGameTime(m));
     expect(three.minutes()).toBeGreaterThanOrEqual(2 * 60);

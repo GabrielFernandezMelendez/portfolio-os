@@ -27,8 +27,8 @@ export const DEATH_MARGIN = 0.6;
 export const DROWN_DAYS: Readonly<Record<PlantKind, number>> = { small: 0.5, bush: 1, tree: 2 };
 export const SHORE_DROWN_FACTOR = 2;
 
-/** Días que se quedan los restos: tocón de un árbol, tronco caído y mata seca de un arbusto */
-export const REMAINS_DAYS = { stump: 6, log: 3, dryBush: 2 } as const;
+/** Días que se quedan los restos: tocón de un árbol, tronco caído, mata seca de un arbusto y árbol carbonizado */
+export const REMAINS_DAYS = { stump: 6, log: 3, dryBush: 2, snag: 8 } as const;
 
 /** Fruto: días que tarda en volver del todo tras comérselo y en madurar al empezar su temporada */
 export const FRUIT_REGROW_DAYS = 4;

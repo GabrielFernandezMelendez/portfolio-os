@@ -4,6 +4,7 @@ import { WORLD } from '../../domain/models/world.model';
 import { BAKE_HEIGHT, BAKE_ORIGIN_X, BAKE_ORIGIN_Y, BAKE_WIDTH, ChunkBaker } from './chunk-baker';
 import { Rect } from '../camera';
 import { VegetationLayer } from '../vegetation/vegetation-layer';
+import { FireLayer } from '../fire/fire-layer';
 import { GameTime } from '../../domain/models/time.model';
 import { PlantInstance, RevealedFn, invalidateLayout } from '../../application/vegetation/plant-layout';
 
@@ -33,6 +34,8 @@ export class TerrainLayer {
   private chunk: ChunkData | null = null;
   /** Plantas del chunk, encima del terreno */
   private readonly plants = new VegetationLayer();
+  /** Fuego, humo y brasas, mezclados con las plantas (se ordenan juntos por profundidad) */
+  private readonly fire = new FireLayer(this.plants.view);
 
   constructor(seed: number) {
     this.baker = new ChunkBaker(seed);
@@ -81,6 +84,7 @@ export class TerrainLayer {
     if (!this.chunk) return;
     if (terrainChanged) invalidateLayout(this.chunk);
     this.plants.layout(this.chunk, (ci, cj) => this.cellTop(ci, cj), time, revealed);
+    if (terrainChanged) this.fire.layout(this.chunk, (ci, cj) => this.cellTop(ci, cj));
   }
 
   /** Actualiza el aspecto de estación de las plantas (otoño, caída de hojas, nieve) */
@@ -91,6 +95,12 @@ export class TerrainLayer {
   /** Animaciones de las plantas (nacer, caer, hundirse…), en tiempo real */
   animatePlants(dtMs: number): void {
     this.plants.update(dtMs);
+    if (this.chunk) this.fire.update(dtMs, this.chunk, (ci, cj) => this.cellTop(ci, cj));
+  }
+
+  /** Punto del mundo de la cara superior de una celda del chunk (para el rayo y para llevar la cámara) */
+  cellPoint(ci: number, cj: number): { x: number; y: number } {
+    return this.cellTop(ci, cj);
   }
 
   /** Planta dibujada bajo un punto del mundo, o null */
@@ -124,6 +134,7 @@ export class TerrainLayer {
   }
 
   destroy(): void {
+    this.fire.destroy();
     this.plants.destroy();
     this.view.destroy({ children: true });
     this.texture.destroy(true);

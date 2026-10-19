@@ -44,13 +44,12 @@ export const HUMUS_KEEP_BIOMASS = 0.2;
 export const BRASA_EVAPORATE = 2.0;
 export const BRASA_DRY = 3.0;
 export const BRASA_MELT = 2.0;
-/** Ceniza que deja por unidad (si el suelo no está calcinado) */
-export const BRASA_ASH = 0.05;
+/** Suelo chamuscado (motas de ceniza) que deja por unidad, como mucho hasta BRASA_SCORCH_MAX (no mata plantas) */
+export const BRASA_SCORCH = 0.4;
+export const BRASA_SCORCH_MAX = 0.6;
 /** Calor que suma por unidad; el calor se reduce a la mitad cada BRASA_HEAT_HALF_LIFE días */
 export const BRASA_HEAT = 1.0;
 export const BRASA_HEAT_HALF_LIFE = 2;
-/** Calor acumulado a partir del cual el suelo se calcina (Tierra Quemada): un trazo da como mucho 1, hacen falta 2–3 seguidos */
-export const CHAR_HEAT = 1.5;
 /** Desvío de temperatura del tile por unidad vertida en él */
 export const BRASA_WARM = 0.02;
 

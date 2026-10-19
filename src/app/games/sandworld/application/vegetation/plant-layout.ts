@@ -38,7 +38,7 @@ export interface PlantDeath {
 }
 
 /** Restos que deja una planta muerta durante unos días */
-export type RemainsKind = 'stump' | 'log' | 'dryBush';
+export type RemainsKind = 'stump' | 'log' | 'dryBush' | 'snag';
 export interface PlantRemains {
   readonly kind: RemainsKind;
   readonly inst: PlantInstance;
@@ -78,6 +78,8 @@ const DROWN = { small: 0.05, bush: 0.08, tree: 0.12 } as const;
 const DROWN_SHORE = 0.25;
 /** ...o enterrada o descalzada si el suelo de su celda sube o baja más que esta parte de BURY_KILL */
 const UPROOT_PART = 0.5;
+/** Suelo chamuscado a partir del cual la planta ha ardido (solo lo deja el fuego; la Brasa se queda por debajo) */
+const BURNT_SCORCH = 0.95;
 
 /** ¿Está descubierto el chunk (cx, cy)? Lo da el mapa de exploración: los bordes con lo no descubierto son precipicio */
 export type RevealedFn = (cx: number, cy: number) => boolean;
@@ -200,7 +202,7 @@ export function canGrowAt(
   if ((ci < m && !revealed(chunk.cx - 1, chunk.cy)) || (ci >= C - m && !revealed(chunk.cx + 1, chunk.cy)) ||
       (cj < m && !revealed(chunk.cx, chunk.cy - 1)) || (cj >= C - m && !revealed(chunk.cx, chunk.cy + 1))) return false;
   const k = cellIndex(ci, cj);
-  if (chunk.material[k] === Material.CHARRED) return false;
+  if (chunk.material[k] === Material.CHARRED || chunk.scorch[k] >= BURNT_SCORCH) return false;
   if (chunk.water[k] > (shore ? SHORE : DRY)) return false;
   const g = groundAt(chunk, k);
   let dryNeighbour = false;
@@ -402,7 +404,8 @@ function wanted(b: number, sprites: number, t: number, plant: number, have: numb
 /** ¿Por qué ya no puede vivir en su celda una planta nacida? null si sigue bien (un charco no la mata) */
 function deathCause(chunk: ChunkData, k: number, w: WildPlant): DeathCause | null {
   const p = PLANT_DEFS[w.inst.plant];
-  if (chunk.material[k] === Material.CHARRED) return 'burnt';
+  // Calcinado (Tierra Quemada) o recién quemado por el frente de un fuego
+  if (chunk.material[k] === Material.CHARRED || chunk.scorch[k] >= BURNT_SCORCH) return 'burnt';
   const change = groundAt(chunk, k) - w.ground;
   const limit = BURY_KILL[p.kind] * UPROOT_PART;
   if (change > limit) return 'buried';
@@ -414,7 +417,7 @@ function deathCause(chunk: ChunkData, k: number, w: WildPlant): DeathCause | nul
 /** Qué queda de una planta según su tamaño y cómo murió */
 function remainsKind(kind: PlantKind, cause: DeathCause): RemainsKind | null {
   if (cause === 'buried' || cause === 'cleared') return null;
-  if (kind === 'tree') return cause === 'withered' ? 'stump' : 'log';
+  if (kind === 'tree') return cause === 'burnt' ? 'snag' : cause === 'withered' ? 'stump' : 'log';
   if (kind === 'bush' && (cause === 'withered' || cause === 'burnt')) return 'dryBush';
   return null;
 }

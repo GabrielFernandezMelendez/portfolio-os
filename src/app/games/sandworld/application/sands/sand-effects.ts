@@ -3,16 +3,17 @@ import { Material } from '../../domain/models/material.model';
 import { tileIndex } from '../../domain/models/chunk.model';
 import { WORLD } from '../../domain/models/world.model';
 import { TerrainPhysics } from '../physics/terrain-physics';
+import { BRASA_IGNITE_HEAT } from '../../config/fire.config';
 import { LAYER_SWITCH_PROGRESS, POUR_MAX_DUNE, POUR_MAX_MASS, POUR_MAX_MASSLESS } from '../../config/pour.config';
 import {
-  AFINIDAD_AFFINITY, BRASA_ASH, BRASA_DRY, BRASA_EVAPORATE, BRASA_HEAT, BRASA_MELT, BRASA_WARM, CHAR_HEAT,
+  AFINIDAD_AFFINITY, BRASA_DRY, BRASA_EVAPORATE, BRASA_HEAT, BRASA_MELT, BRASA_SCORCH, BRASA_SCORCH_MAX, BRASA_WARM,
   DESPERTAR_ESSENCE, ESCARCHA_CHILL, ESCARCHA_FREEZE, ESCARCHA_SNOW, HUMUS_DEPOSIT, HUMUS_FERTILITY, HUMUS_MOISTURE,
   HUMUS_SINK_DEPTH, HUMUS_UNDERWATER,
   MANANTIAL_BASE_RATE, MANANTIAL_MAX_RATE, MANANTIAL_MERGE_DISTANCE, MANANTIAL_RATE_PER_UNIT, MAREA_DIG, MAREA_ROCK_DIG, MAREA_ROCK_FLOOR,
 } from '../../config/sand-effects.config';
 
 /** Algo que ha pasado al aplicar una arena y merece aviso (la crónica lo cuenta) */
-export type SandOutcome = 'charred' | 'springNew' | 'springStronger';
+export type SandOutcome = 'ignited' | 'springNew' | 'springStronger' | 'springBurnt';
 
 /** Celda de un vertido con la cantidad total que recibió */
 export type PouredCell = readonly [gx: number, gy: number, amount: number];
@@ -87,6 +88,8 @@ export const SAND_EFFECTS: Readonly<Record<SandId, SandEffect>> = {
       if (add > 0) physics.deposit(gx, gy, Material.HUMUS, add, progress >= LAYER_SWITCH_PROGRESS);
       if (cell) cell.chunk.moisture[cell.k] = Math.min(1, cell.chunk.moisture[cell.k] + amount * HUMUS_MOISTURE);
       addToTile(physics, gx, gy, 'fertility', amount * HUMUS_FERTILITY);
+      // Es combustible: aviva el fuego y alimenta la Tierra Quemada
+      physics.fire.feedAtCell(gx, gy, amount);
     },
   },
 
@@ -104,6 +107,8 @@ export const SAND_EFFECTS: Readonly<Record<SandId, SandEffect>> = {
         if (!best || c[2] > best[2]) best = c;
       }
       if (!best) return;
+      // En la Tierra Quemada no surge ninguna fuente: el suelo quema el agua
+      if (physics.fire.isBurntLandAt(best[0], best[1])) return 'springBurnt';
       const added = total * MANANTIAL_RATE_PER_UNIT;
       // ¿Hay ya un manantial cerca? Entonces mana más
       const D = MANANTIAL_MERGE_DISTANCE;
@@ -121,23 +126,24 @@ export const SAND_EFFECTS: Readonly<Record<SandId, SandEffect>> = {
     },
   },
 
-  // Brasa: calor. Seca agua y barro, funde lo helado, deja ceniza; en exceso calcina el suelo
+  // Brasa: calor. Seca agua y barro, funde lo helado y chamusca el suelo; con bastante calor prende la vegetación
+  // seca (fuego). Sobre un fuego lo aviva; sobre la Tierra Quemada la alimenta.
   [Sand.BRASA]: {
     sand: Sand.BRASA,
     maxPerCell: POUR_MAX_MASS,
     massless: false,
-    apply: (physics, gx, gy, amount, progress) => {
+    apply: (physics, gx, gy, amount) => {
       physics.thermal.shiftTemperature(gx, gy, amount * BRASA_WARM);
-      const charred = physics.scorch(gx, gy, {
+      const heat = physics.scorch(gx, gy, {
         evaporate: amount * BRASA_EVAPORATE,
         dry: amount * BRASA_DRY,
         melt: amount * BRASA_MELT,
         heat: amount * BRASA_HEAT,
-        ash: amount * BRASA_ASH,
-        ashVisible: progress >= LAYER_SWITCH_PROGRESS,
-        charAt: CHAR_HEAT,
+        scorch: amount * BRASA_SCORCH,
+        scorchMax: BRASA_SCORCH_MAX,
       });
-      return charred ? 'charred' : undefined;
+      physics.fire.feedAtCell(gx, gy, amount);
+      return heat >= BRASA_IGNITE_HEAT && physics.fire.igniteAtCell(gx, gy, 'brasa') ? 'ignited' : undefined;
     },
   },
 
@@ -149,6 +155,8 @@ export const SAND_EFFECTS: Readonly<Record<SandId, SandEffect>> = {
     apply: (physics, gx, gy, amount) => {
       physics.thermal.shiftTemperature(gx, gy, -amount * ESCARCHA_CHILL);
       physics.freeze(gx, gy, amount * ESCARCHA_SNOW, amount * ESCARCHA_FREEZE);
+      // Apaga el fuego; sobre la Tierra Quemada, la nieve congela ese borde (no crece por ahí mientras dure)
+      physics.fire.douseAtCell(gx, gy);
     },
   },
 

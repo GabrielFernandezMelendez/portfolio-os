@@ -76,6 +76,15 @@ const shade = (ramp: Ramp, val: number, px: number, py: number): number =>
 const darken = (c: number, f: number): number =>
   (Math.round((c >> 16) * (1 - f)) << 16) | (Math.round(((c >> 8) & 255) * (1 - f)) << 8) | Math.round((c & 255) * (1 - f));
 
+/** Mezcla dos colores (t = 0 → a, 1 → b) */
+const mix = (a: number, b: number, t: number): number => {
+  const f = (s: number): number => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t);
+  return (f(16) << 16) | (f(8) << 8) | f(0);
+};
+/** Suelo chamuscado: la hierba tira a pardo y quedan motas de ceniza (nunca un cuadrado gris) */
+const SCORCHED = 0x3a3226;
+const ASH_SPECKS = [0x5d5d61, 0x8e8e93, 0xa8a8ad, 0xc2c2c6];
+
 const lighten = (c: number, f: number): number => {
   const r = c >> 16, g = (c >> 8) & 255, b = c & 255;
   return (Math.round(r + (255 - r) * f) << 16) | (Math.round(g + (255 - g) * f) << 8) | Math.round(b + (255 - b) * f);
@@ -412,6 +421,15 @@ export class ChunkBaker {
           }
           // Borde iluminado de la terraza
           if (frontLvl < lvl && frontLvl > -9) color = lighten(color, 0.22);
+        }
+        // Suelo chamuscado tras un fuego o la Brasa: a manchas, con grupitos de motas de ceniza entre la tierra
+        const scorch = chunk.scorch[cell - 1];
+        if (scorch > 0.02 && !isWet && !isFilm && material !== Material.CHARRED) {
+          color = mix(color, SCORCHED, (0.25 + 0.35 * valueNoise(px * 0.21, py * 0.33, this.seed + 71)) * scorch);
+          const r = hash2(px >> 1, py, 77);
+          const dens = (0.1 + 0.12 * valueNoise(py * 0.19, px * 0.23, this.seed + 72)) * scorch;
+          if (r < dens) color = ASH_SPECKS[1 + Math.floor(hash2(px, py, 78) * 3)];
+          else if (r < dens + 0.05 * scorch) color = ASH_SPECKS[0];
         }
         // Brasas: puntos encendidos donde queda calor de la arena Brasa
         const heat = chunk.heat[cell - 1];

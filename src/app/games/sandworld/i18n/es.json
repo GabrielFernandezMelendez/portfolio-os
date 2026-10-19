@@ -27,17 +27,22 @@
     "resume": "Volver a la isla",
     "dev": {
       "reveal": "Probar: descubrir terreno",
-      "sandPile": "Probar: montón de arena",
-      "spring": "Probar: manantial",
+      "sandPile": "Probar: montón de arena (al azar)",
+      "spring": "Probar: manantial (al azar)",
       "rain": "Probar: lluvia",
       "nextSeason": "Probar: siguiente estación",
       "glade": "Probar: Claro Despierto",
       "viewValues": "Ver esencia y afinidad",
       "viewBiomes": "Ver biomas",
       "discoverPlants": "Probar: conocer las plantas",
-      "garden": "Probar: sembrar un huerto",
+      "garden": "Probar: sembrar un huerto (al azar)",
       "fruitAllYear": "Probar: fruto todo el año (sí/no)",
-      "eatFruit": "Probar: comerse los frutos"
+      "eatFruit": "Probar: comerse los frutos",
+      "storm": "Probar: tormenta eléctrica",
+      "dryStorm": "Probar: tormenta seca",
+      "ignite": "Probar: prender fuego (al azar)",
+      "burntLand": "Probar: Tierra Quemada 3×3 (al azar)",
+      "drainLife": "Probar: dejar sin vida la Tierra Quemada"
     }
   },
   "lang": {
@@ -72,9 +77,10 @@
       "afinidad": "La afinidad se ha asentado."
     },
     "outcome": {
-      "charred": "El fuego ha calcinado la tierra.",
       "springNew": "Brota un manantial nuevo.",
-      "springStronger": "Un manantial mana con más fuerza."
+      "springStronger": "Un manantial mana con más fuerza.",
+      "ignited": "La brasa prende la vegetación seca.",
+      "springBurnt": "La Tierra Quemada se traga el manantial: no brota agua."
     },
     "spring": {
       "buried": "Un manantial ha quedado sepultado.",
@@ -99,7 +105,29 @@
         "end": "Escampa.",
         "startSnow": "Empieza a nevar.",
         "endSnow": "Deja de nevar."
+      },
+      "storm": {
+        "start": "Estalla una tormenta eléctrica.",
+        "end": "La tormenta se aleja.",
+        "startSnow": "Estalla una tormenta de nieve.",
+        "endSnow": "La tormenta de nieve se aleja."
+      },
+      "dryStorm": {
+        "start": "Tormenta seca: rayos sin lluvia.",
+        "end": "Pasa la tormenta seca.",
+        "startSnow": "Tormenta seca: rayos sin lluvia.",
+        "endSnow": "Pasa la tormenta seca."
       }
+    },
+    "fire": {
+      "lightning": "Un rayo cae sobre la isla.",
+      "lightningFire": "¡Un rayo prende el bosque!",
+      "brasa": "La brasa prende fuego a la vegetación.",
+      "dev": "Un fuego prende en la isla.",
+      "out": "La lluvia apaga el fuego.",
+      "burntLand": "El incendio deja Tierra Quemada.",
+      "remit": "La Tierra Quemada remite: vuelve la vida a sus bordes.",
+      "drained": "La Tierra Quemada se queda sin vida."
     }
   },
   "indicators": {
@@ -128,7 +156,7 @@
     },
     "humus": {
       "name": "Humus",
-      "desc": "Tierra fértil que retiene el agua."
+      "desc": "Tierra fértil que retiene el agua. Arde con facilidad."
     },
     "manantial": {
       "name": "Manantial",
@@ -136,7 +164,7 @@
     },
     "escarcha": {
       "name": "Escarcha",
-      "desc": "Nieve. Enfría la zona y congela el agua."
+      "desc": "Nieve. Enfría la zona, congela el agua y apaga el fuego."
     },
     "despertar": {
       "name": "Despertar",
@@ -144,7 +172,7 @@
     },
     "marea": {
       "name": "Marea",
-      "desc": "Disuelve el sedimento: excava pozos y canales."
+      "desc": "Disuelve el sedimento: excava pozos y canales. Una zanja hace de cortafuegos."
     },
     "afinidad": {
       "name": "Afinidad",
@@ -165,7 +193,9 @@
   "weather": {
     "rain": "Lluvia",
     "snow": "Nieve",
-    "clear": "Despejado"
+    "clear": "Despejado",
+    "storm": "Tormenta eléctrica",
+    "dryStorm": "Tormenta seca"
   },
   "plant": {
     "grass": "Hierba común",

@@ -93,20 +93,29 @@ describe('Efectos de las arenas', () => {
     expect(physics.takeSpringChanges().map(c => c.state)).toContain('open');
   });
 
-  it('Brasa seca el agua y el barro; un trazo no calcina, tres seguidos sí', () => {
+  it('Brasa seca el agua y el barro y chamusca el suelo, pero nunca lo calcina', () => {
     const { physics, queue, chunk } = setup();
+    chunk.plants.fill(0);
     chunk.water[k] = 0.3; chunk.material[k] = Material.MUD; chunk.moisture[k] = 1;
     physics.addWater(16, 16, 0);
-    pour(physics, queue, Sand.BRASA, 16, 16);
+    for (let n = 0; n < 3; n++) pour(physics, queue, Sand.BRASA, 16, 16);
     expect(chunk.water[k]).toBeLessThan(0.05);
     expect(chunk.material[k]).not.toBe(Material.MUD);
     expect(chunk.material[k]).not.toBe(Material.CHARRED);
-    // Tres trazos seguidos acumulan calor más deprisa de lo que se disipa
-    const s = [new Stroke(Sand.BRASA), new Stroke(Sand.BRASA), new Stroke(Sand.BRASA)];
-    for (const st of s) { queue.preview(st.sand, st.pour(16, 16, 3)); queue.commit(st); }
-    while (queue.active.length) { queue.minute(); physics.minute(); }
-    expect(chunk.material[k]).toBe(Material.CHARRED);
-    expect(queue.events.some(e => e.outcome === 'charred')).toBe(true);
+    expect(chunk.scorch[k]).toBeGreaterThan(0.3);
+    expect(chunk.scorch[k]).toBeLessThan(0.95);      // no mata plantas: eso solo lo hace el fuego
+  });
+
+  it('Brasa sobre vegetación seca prende fuego', () => {
+    const { physics, queue, chunk } = setup();
+    const t = tileIndex(4, 4);
+    chunk.plants.fill(0);
+    chunk.plants[t * 32] = 1;                         // hierba
+    chunk.humidity.fill(0.2);
+    physics.fire.conditions.season = 1;              // verano
+    pour(physics, queue, Sand.BRASA, 16, 16);
+    expect(queue.events.some(e => e.outcome === 'ignited')).toBe(true);
+    expect(chunk.fire[t] > 0 || chunk.burnedAt[t] >= 0).toBe(true);
   });
 
   it('Manantial crea una fuente donde más cayó; otro vertido cerca la refuerza', () => {

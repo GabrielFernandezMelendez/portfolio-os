@@ -41,6 +41,11 @@ export class WeatherSystem {
     return this.state;
   }
 
+  /** Días sin que nada rompa la sequía (para la sequedad del fuego) */
+  droughtDays(now: number): number {
+    return (now - this.lastBreak) / CALENDAR.MINUTES_PER_DAY;
+  }
+
   /** Reparte los episodios de la estación que empieza en `seasonStart` (minutos totales) */
   planSeason(season: SeasonId, seasonStart: number, from = seasonStart): void {
     this.planned = true;

@@ -1,6 +1,7 @@
 import { Season } from '../domain/models/time.model';
 import { WeatherEventDef } from '../domain/models/weather.model';
 import { RAIN_RATE } from './climate.config';
+import { LIGHTNING_PER_HOUR } from './fire.config';
 
 /*
   Registro de fenómenos del tiempo [PROPUESTA]: valores de partida para afinar jugando.
@@ -24,5 +25,42 @@ export const WEATHER_EVENTS: readonly WeatherEventDef[] = [
     gloom: 0.35,
     breaksDrought: true,
     apply: (world, intensity) => (world.precipitate(RAIN_RATE * intensity) ? 'snow' : 'rain'),
+  },
+  {
+    // Tormenta eléctrica: mucha lluvia y rayos. Como empapa el suelo, sus rayos casi nunca prenden.
+    key: 'storm',
+    episodes: {
+      [Season.SPRING]: [0, 2],
+      [Season.SUMMER]: [1, 4],
+      [Season.AUTUMN]: [0, 2],
+      [Season.WINTER]: [0, 0],
+    },
+    hours: [1, 3],
+    intensity: [0.6, 1],
+    gloom: 0.6,
+    breaksDrought: true,
+    apply: (world, intensity) => {
+      const snow = world.precipitate(RAIN_RATE * 1.3 * intensity);
+      world.strike((LIGHTNING_PER_HOUR * intensity) / 60);
+      return snow ? 'snow' : 'rain';
+    },
+  },
+  {
+    // Tormenta seca: rayos casi sin lluvia, al final del verano. Es la que de verdad provoca incendios.
+    key: 'dryStorm',
+    episodes: {
+      [Season.SPRING]: [0, 0],
+      [Season.SUMMER]: [0, 3],
+      [Season.AUTUMN]: [0, 1],
+      [Season.WINTER]: [0, 0],
+    },
+    hours: [1, 2],
+    intensity: [0.5, 1],
+    gloom: 0.45,
+    breaksDrought: false,
+    apply: (world, intensity) => {
+      world.strike((LIGHTNING_PER_HOUR * intensity) / 60);
+      return 'none';
+    },
   },
 ];

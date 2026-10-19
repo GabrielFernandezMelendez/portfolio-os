@@ -70,6 +70,10 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
     this.game.events.on('terrainChanged', cs => this.runtime.markDirty(cs));
     // Vegetación cambiada → se recolocan las plantas
     this.game.events.on('vegetationChanged', cs => this.runtime.refreshPlants(cs));
+    // Rayo de la tormenta eléctrica → rayo y destello
+    this.game.events.on('lightning', c => this.runtime.strike(c.gx, c.gy));
+    // Botón de prueba → la cámara va hasta donde ha pasado
+    this.game.events.on('focus', c => this.runtime.focusCell(c.gx, c.gy));
   }
 
   ngAfterViewInit(): void {

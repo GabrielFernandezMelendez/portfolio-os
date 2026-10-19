@@ -33,7 +33,7 @@ export type RampKey = keyof typeof PLANT_RAMPS;
 /** Colores planos de los detalles de las plantas pequeñas (flores, setas, piedra…) por carácter */
 export const PLANT_FLAT: Readonly<Record<string, number>> = {
   w: 0xffffff, m: 0xc88ae8, P: 0x7a3a9a, c: 0x6ff0ff, e: 0xf0e2c0, o: 0xd9822b, y: 0xf2d24a,
-  s: 0x7d858b, S: 0xaab2b8, n: 0x6a4a2a, t: 0x5a3a22, T: 0x7a5236, d: 0x4a3f33, D: 0x6b5a48, r: 0xd04a3a,
+  s: 0x7d858b, S: 0xaab2b8, k: 0x1e1814, K: 0x3d332c, n: 0x6a4a2a, t: 0x5a3a22, T: 0x7a5236, d: 0x4a3f33, D: 0x6b5a48, r: 0xd04a3a,
 };
 
 /**
@@ -160,6 +160,8 @@ export const PLANT_ART: Readonly<Record<string, ArtSpec>> = {
   sprout: { ramp: 'grass', parts: [{ kind: 'map', rows: ['L...L', '.LGL.', 'L.G.L', '..g..'] }] },
   tilled: { ramp: 'grass', parts: [{ kind: 'map', rows: ['.DnDn.', 'nDnDnD', '.nDnD.'] }] },
   stump: { ramp: 'trunk', parts: [{ kind: 'map', rows: ['.eTe.', 'tTTtt', 'ttTtd'] }] },
+  // Árbol carbonizado que deja un incendio (de pie unos días)
+  snag: { ramp: 'dead', parts: [{ kind: 'map', rows: ['k...k..', '.k.k..k', '..kk.k.', '...kk..', '...kK..', '...kK..', '...kK..', '..kkKk.'] }] },
   dryBush: { ramp: 'dead', parts: [{ kind: 'map', rows: ['d..D..d', '.d.D.d.', 'D.dDd.D', '.ddDdd.', '..dDd..'] }] },
 };
 

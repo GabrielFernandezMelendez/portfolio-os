@@ -17,7 +17,8 @@ import { WORLD } from './world.model';
  *   cover / coverMaterial  capa helada encima de todo (nieve o hielo, en niveles): cuenta en la altura y se funde
  *   coverSeasonal  1 si la capa helada es del tiempo (nevada, hielo de invierno): no cambia el bioma
  *   springBase  altura del terreno cuando nació el manantial: si se entierra por encima, el manantial se tapa
- *   heat      calor acumulado por la Brasa (se disipa); en exceso calcina el suelo
+ *   heat      calor acumulado por la Brasa (se disipa); en exceso prende la vegetación seca
+ *   scorch    suelo chamuscado tras un fuego o la Brasa (0..1): motas de ceniza que se van con los días
  *
  * Rejilla ecológica (TILES × TILES):
  *   temperature, humidity, fertility, essence, affinity  (0..1)
@@ -29,6 +30,17 @@ import { WORLD } from './world.model';
  *   vegGround altura media del tile en la última revisión de la vegetación (si sube de golpe, la arena entierra plantas)
  *   crop / cropGrowth / cropCare  cultivo sembrado en la celda (id de planta + 1, 0 = ninguno), cuánto ha crecido (0..1)
  *             y días de cuidado que le quedan (si llega a 0 sin que nadie lo cuide, vuelve a ser vegetación silvestre)
+ *
+ * Fuego (por tile):
+ *   fire      intensidad del fuego que arde en el tile (0 = no arde)
+ *   fireAge   cuánto ha avanzado el frente dentro del tile (0..1); al llegar a 1 el tile ha ardido
+ *   fireFrom  por dónde entró el fuego: 0 = desde dentro (rayo, Brasa), 1..4 = desde la vecina E, O, S, N;
+ *             +4 si es el borde de la Tierra Quemada que avanza (arde sin saltar a más vecinas)
+ *   burnedAt  minuto de juego en que terminó de arder (-1 = nunca): cuenta para formar Tierra Quemada
+ *   burnt     1 si el tile es Tierra Quemada
+ *   life      vida de la Tierra Quemada (0..1): hace de sus criaturas hasta que llegue la fauna
+ *   feed      alimento extra de la Tierra Quemada (Humus, Brasa): crece más deprisa mientras dura
+ *   remit     cuenta atrás (negativa, en días) para volver a ser tierra viva una vez sin vida; 0 = no empezada
  */
 export interface ChunkData {
   readonly cx: number;
@@ -70,6 +82,16 @@ export interface ChunkData {
   readonly crop: Uint8Array;
   readonly cropGrowth: Float32Array;
   readonly cropCare: Float32Array;
+  readonly scorch: Float32Array;
+
+  readonly fire: Float32Array;
+  readonly fireAge: Float32Array;
+  readonly fireFrom: Uint8Array;
+  readonly burnedAt: Float32Array;
+  readonly burnt: Uint8Array;
+  readonly life: Float32Array;
+  readonly feed: Float32Array;
+  readonly remit: Float32Array;
 }
 
 /** Plantas distintas que caben en un tile (el registro puede crecer hasta aquí sin cambiar el formato) */
@@ -116,6 +138,15 @@ export function createChunkData(cx: number, cy: number): ChunkData {
     crop: new Uint8Array(CELLS_TOTAL),
     cropGrowth: new Float32Array(CELLS_TOTAL),
     cropCare: new Float32Array(CELLS_TOTAL),
+    scorch: new Float32Array(CELLS_TOTAL),
+    fire: new Float32Array(TILES_TOTAL),
+    fireAge: new Float32Array(TILES_TOTAL),
+    fireFrom: new Uint8Array(TILES_TOTAL),
+    burnedAt: new Float32Array(TILES_TOTAL).fill(-1),
+    burnt: new Uint8Array(TILES_TOTAL),
+    life: new Float32Array(TILES_TOTAL),
+    feed: new Float32Array(TILES_TOTAL),
+    remit: new Float32Array(TILES_TOTAL),
   };
 }
 

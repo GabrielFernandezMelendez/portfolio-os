@@ -27,17 +27,22 @@
     "resume": "Back to the island",
     "dev": {
       "reveal": "Test: reveal land",
-      "sandPile": "Test: sand pile",
-      "spring": "Test: spring",
+      "sandPile": "Test: sand pile (random)",
+      "spring": "Test: spring (random)",
       "rain": "Test: rain",
       "nextSeason": "Test: next season",
       "glade": "Test: Awakened Glade",
       "viewValues": "Show essence and affinity",
       "viewBiomes": "Show biomes",
       "discoverPlants": "Test: know all plants",
-      "garden": "Test: sow a garden",
+      "garden": "Test: sow a garden (random)",
       "fruitAllYear": "Test: fruit all year (on/off)",
-      "eatFruit": "Test: eat the fruit"
+      "eatFruit": "Test: eat the fruit",
+      "storm": "Test: thunderstorm",
+      "dryStorm": "Test: dry storm",
+      "ignite": "Test: start a fire (random)",
+      "burntLand": "Test: Burnt Land 3×3 (random)",
+      "drainLife": "Test: drain Burnt Land of life"
     }
   },
   "lang": {
@@ -72,9 +77,10 @@
       "afinidad": "The affinity has settled."
     },
     "outcome": {
-      "charred": "Fire has scorched the earth.",
       "springNew": "A new spring wells up.",
-      "springStronger": "A spring flows stronger."
+      "springStronger": "A spring flows stronger.",
+      "ignited": "The embers set the dry vegetation alight.",
+      "springBurnt": "The Burnt Land swallows the spring: no water rises."
     },
     "spring": {
       "buried": "A spring has been buried.",
@@ -99,7 +105,29 @@
         "end": "The rain stops.",
         "startSnow": "It starts to snow.",
         "endSnow": "The snow stops."
+      },
+      "storm": {
+        "start": "A thunderstorm breaks out.",
+        "end": "The storm moves away.",
+        "startSnow": "A snowstorm breaks out.",
+        "endSnow": "The snowstorm moves away."
+      },
+      "dryStorm": {
+        "start": "Dry storm: lightning without rain.",
+        "end": "The dry storm passes.",
+        "startSnow": "Dry storm: lightning without rain.",
+        "endSnow": "The dry storm passes."
       }
+    },
+    "fire": {
+      "lightning": "Lightning strikes the island.",
+      "lightningFire": "Lightning sets the forest on fire!",
+      "brasa": "The embers set the vegetation on fire.",
+      "dev": "A fire breaks out on the island.",
+      "out": "The rain puts out the fire.",
+      "burntLand": "The wildfire leaves Burnt Land behind.",
+      "remit": "The Burnt Land recedes: life returns to its edges.",
+      "drained": "The Burnt Land is left lifeless."
     }
   },
   "indicators": {
@@ -128,7 +156,7 @@
     },
     "humus": {
       "name": "Humus",
-      "desc": "Fertile soil that holds water."
+      "desc": "Fertile soil that holds water. Burns easily."
     },
     "manantial": {
       "name": "Spring",
@@ -136,7 +164,7 @@
     },
     "escarcha": {
       "name": "Frost",
-      "desc": "Snow. Cools the area and freezes water."
+      "desc": "Snow. Cools the area, freezes water and puts out fire."
     },
     "despertar": {
       "name": "Awakening",
@@ -144,7 +172,7 @@
     },
     "marea": {
       "name": "Tide",
-      "desc": "Dissolves sediment: digs wells and canals."
+      "desc": "Dissolves sediment: digs wells and canals. A trench works as a firebreak."
     },
     "afinidad": {
       "name": "Affinity",
@@ -165,7 +193,9 @@
   "weather": {
     "rain": "Rain",
     "snow": "Snow",
-    "clear": "Clear"
+    "clear": "Clear",
+    "storm": "Thunderstorm",
+    "dryStorm": "Dry storm"
   },
   "plant": {
     "grass": "Common grass",

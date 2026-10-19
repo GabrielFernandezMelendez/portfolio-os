@@ -10,6 +10,8 @@ export type PrecipitationLook = 'none' | 'rain' | 'snow';
 export interface WeatherEffects {
   /** Lluvia (o nieve donde hace frío): niveles de agua por celda en este minuto. Devuelve si nevó en la mayor parte. */
   precipitate(amount: number): boolean;
+  /** Tormenta eléctrica: con esta probabilidad cae un rayo este minuto (y puede prender lo seco) */
+  strike(chance: number): void;
 }
 
 export interface WeatherEventDef {

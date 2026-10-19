@@ -9,17 +9,22 @@ export const DEV_TOOLS = true;
  */
 export const DEV_ACTIONS = [
   'reveal',        // descubrir el siguiente chunk (fase 7: expansión real)
-  'sandPile',      // montón de arena (desprendimientos)
-  'spring',        // manantial en la cumbre
+  'sandPile',      // montón de arena en un sitio al azar (desprendimientos)
+  'spring',        // manantial en una cumbre o ladera al azar
   'rain',          // que llueva ahora (o nieve, si hace frío)
   'nextSeason',    // saltar a la estación siguiente
   'glade',         // despertar un Claro sin sorteo
   'viewValues',    // ver esencia y afinidad de cada tile
   'viewBiomes',    // ver el bioma de cada tile
   'discoverPlants', // conocer todas las plantas (sus nombres al tocarlas)
-  'garden',        // sembrar un huerto (como lo hará una especie evolucionada)
+  'garden',        // sembrar un huerto en un sitio llano al azar (como lo hará una especie evolucionada)
   'fruitAllYear',  // ver el fruto todo el año (sin esperar a su temporada)
   'eatFruit',      // comerse el fruto de todas las plantas (como lo harán los animales)
+  'storm',         // tormenta eléctrica ahora
+  'dryStorm',      // tormenta seca ahora (la que provoca incendios)
+  'ignite',        // prender fuego en un sitio con vegetación al azar
+  'burntLand',     // Tierra Quemada de 3 × 3 tiles en un sitio al azar
+  'drainLife',     // la Tierra Quemada se queda sin vida (empieza a remitir)
 ] as const;
 
 export type DevAction = (typeof DEV_ACTIONS)[number];
