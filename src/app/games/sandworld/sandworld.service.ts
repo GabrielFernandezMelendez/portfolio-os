@@ -393,6 +393,7 @@ export class SandworldService implements OnDestroy {
       case 'viewValues': return this.toggleDevView('values');
       case 'viewBiomes': return this.toggleDevView('biomes');
       case 'discoverPlants': return this.debugDiscoverPlants();
+      case 'garden': return this.debugGarden();
     }
   }
 
@@ -406,6 +407,35 @@ export class SandworldService implements OnDestroy {
     const all = this.world.discoveredPlants.size === PLANT_DEFS.length;
     this.world.discoveredPlants.clear();
     if (!all) for (const p of PLANT_DEFS) this.world.discoveredPlants.add(p.id);
+  }
+
+  /**
+   * TEMPORAL (modo desarrollo): siembra un huerto en la isla inicial, como lo haría una especie evolucionada
+   * (fase 6): 4 × 2 casillas de bayas rojas (una por casilla) y dos manzanos a los lados, con una casilla libre
+   * entre árboles. Busca el sitio llano más cercano al centro.
+   */
+  debugGarden(): void {
+    const revealed = (cx: number, cy: number) => this.world.exploration.isRevealed(cx, cy);
+    const berries = PLANT_DEFS.find(p => p.key === 'redBerries')!.id;
+    const apple = PLANT_DEFS.find(p => p.key === 'appleTree')!.id;
+    const B = 2;   // celdas por casilla (BRUSH_CELLS)
+    const spots: [number, number][] = [];
+    for (let y = 4; y < 26; y += B) for (let x = 6; x < 22; x += B) spots.push([x, y]);
+    spots.sort((a, b) => Math.hypot(a[0] - 15, a[1] - 15) - Math.hypot(b[0] - 15, b[1] - 15));
+    const chunk = this.world.chunk(0, 0);
+    for (const [x, y] of spots) {
+      const saved = chunk.crop.slice();
+      const blocks: [number, number][] = [];
+      for (let by = 0; by < 2; by++) for (let bx = 0; bx < 4; bx++) blocks.push([x + bx * B, y + by * B]);
+      if (!blocks.every(([cx, cy]) => this.vegetation.sow(berries, cx, cy, revealed))) {
+        chunk.crop.set(saved);
+        continue;
+      }
+      this.vegetation.sow(apple, x - B, y, revealed);
+      this.vegetation.sow(apple, x + 4 * B, y + B, revealed);
+      this.events.emit('vegetationChanged', [{ cx: 0, cy: 0 }]);
+      return;
+    }
   }
 
   /** TEMPORAL (modo desarrollo): salta a la estación siguiente */

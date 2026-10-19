@@ -17,6 +17,7 @@ export const DEV_ACTIONS = [
   'viewValues',    // ver esencia y afinidad de cada tile
   'viewBiomes',    // ver el bioma de cada tile
   'discoverPlants', // conocer todas las plantas (sus nombres al tocarlas)
+  'garden',        // sembrar un huerto (como lo hará una especie evolucionada)
 ] as const;
 
 export type DevAction = (typeof DEV_ACTIONS)[number];

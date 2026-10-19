@@ -64,6 +64,13 @@ export interface PlantDef {
   readonly gladeOnly?: boolean;
   /** Sprites como máximo en un tile con la planta llena (cuánto se ve) */
   readonly sprites: number;
+  /**
+   * Probabilidad de que un animal que se la come deje una semilla que germine en otro sitio.
+   * Sin valor: no se propaga así (no tiene semillas que sobrevivan a la digestión o no se come).
+   */
+  readonly seeds?: number;
+  /** Cultivo: tras cosecharla vuelve a crecer (bayas, frutales) en vez de desaparecer (hierba, setas) */
+  readonly regrows?: boolean;
 }
 
 /** Diferencia entre dos estados de la vegetación: chunks a redibujar */

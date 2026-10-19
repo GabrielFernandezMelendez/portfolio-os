@@ -38,6 +38,9 @@ export const PLANT_SPRITES: Readonly<Record<string, readonly string[]>> = {
   pine: ['....O....', '...OGO...', '...OGO...', '..OGLGO..', '..OgGgO..', '.OGLGGGO.', '..OgggO..', '.OGLGGGGO', 'OGGLGGGgO', '.OOgggOO.', 'OGLGGGGgO', 'OGGGGgggO', '.OOOOOOO.', '....t....', '...tTt...'],
   appleTree: ['...OOOOO...', '..OGGLGGO..', '.OGrGLLGGO.', 'OGGLGGrGGgO', 'OGrGGGGGrgO', 'OGGGGrGggGO', '.OGgGGGggO.', '..OOgggOO..', '....tTt....', '....tTt....', '...ttTtt...'],
   willow: ['....OOO....', '..OOGLGOO..', '.OGLGLGLGO.', 'OGLGgLgGLGO', 'OG.GgtgG.GO', 'OG.G.t.G.GO', 'OL.G.t.G.LO', '.L.L.t.L.L.', '.L...t...L.', '....tTt....', '...ttTtt...'],
+  // Cultivos: brote recién sembrado y tierra labrada bajo cada planta sembrada
+  sprout: ['L...L', '.LGL.', 'LGLGL', '..g..'],
+  tilled: ['.DnDn.', 'nDnDnD', '.nDnD.'],
   deadTree: ['d.......d', '.d..d..d.', '..d.d.d..', '...ddd...', '.d..d....', '..d.d..d.', '...dddd..', '....dd...', '....d....', '....dD...', '...ddDd..'],
 };
 

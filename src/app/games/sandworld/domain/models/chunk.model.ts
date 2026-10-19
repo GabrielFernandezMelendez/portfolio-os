@@ -27,6 +27,8 @@ import { WORLD } from './world.model';
  *   glade     1 si el tile tiene un Claro Despierto; gladeWait  días que faltan para poder volver a intentarlo
  *   plants    biomasa (0..1) de cada planta del registro: PLANT_SLOTS valores por tile (tile × PLANT_SLOTS + id)
  *   vegGround altura media del tile en la última revisión de la vegetación (si sube de golpe, la arena entierra plantas)
+ *   crop / cropGrowth / cropCare  cultivo sembrado en la celda (id de planta + 1, 0 = ninguno), cuánto ha crecido (0..1)
+ *             y días de cuidado que le quedan (si llega a 0 sin que nadie lo cuide, vuelve a ser vegetación silvestre)
  */
 export interface ChunkData {
   readonly cx: number;
@@ -65,6 +67,9 @@ export interface ChunkData {
   readonly gladeWait: Float32Array;
   readonly plants: Float32Array;
   readonly vegGround: Float32Array;
+  readonly crop: Uint8Array;
+  readonly cropGrowth: Float32Array;
+  readonly cropCare: Float32Array;
 }
 
 /** Plantas distintas que caben en un tile (el registro puede crecer hasta aquí sin cambiar el formato) */
@@ -108,6 +113,9 @@ export function createChunkData(cx: number, cy: number): ChunkData {
     gladeWait: new Float32Array(TILES_TOTAL),
     plants: new Float32Array(TILES_TOTAL * PLANT_SLOTS),
     vegGround: new Float32Array(TILES_TOTAL),
+    crop: new Uint8Array(CELLS_TOTAL),
+    cropGrowth: new Float32Array(CELLS_TOTAL),
+    cropCare: new Float32Array(CELLS_TOTAL),
   };
 }
 

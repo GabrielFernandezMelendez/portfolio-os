@@ -34,7 +34,8 @@
       "glade": "Test: Awakened Glade",
       "viewValues": "Show essence and affinity",
       "viewBiomes": "Show biomes",
-      "discoverPlants": "Test: know all plants"
+      "discoverPlants": "Test: know all plants",
+      "garden": "Test: sow a garden"
     }
   },
   "lang": {

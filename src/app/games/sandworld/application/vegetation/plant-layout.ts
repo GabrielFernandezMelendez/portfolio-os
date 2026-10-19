@@ -1,7 +1,8 @@
 import { ChunkData, PLANT_SLOTS, cellIndex, groundAt, tileIndex } from '../../domain/models/chunk.model';
 import { Material } from '../../domain/models/material.model';
 import { WORLD } from '../../domain/models/world.model';
-import { PLANT_DEFS, PLANT_MIN } from '../../config/plants.config';
+import { CROP_SPROUT_UNTIL, PLANT_DEFS, PLANT_MIN } from '../../config/plants.config';
+import { BRUSH_CELLS } from '../../config/brush.config';
 
 /** Una planta dibujada: qué planta es, en qué celda del chunk y su semilla (para variar su ritmo de estación) */
 export interface PlantInstance {
@@ -9,11 +10,15 @@ export interface PlantInstance {
   readonly ci: number;
   readonly cj: number;
   readonly seed: number;
+  /** Es un cultivo (sembrado): ocupa una casilla del cursor y se dibuja en su centro; ci, cj es su primera celda */
+  readonly crop?: boolean;
+  /** Cultivo aún pequeño: se dibuja como brote */
+  readonly sprout?: boolean;
 }
 
 const N = WORLD.TILES;
 const G = WORLD.CELLS_PER_TILE;
-/** Separación mínima (en celdas) alrededor de cada planta: los árboles necesitan más sitio */
+/** Separación mínima (en celdas) alrededor de cada planta silvestre: los árboles necesitan más sitio */
 const GAP = { small: 1, bush: 1, tree: 2 } as const;
 /** Celdas libres hasta el borde de la isla (el precipicio al mar de nubes): los árboles son más anchos */
 const EDGE_MARGIN = { small: 1, bush: 1, tree: 2 } as const;
@@ -51,9 +56,12 @@ export function invalidateLayout(chunk: ChunkData): void {
  *   pero solo en la orilla (con tierra seca al lado)
  * - sin suelo calcinado
  */
-export function canGrowAt(chunk: ChunkData, ci: number, cj: number, kind: keyof typeof GAP, shore: boolean, revealed: RevealedFn): boolean {
+export function canGrowAt(
+  chunk: ChunkData, ci: number, cj: number, kind: keyof typeof GAP, shore: boolean, revealed: RevealedFn, crop = false,
+): boolean {
   const C = WORLD.CELLS;
-  const m = EDGE_MARGIN[kind];
+  // Los cultivos los cuida alguien: pueden acercarse una celda más al borde (nunca estar en él)
+  const m = crop ? Math.max(1, EDGE_MARGIN[kind] - 1) : EDGE_MARGIN[kind];
   if ((ci < m && !revealed(chunk.cx - 1, chunk.cy)) || (ci >= C - m && !revealed(chunk.cx + 1, chunk.cy)) ||
       (cj < m && !revealed(chunk.cx, chunk.cy - 1)) || (cj >= C - m && !revealed(chunk.cx, chunk.cy + 1))) return false;
   const k = cellIndex(ci, cj);
@@ -77,6 +85,26 @@ export function canGrowAt(chunk: ChunkData, ci: number, cj: number, kind: keyof 
 }
 
 /**
+ * ¿Cabe un cultivo en la casilla cuya primera celda es (ci, cj)? Como mucho uno por casilla;
+ * un árbol necesita que en las casillas de alrededor no haya otro árbol (una casilla libre entre árboles).
+ */
+export function cropFits(chunk: ChunkData, ci: number, cj: number, kind: keyof typeof GAP): boolean {
+  const C = WORLD.CELLS, B = BRUSH_CELLS;
+  if (chunk.crop[cellIndex(ci, cj)]) return false;
+  if (kind !== 'tree') return true;
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const x = ci + dx * B, y = cj + dy * B;
+      if (x < 0 || y < 0 || x >= C || y >= C) continue;
+      const other = chunk.crop[cellIndex(x, y)];
+      if (other && PLANT_DEFS[other - 1].kind === 'tree') return false;
+    }
+  }
+  return true;
+}
+
+/**
  * Dónde se dibuja cada planta de un chunk. Determinista: con la misma vegetación y el mismo terreno salen
  * siempre las mismas posiciones, así las plantas no saltan de sitio al redibujar. En cada tile, cada planta
  * pone tantos sprites como su biomasa × su máximo (con redondeo al azar fijo), en celdas donde puede crecer
@@ -89,6 +117,19 @@ export function layoutOf(chunk: ChunkData, revealed: RevealedFn): readonly Plant
   if (cached && cached.edges === edges) return cached.list;
   const taken = new Uint8Array(WORLD.CELLS * WORLD.CELLS);
   const out: PlantInstance[] = [];
+  // Primero los cultivos: uno por casilla, en su centro (sin la separación de lo silvestre).
+  // Sus celdas quedan ocupadas para las plantas silvestres, con su hueco alrededor.
+  for (let k = 0; k < chunk.crop.length; k++) {
+    if (!chunk.crop[k]) continue;
+    const p = PLANT_DEFS[chunk.crop[k] - 1];
+    const ci = k % WORLD.CELLS, cj = Math.floor(k / WORLD.CELLS);
+    for (let dy = 0; dy < BRUSH_CELLS; dy++) {
+      for (let dx = 0; dx < BRUSH_CELLS; dx++) {
+        if (ci + dx < WORLD.CELLS && cj + dy < WORLD.CELLS) taken[cellIndex(ci + dx, cj + dy)] = GAP[p.kind] + 1;
+      }
+    }
+    out.push({ plant: p.id, ci, cj, seed: hash(ci, cj, p.id + 99), crop: true, sprout: chunk.cropGrowth[k] < CROP_SPROUT_UNTIL });
+  }
   const order = [...PLANT_DEFS].sort((a, b) => GAP[b.kind] - GAP[a.kind]);
   for (let j = 0; j < N; j++) {
     for (let i = 0; i < N; i++) {
