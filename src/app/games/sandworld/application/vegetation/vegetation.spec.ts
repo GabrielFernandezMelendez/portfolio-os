@@ -1,6 +1,6 @@
 import { World } from '../world/world';
 import { VegetationSystem, plantCapacity, rootsAt } from './vegetation';
-import { Stage, canGrowAt, eatFruit, invalidateLayout, layoutOf, remainsOf, stageOf, takeBirths, takeDeaths } from './plant-layout';
+import { Stage, canGrowAt, drowning, dueForRecheck, eatFruit, invalidateLayout, layoutOf, remainsOf, stageOf, takeBirths, takeDeaths } from './plant-layout';
 import { tileContext } from '../world/tile-context';
 import { TerrainPhysics } from '../physics/terrain-physics';
 import { SeededRandom } from '../../infrastructure/seeded-random';
@@ -80,7 +80,12 @@ describe('Vegetación', () => {
     // Se inunda la celda del roble (y sus vecinas)
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) chunk.water[cellIndex(oak.ci + dx, oak.cj + dy)] = 0.4;
     invalidateLayout(chunk);
-    const flooded = layoutOf(chunk, all);
+    // Aguanta un tiempo con agua (se ve sufriendo) y solo se ahoga si el agua sigue ahí 2 días
+    expect(layoutOf(chunk, all, 0)).toContain(oak);
+    expect(dueForRecheck(chunk, 1440)).toBe(false);
+    expect(drowning(oak, 1440)).toBeCloseTo(0.5, 5);
+    expect(dueForRecheck(chunk, 2 * 1440)).toBe(true);
+    const flooded = layoutOf(chunk, all, 2 * 1440);
     expect(flooded.some(p => p.plant === byKey('oak').id)).toBe(false);
     expect(chunk.plants[slot]).toBe(0);
     // Al retirarse el agua no aparece otro en otra celda (solo nacerá si la biomasa vuelve a crecer)
@@ -97,13 +102,15 @@ describe('Vegetación', () => {
     // Un lago en una esquina: mueren los de dentro, los de fuera no se mueven
     for (let cj = 0; cj < 10; cj++) for (let ci = 0; ci < 10; ci++) chunk.water[cellIndex(ci, cj)] = 0.5;
     invalidateLayout(chunk);
-    const during = layoutOf(chunk, all).map(p => `${p.ci},${p.cj}`);
+    layoutOf(chunk, all, 0);
+    invalidateLayout(chunk);
+    const during = layoutOf(chunk, all, 3 * 1440).map(p => `${p.ci},${p.cj}`);
     expect(during.length).toBeLessThan(before.length);
     for (const p of during) expect(before).toContain(p);
     // Se seca (Duna tapa el manantial): los supervivientes siguen exactamente donde estaban
     for (let cj = 0; cj < 10; cj++) for (let ci = 0; ci < 10; ci++) chunk.water[cellIndex(ci, cj)] = 0;
     invalidateLayout(chunk);
-    expect(layoutOf(chunk, all).map(p => `${p.ci},${p.cj}`)).toEqual(during);
+    expect(layoutOf(chunk, all, 4 * 1440).map(p => `${p.ci},${p.cj}`)).toEqual(during);
   });
 
   it('un charco de lluvia no mata una planta ya nacida', () => {
@@ -208,6 +215,8 @@ describe('Vegetación', () => {
       chunk.sediment[cellIndex(c.ci, c.cj)] += 2;                                // enterrado
       invalidateLayout(chunk);
       layoutOf(chunk, all, DAY);
+      invalidateLayout(chunk);
+      layoutOf(chunk, all, 4 * DAY);      // el inundado aguanta 2 días con agua antes de ahogarse
       const causes = Object.fromEntries(takeDeaths(chunk).map(d => [`${d.inst.ci},${d.inst.cj}`, d.cause]));
       expect(causes[`${a.ci},${a.cj}`]).toBe('flood');
       expect(causes[`${b.ci},${b.cj}`]).toBe('withered');
@@ -238,5 +247,26 @@ describe('Vegetación', () => {
       expect(eatFruit(chunk, 500)).toBe(1);
       expect(bush.eatenAt).toBe(500);
     });
+  });
+
+  it('el humus sin plantas se descompone en tierra en unas semanas; con plantas se mantiene', () => {
+    const { world, chunk } = emptyForest();
+    // Arriba: humus con hierba. Abajo (filas de tiles 6 y 7): humus donde hace demasiado frío para que crezca nada
+    for (let ci = 0; ci < 32; ci++) {
+      for (let cj = 0; cj < 4; cj++) chunk.material[cellIndex(ci, cj)] = Material.HUMUS;
+      for (let cj = 24; cj < 32; cj++) chunk.material[cellIndex(ci, cj)] = Material.HUMUS;
+    }
+    for (let i = 0; i < 8; i++) chunk.plants[tileIndex(i, 0) * PLANT_SLOTS + byKey('grass').id] = 1;
+    for (let j = 6; j < 8; j++) for (let i = 0; i < 8; i++) chunk.temperature[tileIndex(i, j)] = -0.5;
+    const v = new VegetationSystem(world, new SeededRandom(5));
+    for (let h = 0; h < 24 * 60; h++) v.update(1 / 24, Season.SUMMER);
+    let bare = 0, kept = 0;
+    for (let ci = 0; ci < 32; ci++) {
+      for (let cj = 0; cj < 4; cj++) if (chunk.material[cellIndex(ci, cj)] === Material.HUMUS) kept++;
+      for (let cj = 24; cj < 32; cj++) if (chunk.material[cellIndex(ci, cj)] === Material.HUMUS) bare++;
+    }
+    expect(kept).toBe(128);
+    expect(bare).toBeLessThan(256 * 0.3);
+    expect(v.takeSoilChanges()).toEqual([{ cx: 0, cy: 0 }]);
   });
 });

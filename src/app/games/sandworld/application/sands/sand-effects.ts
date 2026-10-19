@@ -7,6 +7,7 @@ import { LAYER_SWITCH_PROGRESS, POUR_MAX_DUNE, POUR_MAX_MASS, POUR_MAX_MASSLESS 
 import {
   AFINIDAD_AFFINITY, BRASA_ASH, BRASA_DRY, BRASA_EVAPORATE, BRASA_HEAT, BRASA_MELT, BRASA_WARM, CHAR_HEAT,
   DESPERTAR_ESSENCE, ESCARCHA_CHILL, ESCARCHA_FREEZE, ESCARCHA_SNOW, HUMUS_DEPOSIT, HUMUS_FERTILITY, HUMUS_MOISTURE,
+  HUMUS_SINK_DEPTH, HUMUS_UNDERWATER,
   MANANTIAL_BASE_RATE, MANANTIAL_MAX_RATE, MANANTIAL_MERGE_DISTANCE, MANANTIAL_RATE_PER_UNIT, MAREA_DIG, MAREA_ROCK_DIG, MAREA_ROCK_FLOOR,
 } from '../../config/sand-effects.config';
 
@@ -72,14 +73,18 @@ export const SAND_EFFECTS: Readonly<Record<SandId, SandEffect>> = {
     },
   },
 
-  // Humus: tierra ligera muy fértil que guarda la humedad
+  // Humus: tierra ligera muy fértil que guarda la humedad y bebe el agua poco honda; en agua honda se hunde
   [Sand.HUMUS]: {
     sand: Sand.HUMUS,
     maxPerCell: POUR_MAX_MASS,
     massless: false,
     apply: (physics, gx, gy, amount, progress) => {
-      physics.deposit(gx, gy, Material.HUMUS, amount * HUMUS_DEPOSIT, progress >= LAYER_SWITCH_PROGRESS);
       const cell = physics.grid.cell(gx, gy);
+      let add = amount * HUMUS_DEPOSIT;
+      // En agua honda se hunde y se deshace: queda en el fondo sin llegar a la superficie
+      const water = cell ? cell.chunk.water[cell.k] : 0;
+      if (water > HUMUS_SINK_DEPTH) add = Math.min(add, Math.max(0, water - HUMUS_UNDERWATER));
+      if (add > 0) physics.deposit(gx, gy, Material.HUMUS, add, progress >= LAYER_SWITCH_PROGRESS);
       if (cell) cell.chunk.moisture[cell.k] = Math.min(1, cell.chunk.moisture[cell.k] + amount * HUMUS_MOISTURE);
       addToTile(physics, gx, gy, 'fertility', amount * HUMUS_FERTILITY);
     },

@@ -20,6 +20,13 @@ export const STAGE_DAYS: Readonly<Record<PlantKind, readonly [sprout: number, yo
 export const BIRTH_MARGIN = 0.6;
 export const DEATH_MARGIN = 0.6;
 
+/**
+ * Días que aguanta una planta con agua honda en su celda antes de ahogarse. Si el agua baja antes, se recupera.
+ * Mientras tanto se ve sufriendo. Las de orilla (junco, sauce) aguantan SHORE_DROWN_FACTOR veces más.
+ */
+export const DROWN_DAYS: Readonly<Record<PlantKind, number>> = { small: 0.5, bush: 1, tree: 2 };
+export const SHORE_DROWN_FACTOR = 2;
+
 /** Días que se quedan los restos: tocón de un árbol, tronco caído y mata seca de un arbusto */
 export const REMAINS_DAYS = { stump: 6, log: 3, dryBush: 2 } as const;
 

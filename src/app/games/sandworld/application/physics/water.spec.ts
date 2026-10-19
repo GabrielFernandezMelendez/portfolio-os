@@ -3,6 +3,8 @@ import { TerrainPhysics } from './terrain-physics';
 import { ChunkData, cellIndex } from '../../domain/models/chunk.model';
 import { Material } from '../../domain/models/material.model';
 import { WORLD } from '../../domain/models/world.model';
+import { SAND_EFFECTS } from '../sands/sand-effects';
+import { Sand } from '../../domain/models/sand.model';
 
 const C = WORLD.CELLS;
 const DAY = 1440;
@@ -107,6 +109,8 @@ describe('Agua', () => {
     for (let cj = 4; cj <= 8; cj++) for (let ci = 4; ci <= 8; ci++) physics.addWater(ci, cj, 0.1);
     for (let cj = 20; cj <= 26; cj++) for (let ci = 20; ci <= 26; ci++) physics.addWater(ci, cj, 1);
     for (let i = 0; i < 4 * DAY; i++) physics.minute();
+    expect(chunk.material[cellIndex(6, 6)]).toBe(Material.SOIL);      // el barro tarda semanas, no días
+    for (let i = 0; i < 27 * DAY; i++) physics.minute();
     expect(chunk.material[cellIndex(6, 6)]).toBe(Material.MUD);
     expect(chunk.material[cellIndex(23, 23)]).toBe(Material.SOIL);
     expect(chunk.material[cellIndex(20, 23)]).toBe(Material.SOIL);    // orilla del lago: tampoco
@@ -159,5 +163,45 @@ describe('Agua', () => {
     physics.addWater(10, 10, 0.08);
     for (let i = 0; i < DAY; i++) physics.minute();
     expect(chunk.water[cellIndex(10, 10)]).toBe(0);
+  });
+
+  describe('humus en la orilla', () => {
+    it('una franja de humus frena la lámina de agua que avanza por el llano', () => {
+      const run = (withHumus: boolean): number => {
+        const { world, chunk } = flatIsland((ci) => 3 - ci * 0.01);      // llano con una caída mínima hacia la derecha
+        if (withHumus) for (let cj = 0; cj < C; cj++) for (let ci = 12; ci < 15; ci++) chunk.material[cellIndex(ci, cj)] = Material.HUMUS;
+        const physics = new TerrainPhysics(world, { infiltration: true, evaporation: false, recharge: false, freezing: false });
+        physics.setSpring(4, 16, 0.008);
+        for (let i = 0; i < 3 * DAY; i++) physics.minute();
+        // Celdas mojadas (empapadas o con agua) más allá de la franja
+        let beyond = 0;
+        for (let cj = 0; cj < C; cj++) for (let ci = 16; ci < 28; ci++) {
+          const k = cellIndex(ci, cj);
+          if (chunk.moisture[k] > 0.5 || chunk.water[k] > 0.003) beyond++;
+        }
+        return beyond;
+      };
+      const without = run(false), with_ = run(true);
+      expect(without).toBeGreaterThan(20);
+      expect(with_).toBeLessThan(without * 0.2);
+    });
+
+    it('en agua honda el humus se hunde: no llega a la superficie ni une lagos', () => {
+      const { world, chunk } = flatIsland((ci, cj) => (ci >= 8 && ci <= 20 && cj >= 8 && cj <= 20 ? 2 : 3));
+      const physics = new TerrainPhysics(world, { infiltration: false, evaporation: false, recharge: false, freezing: false });
+      for (let cj = 8; cj <= 20; cj++) for (let ci = 8; ci <= 20; ci++) physics.addWater(ci, cj, 0.8);
+      for (let i = 0; i < 60; i++) physics.minute();
+      for (let m = 0; m < 1440; m++) {
+        for (let ci = 12; ci <= 16; ci++) SAND_EFFECTS[Sand.HUMUS].apply(physics, ci, 14, 1 / 1440 * 3, m / 1440);
+        physics.minute();
+      }
+      for (let i = 0; i < DAY; i++) physics.minute();
+      const surface = 2 + 0.8;
+      for (let ci = 12; ci <= 16; ci++) {
+        const k = cellIndex(ci, 14);
+        expect(chunk.rock[k] + chunk.sediment[k]).toBeLessThan(surface - 0.1);
+        expect(chunk.water[k]).toBeGreaterThan(0.1);
+      }
+    });
   });
 });

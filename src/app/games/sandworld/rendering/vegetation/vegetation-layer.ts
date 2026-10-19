@@ -8,7 +8,8 @@ import { FRUIT_REGROW_DAYS, FRUIT_RIPEN_DAYS, PLANT_ANIM_MS, REMAINS_DAYS } from
 import { BRUSH_CELLS } from '../../config/brush.config';
 import { WORLD } from '../../domain/models/world.model';
 import {
-  DeathCause, PlantDeath, PlantInstance, PlantRemains, RevealedFn, Stage, layoutOf, remainsOf, stageOf, takeBirths, takeDeaths,
+  DeathCause, PlantDeath, PlantInstance, PlantRemains, RevealedFn, Stage, drowning, dueForRecheck, layoutOf, plantDevFlags, remainsOf, stageOf,
+  takeBirths, takeDeaths,
 } from '../../application/vegetation/plant-layout';
 import { plantStress } from '../../application/vegetation/vegetation';
 import { ArtLook, FRESH } from './plant-art';
@@ -63,6 +64,7 @@ export class VegetationLayer {
   private readonly anims: Anim[] = [];
   private chunk: ChunkData | null = null;
   private cellTop: CellTop | null = null;
+  private revealed: RevealedFn | null = null;
 
   constructor() {
     this.view.sortableChildren = true;
@@ -75,6 +77,7 @@ export class VegetationLayer {
   layout(chunk: ChunkData, cellTop: CellTop, time: GameTime, revealed: RevealedFn): void {
     this.chunk = chunk;
     this.cellTop = cellTop;
+    this.revealed = revealed;
     const list = layoutOf(chunk, revealed, time.totalMinutes);
     const births = new Set(takeBirths(chunk));
     const deaths = takeDeaths(chunk);
@@ -110,6 +113,11 @@ export class VegetationLayer {
 
   /** Cambia la textura de las plantas cuyo aspecto (estación, etapa, fruto, sufrimiento, nieve) ha cambiado */
   updateSeason(chunk: ChunkData, time: GameTime, force = false): void {
+    // Una planta con agua que ya lleva demasiado tiempo: se revisa aunque el terreno no haya cambiado
+    if (!force && this.cellTop && this.revealed && dueForRecheck(chunk, time.totalMinutes)) {
+      this.layout(chunk, this.cellTop, time, this.revealed);
+      return;
+    }
     const stress = new Map<number, number>();
     for (const p of this.placed.values()) {
       const def = PLANT_DEFS[p.inst.plant];
@@ -126,7 +134,7 @@ export class VegetationLayer {
       }
       const look: ArtLook = {
         ...FRESH, ...season, leaves: def.deciduous ? season.leaves : 1,
-        fruit: lookStep(fruitOf(def, p.inst, time)), stress: lookStep(s * 0.9),
+        fruit: lookStep(fruitOf(def, p.inst, time)), stress: lookStep(Math.max(s * 0.9, drowning(p.inst, time.totalMinutes))),
       };
       const [artKey, young] = artFor(def, stage);
       const id = `${artKey}|${young}|${JSON.stringify(look)}`;
@@ -401,13 +409,13 @@ function artFor(def: PlantDef, stage: Stage): [string, boolean] {
 
 /**
  * Fruto que se ve ahora (0..1): solo en su temporada (madura en sus primeros días) y si no se lo han comido
- * (vuelve poco a poco). Solo las plantas con frutos dibujados.
+ * (vuelve poco a poco). Solo las plantas con frutos dibujados. En modo desarrollo se puede ver todo el año.
  */
 function fruitOf(def: PlantDef, inst: PlantInstance, time: GameTime): number {
   if (!def.food || !PLANT_ART[def.key]?.parts.some(p => p.kind === 'fruit')) return 0;
   const seasons = def.food.seasons;
   let ripe = 1;
-  if (seasons) {
+  if (seasons && !plantDevFlags.fruitAllYear) {
     if (!seasons.includes(time.season)) return 0;
     const prev = ((time.season + 3) % 4) as SeasonId;
     if (!seasons.includes(prev)) ripe = Math.min(1, (time.dayOfSeason - 1 + time.minuteOfDay / 1440) / FRUIT_RIPEN_DAYS);

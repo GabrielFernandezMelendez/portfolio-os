@@ -57,3 +57,23 @@ export const RULE_INTERVAL_MINUTES = 10;
 
 /** Cambio de agua (en niveles) que se nota al dibujar: por debajo no se vuelve a hornear */
 export const WATER_VISUAL_STEP = 0.008;
+
+// ── Humus: suelo vivo que frena el agua de la orilla ──
+/**
+ * Agua (niveles por minuto) que bebe una celda de humus aunque esté empapada: la lámina fina que avanza por el
+ * llano se frena en una franja de humus. Solo con agua poco honda (hasta HUMUS_ABSORB_MAX_DEPTH): un lago o una
+ * crecida pasan igual. Una franja de 8 celdas bebe tanto como un manantial mediano.
+ */
+export const HUMUS_ABSORB = 0.002;
+export const HUMUS_ABSORB_MAX_DEPTH = 0.12;
+
+// ── Barro y pantano ──
+/**
+ * Días seguidos de agua poco honda y estancada para que la tierra se vuelva barro (y, con el tiempo, pantano):
+ * al azar fijo por celda entre el mínimo y el máximo, para que no se embarre todo a la vez.
+ * El humus (mudResist del material) y las raíces de las plantas (MUD_ROOTS_FACTOR) lo retrasan.
+ */
+export const MUD_DAYS = [20, 30] as const;
+export const MUD_ROOTS_FACTOR = 1.5;
+/** Raíces del tile (talud extra) a partir de las que cuentan para retrasar el barro */
+export const MUD_ROOTS_MIN = 0.2;

@@ -5,7 +5,7 @@ import { MATERIAL_DEFS } from '../../config/materials.config';
 import { WATER_TABLE } from '../../config/world.config';
 import {
   EDGE_DRAIN_RATE, EVAPORATION, INFILTRATION, RULE_INTERVAL_MINUTES, SOIL_DRYING, SOIL_WATER_CAPACITY,
-  STAGNANT_FLOW, PIPE_INERTIA, PIPE_RATE, WATER_MIN, WATER_PASSES_PER_MINUTE, WATER_TABLE_RECHARGE, WATER_VISUAL_STEP,
+  HUMUS_ABSORB_MAX_DEPTH, STAGNANT_FLOW, PIPE_INERTIA, PIPE_RATE, WATER_MIN, WATER_PASSES_PER_MINUTE, WATER_TABLE_RECHARGE, WATER_VISUAL_STEP,
   WETTING_DEPTH,
 } from '../../config/water.config';
 import { CellRef, TerrainGrid } from './terrain-grid';
@@ -264,6 +264,13 @@ export class WaterSystem {
         if (absorbed > 0) this.damp.add(key);
       }
 
+      // Humus: suelo vivo que bebe la lámina fina aunque esté empapado (frena el agua que avanza por la orilla)
+      if (def.absorb && c.water[k] > 0 && c.water[k] <= HUMUS_ABSORB_MAX_DEPTH) {
+        c.water[k] = Math.max(0, c.water[k] - def.absorb);
+        c.moisture[k] = 1;
+        this.damp.add(key);
+      }
+
       // Evaporación según la temperatura
       if (this.options.evaporation && c.water[k] > 0) {
         c.water[k] = Math.max(0, c.water[k] - EVAPORATION * temperature);
@@ -327,7 +334,7 @@ export class WaterSystem {
         c.ruleTimer[k] = 0;
       }
       c.ruleTimer[k] += elapsedDays;
-      if (c.ruleTimer[k] >= rule.days) {
+      if (c.ruleTimer[k] >= (rule.daysAt ? rule.daysAt(ctx) : rule.days)) {
         c.material[k] = rule.to;
         c.ruleId[k] = 0;
         c.ruleTimer[k] = 0;
@@ -351,6 +358,9 @@ export class WaterSystem {
       deepNeighbour: deep,
       belowTable: this.grid.ground(cell) < WATER_TABLE,
       temperature: temperatureAt(c, t),
+      mudResist: MATERIAL_DEFS[c.material[k] as MaterialId].mudResist ?? 1,
+      roots: this.grid.reposeBonus?.(cell) ?? 0,
+      jitter: cellJitter(gx, gy),
     };
   }
 
@@ -387,4 +397,11 @@ export class WaterSystem {
       }
     }
   }
+}
+
+/** Azar fijo por celda (0..1) */
+function cellJitter(gx: number, gy: number): number {
+  let h = Math.imul(gx, 374761393) ^ Math.imul(gy, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }

@@ -2,7 +2,7 @@ import { ChunkData, PLANT_SLOTS, cellIndex, groundAt, tileIndex } from '../../do
 import { Material } from '../../domain/models/material.model';
 import { WORLD } from '../../domain/models/world.model';
 import { BURY_KILL, CROP_SPROUT_UNTIL, CROP_YOUNG_UNTIL, PLANT_DEFS, PLANT_MIN, SEEDLING } from '../../config/plants.config';
-import { BIRTH_MARGIN, DEATH_MARGIN, REMAINS_DAYS, STAGE_DAYS } from '../../config/plant-life.config';
+import { BIRTH_MARGIN, DEATH_MARGIN, DROWN_DAYS, REMAINS_DAYS, SHORE_DROWN_FACTOR, STAGE_DAYS } from '../../config/plant-life.config';
 import { PlantKind } from '../../domain/models/plant.model';
 import { BRUSH_CELLS } from '../../config/brush.config';
 
@@ -16,6 +16,8 @@ export interface PlantInstance {
   readonly born: number;
   /** Minuto de juego en que se comieron su fruto (vuelve poco a poco); -Infinity = nunca */
   eatenAt: number;
+  /** Minuto de juego desde el que tiene agua honda en su celda (null = seca). Si dura demasiado, se ahoga. */
+  wetSince?: number | null;
   /** Es un cultivo (sembrado): ocupa una casilla del cursor y se dibuja en su centro; ci, cj es su primera celda */
   readonly crop?: boolean;
   /** Crecimiento del cultivo (0..1): decide su etapa */
@@ -106,6 +108,8 @@ interface ChunkPlants {
   deaths: PlantDeath[];
   births: PlantInstance[];
   remains: PlantRemains[];
+  /** Minuto en que hay que volver a mirar aunque nada cambie (una planta que se ahogará si el agua sigue) */
+  recheckAt: number;
 }
 
 const state = new WeakMap<ChunkData, ChunkPlants>();
@@ -114,6 +118,28 @@ const state = new WeakMap<ChunkData, ChunkPlants>();
 export function invalidateLayout(chunk: ChunkData): void {
   const s = state.get(chunk);
   if (s) s.dirty = true;
+}
+
+/**
+ * ¿Hay que revisar ya las plantas del chunk aunque no haya cambiado nada? (una planta con agua lleva el tiempo
+ * suficiente para ahogarse). Si es así, lo marca para revisar.
+ */
+export function dueForRecheck(chunk: ChunkData, now: number): boolean {
+  const s = state.get(chunk);
+  if (!s || now < s.recheckAt) return false;
+  s.dirty = true;
+  return true;
+}
+
+/** Cuánto lleva ahogándose una planta (0 = seca, 1 = a punto de morir) */
+export function drowning(inst: PlantInstance, now: number): number {
+  if (inst.wetSince == null || inst.crop) return 0;
+  return Math.min(1, (now - inst.wetSince) / drownMinutes(inst.plant));
+}
+
+function drownMinutes(plant: number): number {
+  const p = PLANT_DEFS[plant];
+  return DROWN_DAYS[p.kind] * (p.shore ? SHORE_DROWN_FACTOR : 1) * 1440;
 }
 
 /** Plantas que han muerto desde la última llamada (se vacía al leerla) */
@@ -130,6 +156,9 @@ export function takeBirths(chunk: ChunkData): PlantInstance[] {
 export function remainsOf(chunk: ChunkData): readonly PlantRemains[] {
   return state.get(chunk)?.remains ?? [];
 }
+
+/** Opciones de prueba (modo desarrollo): fruto todo el año, sin esperar a su temporada */
+export const plantDevFlags = { fruitAllYear: false };
 
 /** Algo (un animal; de momento, el botón de desarrollo) se come el fruto de todas las plantas del chunk */
 export function eatFruit(chunk: ChunkData, now: number): number {
@@ -230,7 +259,7 @@ export function layoutOf(chunk: ChunkData, revealed: RevealedFn, now = 0): reado
   if (st && !st.dirty && st.edges === edges) return st.list;
   const first = !st;
   if (!st) {
-    st = { edges, dirty: true, wild: [], list: [], deaths: [], births: [], remains: [] };
+    st = { edges, dirty: true, wild: [], list: [], deaths: [], births: [], remains: [], recheckAt: Infinity };
     state.set(chunk, st);
   }
   const C = WORLD.CELLS;
@@ -260,6 +289,7 @@ export function layoutOf(chunk: ChunkData, revealed: RevealedFn, now = 0): reado
   // 1. Las que ya estaban: siguen en su celda o mueren allí
   const alive: WildPlant[] = [];
   const deaths = new Set<number>();
+  let recheckAt = Infinity;
   const die = (w: WildPlant, cause: DeathCause) => {
     st!.deaths.push({ inst: w.inst, cause });
     const kind = remainsKind(PLANT_DEFS[w.inst.plant].kind, cause);
@@ -268,7 +298,18 @@ export function layoutOf(chunk: ChunkData, revealed: RevealedFn, now = 0): reado
   for (const w of st.wild) {
     const p = PLANT_DEFS[w.inst.plant];
     const k = cellIndex(w.inst.ci, w.inst.cj);
-    const cause = taken[k] ? 'cleared' : deathCause(chunk, k, w);
+    let cause: DeathCause | null = taken[k] ? 'cleared' : deathCause(chunk, k, w);
+    // El agua honda no mata al momento: solo si sigue ahí el tiempo que aguanta la planta
+    if (cause === 'flood') {
+      w.inst.wetSince ??= now;
+      const deadline = w.inst.wetSince + drownMinutes(p.id);
+      if (now < deadline) {
+        cause = null;
+        recheckAt = Math.min(recheckAt, deadline);
+      }
+    } else if (!cause) {
+      w.inst.wetSince = null;
+    }
     if (cause) {
       const slot = w.tile * PLANT_SLOTS + p.id;
       chunk.plants[slot] = Math.max(0, chunk.plants[slot] - 1 / p.sprites);
@@ -339,6 +380,7 @@ export function layoutOf(chunk: ChunkData, revealed: RevealedFn, now = 0): reado
   st.remains = st.remains.filter(r => (now - r.at) / 1440 < REMAINS_DAYS[r.kind] && !taken[cellIndex(r.inst.ci, r.inst.cj)]);
   st.edges = edges;
   st.dirty = false;
+  st.recheckAt = recheckAt;
   return st.list;
 }
 

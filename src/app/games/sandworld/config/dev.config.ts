@@ -18,6 +18,7 @@ export const DEV_ACTIONS = [
   'viewBiomes',    // ver el bioma de cada tile
   'discoverPlants', // conocer todas las plantas (sus nombres al tocarlas)
   'garden',        // sembrar un huerto (como lo hará una especie evolucionada)
+  'fruitAllYear',  // ver el fruto todo el año (sin esperar a su temporada)
   'eatFruit',      // comerse el fruto de todas las plantas (como lo harán los animales)
 ] as const;
 

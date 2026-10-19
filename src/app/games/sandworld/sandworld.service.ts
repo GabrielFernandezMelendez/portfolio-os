@@ -30,7 +30,7 @@ import { Season } from './domain/models/time.model';
 import { DevTileView } from './rendering/dev/dev-tile-overlay';
 import { DevAction } from './config/dev.config';
 import { VegetationSystem } from './application/vegetation/vegetation';
-import { eatFruit } from './application/vegetation/plant-layout';
+import { eatFruit, plantDevFlags } from './application/vegetation/plant-layout';
 import { PLANT_DEFS, VEGETATION_CHECK_MINUTES } from './config/plants.config';
 import { SAND_COLOR_NUM } from './config/sands.config';
 import { PENDING_REDRAW_MINUTES } from './config/pour.config';
@@ -318,6 +318,8 @@ export class SandworldService implements OnDestroy {
   /** Revisa la vegetación: recoloca las plantas de los chunks que cambian y actualiza la barra de Vegetación */
   private updateVegetation(season: number): void {
     const changes = this.vegetation.update(VEGETATION_CHECK_MINUTES / 1440, season as 0 | 1 | 2 | 3);
+    const soil = this.vegetation.takeSoilChanges();
+    if (soil.length) this.events.emit('terrainChanged', soil);
     if (changes.length === 0) return;
     this.events.emit('vegetationChanged', changes);
     this.refreshIndicators();
@@ -400,6 +402,7 @@ export class SandworldService implements OnDestroy {
       case 'discoverPlants': return this.debugDiscoverPlants();
       case 'garden': return this.debugGarden();
       case 'eatFruit': return this.debugEatFruit();
+      case 'fruitAllYear': plantDevFlags.fruitAllYear = !plantDevFlags.fruitAllYear; return;
     }
   }
 

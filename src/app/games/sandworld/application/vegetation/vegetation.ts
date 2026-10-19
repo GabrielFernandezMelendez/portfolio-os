@@ -13,6 +13,8 @@ import { World } from '../world/world';
 import { tileContext } from '../world/tile-context';
 import { RevealedFn, canGrowAt, cropFits, invalidateLayout } from './plant-layout';
 import { BRUSH_CELLS } from '../../config/brush.config';
+import { Material } from '../../domain/models/material.model';
+import { HUMUS_DECAY_DAYS, HUMUS_KEEP_BIOMASS } from '../../config/sand-effects.config';
 
 const N = WORLD.TILES;
 const G = WORLD.CELLS_PER_TILE;
@@ -83,6 +85,9 @@ export function rootsAt(chunk: ChunkData, k: number): number {
  *    los cuida durante CROP_CARE_DAYS, se asilvestran y pasan a ser vegetación natural.
  */
 export class VegetationSystem {
+  /** Chunks cuyo suelo ha cambiado (humus que se descompone): hay que volver a dibujarlos */
+  private readonly soilChanges = new Set<string>();
+
   constructor(
     private readonly world: World,
     private readonly random: RandomSource,
@@ -192,12 +197,41 @@ export class VegetationSystem {
         }
       }
       if (this.updateCrops(chunk, elapsedDays, season)) visible = true;
+      this.decayHumus(chunk, elapsedDays);
       if (visible) {
         invalidateLayout(chunk);
         changed.push({ cx, cy });
       }
     }
     return changed;
+  }
+
+  /** Chunks cuyo suelo ha cambiado desde la última llamada (se vacía al leerla) */
+  takeSoilChanges(): { cx: number; cy: number }[] {
+    const out = [...this.soilChanges].map(k => {
+      const [cx, cy] = k.split(',').map(Number);
+      return { cx, cy };
+    });
+    this.soilChanges.clear();
+    return out;
+  }
+
+  /**
+   * El humus sin plantas que lo renueven se descompone poco a poco en tierra normal (de media en HUMUS_DECAY_DAYS):
+   * hay que mantener viva la orilla para que siga protegiéndola.
+   */
+  private decayHumus(chunk: ChunkData, dt: number): void {
+    const chance = dt / HUMUS_DECAY_DAYS;
+    for (let k = 0; k < chunk.material.length; k++) {
+      if (chunk.material[k] !== Material.HUMUS) continue;
+      const ci = k % WORLD.CELLS, cj = Math.floor(k / WORLD.CELLS);
+      const base = tileIndex(Math.floor(ci / G), Math.floor(cj / G)) * PLANT_SLOTS;
+      let biomass = 0;
+      for (const p of PLANT_DEFS) biomass += chunk.plants[base + p.id];
+      if (biomass >= HUMUS_KEEP_BIOMASS || this.random.next() >= chance) continue;
+      chunk.material[k] = Material.SOIL;
+      this.soilChanges.add(`${chunk.cx},${chunk.cy}`);
+    }
   }
 
   /** Actualiza un tile. Devuelve si alguna planta ha cambiado de forma visible (décimas de biomasa). */

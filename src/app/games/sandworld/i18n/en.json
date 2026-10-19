@@ -36,6 +36,7 @@
       "viewBiomes": "Show biomes",
       "discoverPlants": "Test: know all plants",
       "garden": "Test: sow a garden",
+      "fruitAllYear": "Test: fruit all year (on/off)",
       "eatFruit": "Test: eat the fruit"
     }
   },

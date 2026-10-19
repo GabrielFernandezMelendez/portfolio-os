@@ -25,6 +25,19 @@ export const MANANTIAL_MERGE_DISTANCE = 2;
 export const HUMUS_DEPOSIT = 0.6;
 export const HUMUS_FERTILITY = 0.04;
 export const HUMUS_MOISTURE = 0.5;
+/**
+ * Humus en agua honda: es ligero y se deshace, no hace tierra firme. Donde el agua pasa de HUMUS_SINK_DEPTH,
+ * se queda en el fondo dejando al menos HUMUS_UNDERWATER de agua encima (no une lagos ni corta ríos: eso es
+ * la Duna); lo que sobra se disuelve (abona el fondo).
+ */
+export const HUMUS_SINK_DEPTH = 0.1;
+export const HUMUS_UNDERWATER = 0.15;
+/**
+ * El humus se descompone en tierra normal en unos HUMUS_DECAY_DAYS días (de media) si en su tile no hay plantas
+ * que lo renueven con sus hojas (biomasa total por debajo de HUMUS_KEEP_BIOMASS). Con vegetación, se mantiene.
+ */
+export const HUMUS_DECAY_DAYS = 30;
+export const HUMUS_KEEP_BIOMASS = 0.2;
 
 // ── Brasa ──
 /** Agua que evapora, humedad que seca y nieve o hielo que funde por unidad */
