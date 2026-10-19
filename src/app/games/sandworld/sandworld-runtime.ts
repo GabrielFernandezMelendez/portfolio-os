@@ -259,6 +259,7 @@ export class SandworldRuntime {
     this.grains.update(dt);
     this.devOverlay?.update(dt);
     // Aspecto de estación de las plantas (cambia en días de juego: basta con mirarlo dos veces por segundo)
+    for (const t of this.terrains.values()) t.animatePlants(dt);
     this.plantClock += dt;
     if (this.plantClock >= PLANT_LOOK_MS) {
       this.plantClock = 0;

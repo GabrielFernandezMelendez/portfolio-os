@@ -30,6 +30,7 @@ import { Season } from './domain/models/time.model';
 import { DevTileView } from './rendering/dev/dev-tile-overlay';
 import { DevAction } from './config/dev.config';
 import { VegetationSystem } from './application/vegetation/vegetation';
+import { eatFruit } from './application/vegetation/plant-layout';
 import { PLANT_DEFS, VEGETATION_CHECK_MINUTES } from './config/plants.config';
 import { SAND_COLOR_NUM } from './config/sands.config';
 import { PENDING_REDRAW_MINUTES } from './config/pour.config';
@@ -398,6 +399,7 @@ export class SandworldService implements OnDestroy {
       case 'viewBiomes': return this.toggleDevView('biomes');
       case 'discoverPlants': return this.debugDiscoverPlants();
       case 'garden': return this.debugGarden();
+      case 'eatFruit': return this.debugEatFruit();
     }
   }
 
@@ -440,6 +442,11 @@ export class SandworldService implements OnDestroy {
       this.events.emit('vegetationChanged', [{ cx: 0, cy: 0 }]);
       return;
     }
+  }
+
+  /** TEMPORAL (modo desarrollo): algo se come el fruto de todas las plantas (vuelve poco a poco) */
+  debugEatFruit(): void {
+    for (const { cx, cy } of this.world.exploration.list()) eatFruit(this.world.chunk(cx, cy), this.engine.time.totalMinutes);
   }
 
   /** TEMPORAL (modo desarrollo): salta a la estación siguiente */

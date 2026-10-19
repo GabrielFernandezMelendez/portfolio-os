@@ -1,6 +1,6 @@
 import { World } from '../world/world';
 import { VegetationSystem } from './vegetation';
-import { invalidateLayout, layoutOf } from './plant-layout';
+import { Stage, invalidateLayout, layoutOf, stageOf } from './plant-layout';
 import { Biome } from '../../domain/models/biome.model';
 import { Material } from '../../domain/models/material.model';
 import { ChunkData, PLANT_SLOTS, cellIndex, tileIndex } from '../../domain/models/chunk.model';
@@ -73,7 +73,7 @@ describe('Semillas y cultivos', () => {
     invalidateLayout(chunk);
     const crops = layoutOf(chunk, open).filter(p => p.crop);
     expect(crops.length).toBe(5);
-    expect(crops.every(p => p.sprout)).toBe(true);                 // recién sembrados: brotes
+    expect(crops.every(p => stageOf(p, 0) <= Stage.SPROUT)).toBe(true);   // recién sembrados: semilla o brote
   });
 
   it('crecen, se cosechan (las bayas rebrotan) y sin cuidado se asilvestran', () => {

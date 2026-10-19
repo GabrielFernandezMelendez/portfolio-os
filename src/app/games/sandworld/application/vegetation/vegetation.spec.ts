@@ -1,6 +1,6 @@
 import { World } from '../world/world';
 import { VegetationSystem, plantCapacity, rootsAt } from './vegetation';
-import { canGrowAt, invalidateLayout, layoutOf } from './plant-layout';
+import { Stage, canGrowAt, eatFruit, invalidateLayout, layoutOf, remainsOf, stageOf, takeBirths, takeDeaths } from './plant-layout';
 import { tileContext } from '../world/tile-context';
 import { TerrainPhysics } from '../physics/terrain-physics';
 import { SeededRandom } from '../../infrastructure/seeded-random';
@@ -161,5 +161,82 @@ describe('Vegetación', () => {
     for (const p of layoutOf(chunk, only00)) {
       expect(canGrowAt(chunk, p.ci, p.cj, PLANT_DEFS[p.plant].kind, !!PLANT_DEFS[p.plant].shore, only00)).toBe(true);
     }
+  });
+
+  describe('ciclo de vida de cada planta', () => {
+    const all = () => true;
+    const DAY = 1440;
+
+    it('la vegetación inicial ya está crecida, pero lo que nace después empieza como semilla y crece por etapas', () => {
+      const { chunk } = emptyForest();
+      chunk.plants[tileIndex(2, 2) * PLANT_SLOTS + byKey('oak').id] = 1;
+      const first = layoutOf(chunk, all, 0);
+      expect(stageOf(first[0], 0)).toBe(Stage.ADULT);
+      expect(takeBirths(chunk)).toEqual([]);
+      chunk.plants[tileIndex(5, 5) * PLANT_SLOTS + byKey('oak').id] = 1;
+      invalidateLayout(chunk);
+      const born = layoutOf(chunk, all, 10 * DAY).find(p => p.ci >= 20 && p.cj >= 20)!;
+      expect(takeBirths(chunk)).toEqual([born]);
+      expect(stageOf(born, 10 * DAY)).toBe(Stage.SEED);
+      expect(stageOf(born, 12 * DAY)).toBe(Stage.SPROUT);
+      expect(stageOf(born, 15 * DAY)).toBe(Stage.YOUNG);
+      expect(stageOf(born, 21 * DAY)).toBe(Stage.ADULT);
+    });
+
+    it('una biomasa que oscila en el límite no hace morir y renacer plantas', () => {
+      const { chunk } = emptyForest();
+      const slot = tileIndex(3, 3) * PLANT_SLOTS + byKey('oak').id;
+      chunk.plants[slot] = 1;
+      layoutOf(chunk, all, 0);
+      for (let n = 0; n < 20; n++) {
+        chunk.plants[slot] = n % 2 ? 0.55 : 1;
+        invalidateLayout(chunk);
+        layoutOf(chunk, all, n * 60);
+      }
+      expect(takeDeaths(chunk)).toEqual([]);
+      expect(takeBirths(chunk)).toEqual([]);
+    });
+
+    it('cada muerte tiene su causa y sus restos: inundado deja tronco, seco deja tocón, enterrado nada', () => {
+      const { chunk } = emptyForest();
+      for (const [i, j] of [[1, 1], [4, 1], [1, 4]]) chunk.plants[tileIndex(i, j) * PLANT_SLOTS + byKey('oak').id] = 1;
+      const oaks = layoutOf(chunk, all, 0).filter(p => p.plant === byKey('oak').id);
+      expect(oaks.length).toBe(3);
+      const [a, b, c] = oaks;
+      chunk.water[cellIndex(a.ci, a.cj)] = 0.5;                                   // inundado
+      chunk.plants[tileIndex(Math.floor(b.ci / 4), Math.floor(b.cj / 4)) * PLANT_SLOTS + byKey('oak').id] = 0.1;   // se seca
+      chunk.sediment[cellIndex(c.ci, c.cj)] += 2;                                // enterrado
+      invalidateLayout(chunk);
+      layoutOf(chunk, all, DAY);
+      const causes = Object.fromEntries(takeDeaths(chunk).map(d => [`${d.inst.ci},${d.inst.cj}`, d.cause]));
+      expect(causes[`${a.ci},${a.cj}`]).toBe('flood');
+      expect(causes[`${b.ci},${b.cj}`]).toBe('withered');
+      expect(causes[`${c.ci},${c.cj}`]).toBe('buried');
+      const remains = Object.fromEntries(remainsOf(chunk).map(r => [`${r.inst.ci},${r.inst.cj}`, r.kind]));
+      expect(remains).toEqual({ [`${a.ci},${a.cj}`]: 'log', [`${b.ci},${b.cj}`]: 'stump' });
+      // Los restos caducan con los días
+      invalidateLayout(chunk);
+      layoutOf(chunk, all, 30 * DAY);
+      expect(remainsOf(chunk)).toEqual([]);
+    });
+
+    it('entre dos árboles queda al menos una casilla del cursor libre', () => {
+      const { chunk } = emptyForest();
+      for (let t = 0; t < 64; t++) chunk.plants[t * PLANT_SLOTS + byKey('oak').id] = 1;
+      const trees = layoutOf(chunk, all, 0).filter(p => PLANT_DEFS[p.plant].kind === 'tree');
+      expect(trees.length).toBeGreaterThan(20);
+      for (const p of trees) for (const q of trees) {
+        if (p !== q) expect(Math.max(Math.abs(p.ci - q.ci), Math.abs(p.cj - q.cj))).toBeGreaterThan(3);
+      }
+    });
+
+    it('el fruto comido se apunta en cada planta que da comida', () => {
+      const { chunk } = emptyForest();
+      chunk.plants[tileIndex(2, 2) * PLANT_SLOTS + byKey('redBerries').id] = 1;
+      const [bush] = layoutOf(chunk, all, 0);
+      expect(bush.eatenAt).toBe(-Infinity);
+      expect(eatFruit(chunk, 500)).toBe(1);
+      expect(bush.eatenAt).toBe(500);
+    });
   });
 });

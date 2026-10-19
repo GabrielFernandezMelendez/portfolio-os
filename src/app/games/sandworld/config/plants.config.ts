@@ -3,7 +3,7 @@ import { Season } from '../domain/models/time.model';
 
 /*
   Registro de plantas [PROPUESTA]: 20 plantas con valores de partida para afinar jugando.
-  Añadir una = una entrada aquí (id siguiente), su sprite en rendering/vegetation/plant-sprites.ts
+  Añadir una = una entrada aquí (id siguiente), su dibujo en config/plant-art.config.ts
   y su nombre en i18n (plant.<key>). La simulación, el dibujo y (más adelante) la fauna lo leen todo de aquí.
   Biomas: forest, desert, tundra, wetland, swamp, rockland, burnt, glade.
 */
@@ -99,8 +99,9 @@ export const CROP_CAPACITY_BONUS = 1.2;
 export const CROP_CARE_DAYS = 20;
 /** Lo que queda de un cultivo que vuelve a crecer tras la cosecha */
 export const CROP_REGROW_FROM = 0.3;
-/** Crecimiento a partir del que un cultivo se dibuja ya como planta (antes es un brote) */
+/** Etapas de un cultivo según su crecimiento: brote hasta CROP_SPROUT_UNTIL, joven hasta CROP_YOUNG_UNTIL, después adulto */
 export const CROP_SPROUT_UNTIL = 0.35;
+export const CROP_YOUNG_UNTIL = 0.7;
 
 // ── Estaciones de los árboles y la hierba (días) ──
 /** Lo que tarda cada planta en cambiar de color, perder o recuperar hojas, al azar entre min y max */

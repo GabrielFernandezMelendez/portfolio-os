@@ -88,6 +88,11 @@ export class TerrainLayer {
     if (this.chunk) this.plants.updateSeason(this.chunk, time);
   }
 
+  /** Animaciones de las plantas (nacer, caer, hundirse…), en tiempo real */
+  animatePlants(dtMs: number): void {
+    this.plants.update(dtMs);
+  }
+
   /** Planta dibujada bajo un punto del mundo, o null */
   plantAt(wx: number, wy: number): PlantInstance | null {
     return this.plants.plantAt(wx, wy);

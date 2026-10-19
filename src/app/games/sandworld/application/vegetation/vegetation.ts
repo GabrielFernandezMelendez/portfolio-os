@@ -49,6 +49,18 @@ export function plantCapacity(p: PlantDef, ctx: TileContext, biome: BiomeId): nu
   return Math.max(0, Math.min(1, weight * fit(ctx.temperature, p.temperature[0], p.temperature[1]) * moisture * fertility * ground));
 }
 
+/**
+ * Cuánto sufre una planta de un tile (0 = bien, 1 = muriéndose): lo lejos que está lo que el tile le permite ahora
+ * (sequía, frío, sal…) de la biomasa que tiene. Lo usa el dibujo para irla apagando hacia ocre y marrón.
+ */
+export function plantStress(chunk: ChunkData, i: number, j: number, plant: number): number {
+  const t = tileIndex(i, j);
+  const b = chunk.plants[t * PLANT_SLOTS + plant];
+  if (b <= 0) return 0;
+  const cap = plantCapacity(PLANT_DEFS[plant], tileContext(chunk, i, j), chunk.biome[t] as BiomeId);
+  return Math.max(0, Math.min(1, (b - cap) / Math.max(0.2, b)));
+}
+
 /** Talud extra que dan las raíces de las plantas del tile de esta celda (árboles y sauce) */
 export function rootsAt(chunk: ChunkData, k: number): number {
   const ci = k % WORLD.CELLS, cj = Math.floor(k / WORLD.CELLS);

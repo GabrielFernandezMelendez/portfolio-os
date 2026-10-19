@@ -1,7 +1,15 @@
 import { PlantDef } from '../../domain/models/plant.model';
 import { CALENDAR, GameTime, Season } from '../../domain/models/time.model';
 import { LEAF_CHANGE_DAYS, LEAF_CHANGE_STAGGER_DAYS } from '../../config/plants.config';
-import { LOOK_STEPS, PlantLook } from './plant-sprites';
+import { LOOK_STEPS } from './plant-sprites';
+
+/** Aspecto de estación de una planta (cada valor 0..1, ya redondeado a pasos) */
+export interface PlantLook {
+  readonly autumn: number;
+  readonly leaves: number;
+  readonly dry: number;
+  readonly snow: boolean;
+}
 
 const step = (v: number): number => Math.round(Math.max(0, Math.min(1, v)) * LOOK_STEPS) / LOOK_STEPS;
 

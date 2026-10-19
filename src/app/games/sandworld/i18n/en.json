@@ -35,7 +35,8 @@
       "viewValues": "Show essence and affinity",
       "viewBiomes": "Show biomes",
       "discoverPlants": "Test: know all plants",
-      "garden": "Test: sow a garden"
+      "garden": "Test: sow a garden",
+      "eatFruit": "Test: eat the fruit"
     }
   },
   "lang": {
