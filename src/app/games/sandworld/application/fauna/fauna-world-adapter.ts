@@ -18,6 +18,14 @@ const DEEP = 0.08;
 /** Comida que da el fruto de una planta (se lo come entero) y fruto mínimo para que valga la pena */
 const FRUIT_FOOD = 0.02;
 const FRUIT_RIPE = 0.5;
+/**
+ * Celdas que no se pisan junto a un borde que da al vacío: el contorno irregular de la isla se come hasta casi
+ * una celda (y el animal tiene cuerpo); como los árboles, se quedan a 2 celdas del precipicio.
+ */
+const EDGE = 2;
+/** Biomasa de árboles en un tile para que haga de refugio, y nieve (niveles) que cuenta como nevado */
+const SHELTER = 0.3;
+const SNOWY = 0.15;
 /** Lo que queda de una planta pastada: las raíces (puede rebrotar si no la siguen pisando) */
 const GRAZE_FLOOR = PLANT_MIN * 0.4;
 
@@ -44,7 +52,34 @@ export class FaunaWorldAdapter implements FaunaWorld {
   walkable(gx: number, gy: number): boolean {
     const c = this.cell(gx, gy);
     if (!c) return false;
+    const ex = this.world.exploration;
+    const { cx, cy } = c.chunk;
+    if ((c.ci < EDGE && !ex.isRevealed(cx - 1, cy)) || (c.ci >= C - EDGE && !ex.isRevealed(cx + 1, cy)) ||
+        (c.cj < EDGE && !ex.isRevealed(cx, cy - 1)) || (c.cj >= C - EDGE && !ex.isRevealed(cx, cy + 1))) return false;
     return c.chunk.water[c.k] < DEEP && c.chunk.material[c.k] !== Material.CHARRED;
+  }
+
+  shelterNear(gx: number, gy: number, max: number): { x: number; y: number } | null {
+    const ti = Math.floor(gx / G), tj = Math.floor(gy / G), R = Math.ceil(max / G);
+    let best: { x: number; y: number; d: number } | null = null;
+    for (let dj = -R; dj <= R; dj++) {
+      for (let di = -R; di <= R; di++) {
+        const where = this.tile(ti + di, tj + dj);
+        if (!where) continue;
+        const base = tileIndex(where.i, where.j) * PLANT_SLOTS;
+        let trees = 0;
+        for (const p of PLANT_DEFS) if (p.kind === 'tree') trees += where.chunk.plants[base + p.id];
+        if (trees < SHELTER) continue;
+        const x = (ti + di + 0.5) * G, y = (tj + dj + 0.5) * G, d = Math.hypot(x - gx, y - gy);
+        if (d <= max && (!best || d < best.d) && this.walkable(Math.floor(x), Math.floor(y))) best = { x, y, d };
+      }
+    }
+    return best ? { x: best.x, y: best.y } : null;
+  }
+
+  snowAt(gx: number, gy: number): boolean {
+    const c = this.cell(gx, gy);
+    return !!c && c.chunk.cover[c.k] > SNOWY;
   }
 
   height(gx: number, gy: number): number {

@@ -143,7 +143,9 @@
           "poison": "{name} died of poisoning.",
           "exhaustion": "{name} died of exhaustion.",
           "fire": "{name} didn't escape the fire.",
-          "dehydration": "{name} died of thirst."
+          "dehydration": "{name} died of thirst.",
+          "lightning": "{name} was struck by lightning.",
+          "buried": "{name} was buried under the sand."
         },
         "herdSplit": "A deer herd has split up: there were too many of them.",
         "hunger": "The deer are starving: there isn't enough food for everyone.",
@@ -154,7 +156,8 @@
           "rejected": "Another herd chased {name} off with their antlers.",
           "alone": "{name} got lost and is now on their own."
         },
-        "discovered": "The deer eat {food}."
+        "discovered": "The deer eat {food}.",
+        "stampede": "Stampede! Something spooked a herd of deer."
       }
     }
   },
@@ -292,7 +295,6 @@
     },
     "diary": {
       "born": "I was born. Everything is huge and smells of grass.",
-      "fire": "Fire! I ran without looking back.",
       "favourite": "{food}. My life has meaning.",
       "poison": {
         "lethal": "I ate {food}. I feel awful, truly awful.",
@@ -319,7 +321,31 @@
       "goodGrass": "The grass is better here.",
       "thirsty": "My tongue feels like an old shoe.",
       "parched": "I'd give my antlers for a puddle.",
-      "arrived": "I've arrived on the island. It smells of fresh grass and a hint of pasta."
+      "arrived": "I've arrived on the island. It smells of fresh grass and a hint of pasta.",
+      "scare": {
+        "fire": "Fire! I ran without looking back.",
+        "sandFall": "It rained sand from the sky. I hate this place.",
+        "dig": "The ground opened under my hooves. That's not normal.",
+        "spring": "Water burst out of the ground! I nearly fainted.",
+        "heat": "Something is burning the ground around here. I'll keep away.",
+        "frost": "The meadow froze all of a sudden. My hooves are icicles.",
+        "glow": "Something is glowing over there. A bit scary… and I really want to look.",
+        "lightning": "Lightning! I ran without knowing where.",
+        "thunder": "Another thunderclap. My fur is standing on end.",
+        "corpse": "I saw one of us lying on the ground. I walked away."
+      },
+      "used": "The same thing again. I don't even flinch any more.",
+      "curious": {
+        "spring": "I went to see the new water. Nice and cool.",
+        "glow": "I went to see what was glowing. No idea what it is, but it's pretty."
+      },
+      "buried": "Sand fell on top of me. Everything hurts.",
+      "struck": "Lightning struck right next to me. My ears are still ringing.",
+      "grief": "I won't leave {name}. They aren't moving.",
+      "storm": "Nobody can sleep with this thunder.",
+      "stormShelter": "We've gone under the trees to wait out the storm.",
+      "rain": "I took shelter under a tree. Rain puts me in a bad mood.",
+      "siesta": "Too hot to do anything. Siesta in the shade."
     },
     "tab": {
       "status": "Status",
@@ -352,7 +378,9 @@
       "oldAge": "Died of old age.",
       "poison": "Died of poisoning.",
       "exhaustion": "Died of exhaustion.",
-      "fire": "Didn't escape the fire."
+      "fire": "Didn't escape the fire.",
+      "lightning": "Struck by lightning.",
+      "buried": "Buried under the sand."
     }
   }
 }

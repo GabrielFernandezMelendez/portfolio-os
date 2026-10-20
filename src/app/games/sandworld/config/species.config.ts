@@ -12,6 +12,10 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     // Pasta hierba, ramonea hojas y brotes y come los frutos que caen de árboles y arbustos
     diets: ['grazer', 'browser', 'frugivore'],
     herd: { min: 4, max: 9, cohesion: 5 },
+    // Cada uno quiere ~3 celdas para él; pastando la manada se abre a 1,8 × la cohesión; apiñados, a un tercio
+    spacing: { personal: 3, graze: 1.8, huddle: 0.35 },
+    // Crepuscular: come sobre todo al amanecer y al atardecer; con calor sestea a mediodía
+    activeHours: [[5, 9], [18, 22]], siestaHours: [12, 16],
     speed: { walk: 0.12, run: 0.4 },
     youngDays: 20, adultDays: 60, lifespanDays: [180, 300],
     breeding: {

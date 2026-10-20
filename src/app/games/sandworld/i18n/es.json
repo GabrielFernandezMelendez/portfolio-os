@@ -143,7 +143,9 @@
           "poison": "{name} ha muerto envenenado.",
           "exhaustion": "{name} ha muerto de agotamiento.",
           "fire": "{name} no ha escapado del fuego.",
-          "dehydration": "{name} ha muerto de sed."
+          "dehydration": "{name} ha muerto de sed.",
+          "lightning": "A {name} le ha caído un rayo.",
+          "buried": "{name} ha quedado sepultado bajo la arena."
         },
         "herdSplit": "Una manada de ciervos se ha dividido: ya no cabían.",
         "hunger": "Los ciervos pasan hambre: ya no hay comida para todos.",
@@ -154,7 +156,8 @@
           "rejected": "Otra manada ha echado a {name} a cornadas.",
           "alone": "{name} se ha perdido y ahora va solo."
         },
-        "discovered": "Los ciervos comen {food}."
+        "discovered": "Los ciervos comen {food}.",
+        "stampede": "¡Estampida! Algo ha espantado a una manada de ciervos."
       }
     }
   },
@@ -292,7 +295,6 @@
     },
     "diary": {
       "born": "He nacido. Todo es enorme y huele a hierba.",
-      "fire": "¡Fuego! He salido corriendo sin mirar atrás.",
       "favourite": "{food}. Mi vida tiene sentido.",
       "poison": {
         "lethal": "Me he comido {food}. Me encuentro fatal, fatal.",
@@ -319,7 +321,31 @@
       "goodGrass": "Aquí la hierba está mejor.",
       "thirsty": "Tengo la lengua como una suela de zapato.",
       "parched": "Daría mi cornamenta por un charco.",
-      "arrived": "He llegado a la isla. Huele a hierba nueva y a algo de pasta."
+      "arrived": "He llegado a la isla. Huele a hierba nueva y a algo de pasta.",
+      "scare": {
+        "fire": "¡Fuego! He salido corriendo sin mirar atrás.",
+        "sandFall": "Ha llovido arena del cielo. Odio este sitio.",
+        "dig": "El suelo se ha abierto a mis pies. Esto no es normal.",
+        "spring": "¡Ha brotado agua del suelo! Casi me da algo.",
+        "heat": "Algo quema el suelo por aquí. Mejor me aparto.",
+        "frost": "Se ha helado el prado de golpe. Tengo las pezuñas congeladas.",
+        "glow": "Algo brilla allí. Me da un poco de miedo… y muchas ganas de mirar.",
+        "lightning": "¡Un rayo! He corrido sin saber hacia dónde.",
+        "thunder": "Otro trueno. Se me ponen los pelos de punta.",
+        "corpse": "He visto a uno de los nuestros tirado en el suelo. Me he alejado."
+      },
+      "used": "Otra vez lo mismo. Ya ni me inmuto.",
+      "curious": {
+        "spring": "He ido a ver el agua nueva. Está fresquita.",
+        "glow": "He ido a ver lo que brillaba. No entiendo nada, pero es bonito."
+      },
+      "buried": "Me ha caído arena encima. Me duele todo.",
+      "struck": "Me ha caído un rayo al lado. Aún me pitan las orejas.",
+      "grief": "No me separo de {name}. No se mueve.",
+      "storm": "No hay quien duerma con estos truenos.",
+      "stormShelter": "Nos hemos metido bajo los árboles a esperar que pase la tormenta.",
+      "rain": "Me he refugiado bajo un árbol. La lluvia me pone de mal humor.",
+      "siesta": "Hace demasiado calor para hacer nada. Siesta a la sombra."
     },
     "tab": {
       "status": "Estado",
@@ -352,7 +378,9 @@
       "oldAge": "Murió de viejo.",
       "poison": "Murió envenenado.",
       "exhaustion": "Murió de agotamiento.",
-      "fire": "No escapó del fuego."
+      "fire": "No escapó del fuego.",
+      "lightning": "Le cayó un rayo.",
+      "buried": "Quedó sepultado bajo la arena."
     }
   }
 }

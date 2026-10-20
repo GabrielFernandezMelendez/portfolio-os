@@ -9,6 +9,7 @@ import { lifeStage } from './needs';
 import { tryConceive } from './breeding';
 import { animalView } from './animal-view';
 import { leaderOf } from './herds';
+import { RUN_STOP } from '../../config/fauna.config';
 
 const DAY = 1440;
 const G = 4;
@@ -27,6 +28,9 @@ class FakeIsland implements FaunaWorld {
   readonly shroom: Float32Array;
   water = new Set<string>();
   fire = new Set<string>();
+  /** Tiles con árboles ("i,j"): refugio */
+  trees = new Set<string>();
+  snow = false;
   constructor(readonly tiles: number, grass = 0.8) {
     this.grass = new Float32Array(tiles * tiles).fill(grass);
     this.shroom = new Float32Array(tiles * tiles);
@@ -74,6 +78,16 @@ class FakeIsland implements FaunaWorld {
     const t = this.t(gx, gy);
     if (t >= 0) this.grass[t] *= 1 - amount;
   }
+  shelterNear(gx: number, gy: number, max: number) {
+    let best: { x: number; y: number; d: number } | null = null;
+    for (const k of this.trees) {
+      const [i, j] = k.split(',').map(Number);
+      const x = (i + 0.5) * G, y = (j + 0.5) * G, d = Math.hypot(x - gx, y - gy);
+      if (d <= max && (!best || d < best.d)) best = { x, y, d };
+    }
+    return best ? { x: best.x, y: best.y } : null;
+  }
+  snowAt(): boolean { return this.snow; }
   dropSeed(): void {}
   fertilize(): void {}
   totalFood(diets: readonly Diet[]): number {
@@ -319,4 +333,110 @@ describe('Fauna: ciervos', () => {
     expect(fauna.news.some(n => n.type === 'born')).toBe(true);
     expect(Math.max(...counts)).toBeLessThan(40);
   }, 20000);
+
+  // ── Comportamientos comunes: espacio, estímulos y tiempo ──
+
+  const meanNearest = (herd: { x: number; y: number }[]) =>
+    herd.reduce((t, a) => t + Math.min(...herd.filter(b => b !== a).map(b => Math.hypot(a.x - b.x, a.y - b.y))), 0) / herd.length;
+
+  it('pastando guardan su espacio; de noche se apiñan', () => {
+    const { island, fauna } = setup(24);
+    const t0 = at(Season.SUMMER, 1) - 9 * 60 + 10 * 60;     // 10:00
+    const herd = fauna.spawnHerd('deer', 40, 40, t0);
+    let day = 0, night = 0;
+    const end = run(fauna, island, t0, 5 * 60);
+    const adults = herd.filter(a => a.mother === null);     // la cría va pegada a su madre
+    day = meanNearest(adults);
+    run(fauna, island, end, 14 * 60);                      // hasta las 3:00
+    night = meanNearest(adults);
+    expect(day).toBeGreaterThan(1.8);
+    expect(night).toBeLessThan(day);
+  });
+
+  it('un susto: huyen corriendo hasta relajarse (no hasta caer rendidos) y la alarma se contagia', () => {
+    const { island, fauna } = setup(24);
+    const t0 = at(Season.SPRING, 3);
+    const herd = fauna.spawnHerd('deer', 40, 40, t0);
+    run(fauna, island, t0, 30);
+    const first = herd[0];
+    // Arena que cae justo al lado de uno solo (alcance corto): los demás se asustan por contagio
+    fauna.sense({ type: 'sandFall', gx: first.x + 1, gy: first.y, strength: 1 }, t0 + 30);
+    run(fauna, island, t0 + 30, 10);
+    expect(herd.filter(a => a.action === 'run').length).toBeGreaterThanOrEqual(3);
+    expect(fauna.news.some(n => n.type === 'stampede')).toBe(true);
+    run(fauna, island, t0 + 40, 120);
+    expect(herd.every(a => a.action !== 'run')).toBe(true);
+    expect(herd.every(a => a.rest > RUN_STOP + 0.05)).toBe(true);
+    expect(herd.some(a => a.diary.some(d => d.key === 'scare.sandFall'))).toBe(true);
+  });
+
+  it('se acostumbran a lo que se repite sin daño; lo que hace daño les vuelve a asustar del todo', () => {
+    const { fauna } = setup(24);
+    const t0 = at(Season.SPRING, 3);
+    const [a] = fauna.spawnHerd('deer', 40, 40, t0);
+    const scare = (m: number, hurt = 0) => {
+      a.fear = 0;
+      fauna.sense({ type: 'dig', gx: a.x + 3, gy: a.y, strength: 1, hurtRadius: hurt }, m);
+      return a.fear;
+    };
+    const firstFear = scare(t0);
+    for (let n = 1; n < 6; n++) scare(t0 + n * 30);
+    const used = scare(t0 + 200);
+    expect(used).toBeLessThan(firstFear * 0.5);
+    scare(t0 + 230, 5);                                    // esta vez hace daño
+    expect(scare(t0 + 260)).toBeGreaterThan(used);
+  });
+
+  it('la Duna que cae encima hace daño; el rayo cerca hiere y la manada evita la zona', () => {
+    const { island, fauna } = setup(24);
+    const t0 = at(Season.SPRING, 3);
+    const herd = fauna.spawnHerd('deer', 40, 40, t0);
+    const [a, b] = herd;
+    fauna.sense({ type: 'sandFall', gx: a.x, gy: a.y, strength: 1, hurtRadius: 1 }, t0);
+    expect(a.health).toBeLessThan(1);
+    expect(a.diary[0].key).toBe('buried');
+    fauna.sense({ type: 'lightning', gx: b.x, gy: b.y, strength: 1, hurtRadius: 1 }, t0 + 1);
+    expect(b.health).toBeLessThan(0.5);
+    const zones = fauna.herds.get(b.herd)!.zones;
+    expect(zones.length).toBeGreaterThan(0);
+    run(fauna, island, t0 + 1, 3 * 60);
+    // No se quedan dentro de la zona del rayo
+    const z = zones[zones.length - 1];
+    expect(herd.filter(x => x.diedAt === null && Math.hypot(x.x - z.x, x.y - z.y) < z.r).length).toBeLessThanOrEqual(1);
+  });
+
+  it('un manantial nuevo: primero el susto y luego van a mirar', () => {
+    const { island, fauna } = setup(24);
+    const t0 = at(Season.SPRING, 3);
+    const herd = fauna.spawnHerd('deer', 40, 40, t0);
+    fauna.sense({ type: 'spring', gx: 46, gy: 40, strength: 1 }, t0);
+    expect(herd.some(a => a.fear > 0)).toBe(true);
+    let closest = Infinity;
+    for (let m = t0; m < t0 + 5 * 60; m++) {
+      fauna.minute(toGameTime(m));
+      for (const a of herd) closest = Math.min(closest, Math.hypot(a.x - 46, a.y - 40));
+    }
+    expect(closest).toBeLessThan(2.5);
+  });
+
+  it('con tormenta no duermen y se refugian bajo los árboles; con calor sestean a la sombra', () => {
+    const { island, fauna } = setup(24);
+    island.trees.add('12,10');
+    const night = at(Season.SPRING, 3) - 9 * 60 + 23 * 60;    // 23:00
+    const herd = fauna.spawnHerd('deer', 40, 40, night);
+    fauna.conditions = { rain: 1, storm: true, snow: false, cold: false, hot: false, drought: false };
+    run(fauna, island, night, 3 * 60);
+    expect(herd.filter(a => a.action === 'sleep').length).toBe(0);
+    expect(herd.some(a => Math.hypot(a.x - 50, a.y - 42) < 4)).toBe(true);
+    // Calor a mediodía
+    const hot = setup(24);
+    hot.island.trees.add('12,10');
+    const noon = at(Season.SUMMER, 3) - 9 * 60 + 12 * 60;
+    const herd2 = hot.fauna.spawnHerd('deer', 44, 40, noon);
+    for (const a of herd2) { a.satiety = 0.9; a.hydration = 0.9; }
+    hot.fauna.conditions = { rain: 0, storm: false, snow: false, cold: false, hot: true, drought: false };
+    run(hot.fauna, hot.island, noon, 2 * 60);
+    expect(herd2.filter(a => a.action === 'sleep').length).toBeGreaterThanOrEqual(2);
+    expect(herd2.some(a => a.diary.some(d => d.key === 'siesta'))).toBe(true);
+  });
 });

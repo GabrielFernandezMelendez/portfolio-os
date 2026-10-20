@@ -35,6 +35,10 @@ export interface FaunaWorld {
   dropSeed(plant: number, gx: number, gy: number): void;
   /** Un cadáver abona el suelo */
   fertilize(gx: number, gy: number, amount: number): void;
+  /** Refugio más cercano (bajo los árboles), a `max` celdas como mucho: para la lluvia, la tormenta, el frío o el calor */
+  shelterNear(gx: number, gy: number, max: number): { readonly x: number; readonly y: number } | null;
+  /** ¿Hay nieve o hielo bajo sus patas? (se duerme peor) */
+  snowAt(gx: number, gy: number): boolean;
   /** Comida de toda la isla para estas dietas (para la capacidad de cada especie) */
   totalFood(diets: readonly Diet[], now: number, season: SeasonId): number;
 }

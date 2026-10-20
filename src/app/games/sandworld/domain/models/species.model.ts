@@ -16,6 +16,14 @@ export interface SpeciesDef {
 
   /** Manada: tamaño con el que se siente cómoda (por encima, se divide) y distancia (celdas) a la que se mantiene */
   readonly herd: { readonly min: number; readonly max: number; readonly cohesion: number };
+  /**
+   * Espacio entre ellos: distancia que quiere al vecino más cercano (celdas), cuánto se abre la manada al pastar
+   * tranquila (× cohesión) y cuánto se aprieta al apiñarse (miedo, sueño, frío, tormenta).
+   */
+  readonly spacing: { readonly personal: number; readonly graze: number; readonly huddle: number };
+  /** Horas del día en que más come (al amanecer y al atardecer) y en que sestea si hace calor */
+  readonly activeHours: readonly (readonly [from: number, to: number])[];
+  readonly siestaHours: readonly [from: number, to: number];
   /** Velocidad andando y corriendo (celdas por minuto de juego) */
   readonly speed: { readonly walk: number; readonly run: number };
 

@@ -42,6 +42,8 @@ import { FaunaWorldAdapter } from './application/fauna/fauna-world-adapter';
 import { AnimalOrder } from './domain/models/animal.model';
 import { SPECIES_DEFS } from './config/species.config';
 import { AnimalView, animalView } from './application/fauna/animal-view';
+import { SAND_STIMULUS } from './config/temperament.config';
+import { StimulusType } from './domain/models/stimulus.model';
 
 /** El reloj de la interfaz avanza de 10 en 10 minutos de juego, como en Stardew */
 const CLOCK_STEP_MINUTES = 10;
@@ -50,7 +52,9 @@ const INSPECT_MS = 2500;
 /** Agua (en niveles) en la celda tocada a partir de la que la etiqueta dice "Agua" */
 const INSPECT_WATER = 0.05;
 /** Cada cuántos minutos de juego se refresca la ficha del animal elegido */
-const ANIMAL_VIEW_MINUTES = 5;
+const ANIMAL_VIEW_MINUTES = 30;
+/** Cada cuánto (ms reales) avisa a los animales una arena que se está vertiendo */
+const POUR_STIMULUS_MS = 1200;
 /** Segundos que se ve la etiqueta "Isla viva · Nivel N" */
 const ISLAND_LABEL_MS = 3000;
 
@@ -125,6 +129,8 @@ export class SandworldService implements OnDestroy {
   readonly strokeLeft = signal(1);
 
   private chronicleRevision = -1;
+  /** Último aviso a los animales de la arena que se vierte (ms reales) */
+  private pourStimulusAt = -Infinity;
   private islandLabelTimer: ReturnType<typeof setTimeout> | null = null;
   private hasStoredLang = false;
 
@@ -158,6 +164,11 @@ export class SandworldService implements OnDestroy {
       this.reportWorldEvents();
       if (t.minute % BIOME_CHECK_MINUTES === 0) this.updateBiomes();
       if (t.minute % VEGETATION_CHECK_MINUTES === 0) this.updateVegetation(t.season);
+      this.fauna.conditions = {
+        rain: w.look === 'rain' ? w.intensity : 0, storm: w.key === 'storm' || w.key === 'dryStorm', snow: w.look === 'snow',
+        cold: t.season === Season.WINTER, hot: t.season === Season.SUMMER && w.key === null,
+        drought: this.physics.fire.conditions.droughtDays > 5,
+      };
       this.fauna.minute(t);
       this.reportFauna();
       if (this.selectedAnimal() !== null && t.minute % ANIMAL_VIEW_MINUTES === 0) this.refreshAnimal();
@@ -280,6 +291,13 @@ export class SandworldService implements OnDestroy {
     if (changed.length === 0) return false;
     this.pours.preview(stroke.sand, changed);
     this.events.emit('terrainChanged', chunksOf(changed));
+    // Los animales cercanos notan lo que cae (la Duna que les cae encima, además, les hace daño)
+    const type = SAND_STIMULUS[stroke.sand];
+    const nowMs = performance.now();
+    if (type && nowMs - this.pourStimulusAt > POUR_STIMULUS_MS) {
+      this.pourStimulusAt = nowMs;
+      this.stimulus(type, gx + 1, gy + 1, 0.8, type === 'sandFall' ? 1.5 : 0);
+    }
     // La botella baja de 2 en 2 % (no hace falta avisar a la interfaz en cada frame)
     if (Math.abs(this.strokeLeft() - stroke.remaining) >= 0.02 || stroke.remaining === 0) this.strokeLeft.set(stroke.remaining);
     return true;
@@ -336,6 +354,9 @@ export class SandworldService implements OnDestroy {
       if (seen.has(key)) continue;          // un aviso por tipo y minuto, aunque pase en muchas celdas
       seen.add(key);
       this.log({ type: 'world', key: `chronicle.outcome.${e.outcome}`, priority: 6 });
+      // Un manantial que brota da curiosidad; la Brasa que prende, miedo
+      if (e.outcome === 'springNew' || e.outcome === 'springStronger') this.stimulus('spring', e.gx, e.gy, 1);
+      if (e.outcome === 'ignited') this.stimulus('fire', e.gx, e.gy, 1);
     }
     for (const c of this.physics.takeSpringChanges()) {
       this.log({ type: 'world', key: `chronicle.spring.${c.state}`, priority: 6 });
@@ -356,9 +377,15 @@ export class SandworldService implements OnDestroy {
       switch (n.type) {
         case 'strike':
           this.events.emit('lightning', { gx: n.gx, gy: n.gy });
+          // El rayo espanta (y hiere) a los de al lado; el trueno se oye en toda la isla
+          this.stimulus('lightning', n.gx, n.gy, 1, 1.5);
+          this.stimulus('thunder', n.gx, n.gy, 0.7);
           tell(n.ignited ? 'chronicle.fire.lightningFire' : 'chronicle.fire.lightning', n.ignited ? 8 : 4);
           break;
-        case 'ignite': if (n.cause === 'brasa') tell('chronicle.fire.brasa', 7); break;
+        case 'ignite':
+          this.stimulus('fire', n.gi * WORLD.CELLS_PER_TILE + 2, n.gj * WORLD.CELLS_PER_TILE + 2, 1);
+          if (n.cause === 'brasa') tell('chronicle.fire.brasa', 7);
+          break;
         case 'out': tell('chronicle.fire.out', 5); break;
         case 'burntLand': tell('chronicle.fire.burntLand', 9); break;
         case 'remit': tell('chronicle.fire.remit', 6); break;
@@ -366,10 +393,17 @@ export class SandworldService implements OnDestroy {
     }
   }
 
+  /** Algo pasa en el mundo: los animales a su alcance lo notan (y la ficha abierta se refresca si cambia algo) */
+  private stimulus(type: StimulusType, gx: number, gy: number, strength: number, hurtRadius = 0): void {
+    this.fauna.sense({ type, gx, gy, strength, hurtRadius }, this.engine.time.totalMinutes);
+    this.reportFauna();
+  }
+
   /** Cuenta en la crónica lo que pasa en la fauna (un aviso por tipo y especie en cada minuto) */
   private reportFauna(): void {
     const news = this.fauna.news.splice(0);
     if (!news.length) return;
+    if (this.selectedAnimal() !== null) this.refreshAnimal();
     const told = new Set<string>();
     const tell = (n: FaunaNews, event: string, priority: number, params?: Record<string, string | number>) => {
       const key = `chronicle.fauna.${SPECIES_DEFS[n.species].key}.${event}`;
@@ -386,6 +420,7 @@ export class SandworldService implements OnDestroy {
         case 'hunger': tell(n, 'hunger', 8); break;
         case 'poisoned': tell(n, 'poisoned', 6, { name: n.name, food: `@plant.${PLANT_DEFS[n.plant].key}` }); break;
         case 'lost': tell(n, `lost.${n.outcome}`, 5, { name: n.name }); break;
+        case 'stampede': tell(n, 'stampede', 7); break;
         case 'discovered':
           // La crónica cuenta que una especie se come una planta: el jugador la conoce desde ahora
           this.world.discoveredPlants.add(n.plant);

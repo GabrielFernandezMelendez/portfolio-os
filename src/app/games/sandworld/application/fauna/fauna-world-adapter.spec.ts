@@ -76,4 +76,13 @@ describe('Fauna: el mundo visto por los animales (adaptador)', () => {
     expect(near.fromX).toBeLessThan(13);
     expect(adapter.danger(25, 25).level).toBe(0);
   });
+
+  it('no pisan las dos últimas celdas junto al vacío (la pared de la isla)', () => {
+    const { chunk, adapter } = setup();
+    for (let k = 0; k < chunk.water.length; k++) { chunk.water[k] = 0; chunk.material[k] = Material.SOIL; }
+    for (const x of [0, 1, 30, 31]) expect(adapter.walkable(x, 16)).toBe(false);
+    for (const y of [0, 1, 30, 31]) expect(adapter.walkable(16, y)).toBe(false);
+    expect(adapter.walkable(2, 16)).toBe(true);
+    expect(adapter.walkable(16, 29)).toBe(true);
+  });
 });
