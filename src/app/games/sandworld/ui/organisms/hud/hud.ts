@@ -10,6 +10,7 @@ import { SpeedControlComponent } from '../../molecules/speed-control/speed-contr
 import { HUD_PLANKS } from './hud-planks';
 import { TileTagComponent } from '../../molecules/tile-tag/tile-tag';
 import { TPipe } from '../../../i18n/t.pipe';
+import { AnimalSheetComponent } from '../animal-sheet/animal-sheet';
 
 /**
  * HUD completo sobre el mundo. Lee el estado del servicio y le devuelve las acciones del jugador.
@@ -21,7 +22,7 @@ import { TPipe } from '../../../i18n/t.pipe';
   standalone: true,
   imports: [
     NgComponentOutlet, HudTopComponent, PlankBarComponent, SettingsMenuComponent, ChronicleBookComponent,
-    IslandLabelComponent, SpeedControlComponent, TileTagComponent, TPipe,
+    IslandLabelComponent, SpeedControlComponent, TileTagComponent, TPipe, AnimalSheetComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -47,7 +48,12 @@ import { TPipe } from '../../../i18n/t.pipe';
 
     <div class="bottom">
       <div class="float">
-        @if (openPanel(); as panel) {
+        @if (game.animalView(); as animal) {
+          <!-- Ficha del animal tocado en el mapa -->
+          <div class="panel">
+            <sw-animal-sheet [view]="animal" (close)="game.closeAnimal()" (order)="game.orderAnimal(animal.id, $event)" />
+          </div>
+        } @else if (openPanel(); as panel) {
           <!-- Envoltorio propio: los componentes creados dinámicamente no reciben los estilos de este HUD -->
           <div class="panel"><ng-container *ngComponentOutlet="panel" /></div>
         } @else {

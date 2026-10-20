@@ -146,6 +146,22 @@ describe('Fuego', () => {
     expect([...winter.chunk.life].filter(v => v > 0).length).toBeLessThanOrEqual(10);
   });
 
+  it('el muro de Escarcha aguanta la Tierra Quemada en verano mientras dura, y luego se funde', () => {
+    const { physics, chunk } = forest();
+    physics.fire.makeBurntLand(2, 2);
+    // Muro: hiela toda la corona de tiles alrededor del 3 × 3 (cargado al máximo)
+    for (let j = 1; j <= 5; j++) for (let i = 1; i <= 5; i++) {
+      if (i > 1 && i < 5 && j > 1 && j < 5) continue;
+      for (let n = 0; n < 6; n++) physics.fire.douseAtCell(...cell(i, j), 1);
+    }
+    expect(chunk.frozen[tileIndex(1, 1)]).toBeGreaterThan(0);
+    expect(physics.fire.igniteAtCell(...cell(1, 1), 'lightning')).toBe(false);
+    run(physics, 7);
+    expect([...chunk.life].filter(v => v > 0).length).toBe(9);
+    run(physics, 3);
+    expect(chunk.frozen[tileIndex(1, 1)]).toBe(0);
+  });
+
   it('sin vida remite de fuera hacia dentro: el centro es el último en volver', () => {
     const { physics, chunk } = forest();
     physics.fire.conditions.season = 3;          // en invierno, para que no crezca mientras tanto

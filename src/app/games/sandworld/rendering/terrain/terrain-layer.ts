@@ -103,6 +103,25 @@ export class TerrainLayer {
     return this.cellTop(ci, cj);
   }
 
+  /** Contenedor de las plantas del chunk: los animales que están en él se ordenan con ellas por profundidad */
+  get plantsView(): Container {
+    return this.plants.view;
+  }
+
+  /**
+   * Punto del mundo de una posición con decimales dentro del chunk (celdas locales): lo usan los animales,
+   * que se mueven entre celdas. La altura es la de la celda en la que está.
+   */
+  floatPoint(ci: number, cj: number): { x: number; y: number } {
+    const G = WORLD.CELLS_PER_TILE, C = WORLD.CELLS;
+    const u = ci / G - 0.5, v = cj / G - 0.5;
+    const k = this.baker.surfaceAtCell(Math.max(0, Math.min(C - 1, Math.floor(ci))), Math.max(0, Math.min(C - 1, Math.floor(cj))));
+    return {
+      x: this.sprite.x + BAKE_ORIGIN_X + (u - v) * WORLD.TILE_W / 2,
+      y: this.sprite.y + BAKE_ORIGIN_Y + (u + v) * WORLD.TILE_H / 2 - k * WORLD.LEVEL_PX,
+    };
+  }
+
   /** Planta dibujada bajo un punto del mundo, o null */
   plantAt(wx: number, wy: number): PlantInstance | null {
     return this.plants.plantAt(wx, wy);

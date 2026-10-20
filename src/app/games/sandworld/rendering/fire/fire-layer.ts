@@ -14,6 +14,9 @@ const SCAN_MS = 250;
 const FLICKER_MS = 110;
 const SMOKE = [0x6a6a70, 0x8a8a90, 0xa8a8ae];
 const EMBER = [0xc83a1a, 0xf08a24, 0xffd04a];
+/** Escarcha del muro: motas de hielo y nieve sobre los tiles helados */
+const FROST = [0xdbe5ec, 0xffffff, 0xaebfcc, 0xc6d4de];
+const FROST_FULL_DAYS = 4;
 
 interface Flame { readonly sprite: Sprite; readonly w: number; readonly h: number; frame: number }
 interface Puff { readonly sprite: Sprite; vx: number; vy: number; life: number; readonly max: number }
@@ -24,9 +27,12 @@ interface Ember { readonly sprite: Sprite; readonly phase: number }
  * - llamas de suelo en el frente que avanza por cada tile que arde (salen de la tierra, no solo de los árboles)
  * - humo que sube de lo que arde y, más suave, de la Tierra Quemada
  * - brasas que laten en las grietas de la Tierra Quemada
+ * - escarcha sobre los tiles helados (el muro de Escarcha que no deja pasar el fuego ni la Tierra Quemada)
  */
 export class FireLayer {
   private flames: Flame[] = [];
+  private frost: Sprite[] = [];
+  private frostKey = '';
   private embers: Ember[] = [];
   private readonly puffs: Puff[] = [];
   private scan = 0;
@@ -90,13 +96,42 @@ export class FireLayer {
   }
 
   destroy(): void {
+    for (const f of this.frost) f.destroy();
     for (const f of this.flames) f.sprite.destroy();
     for (const e of this.embers) e.sprite.destroy();
     for (const p of this.puffs) p.sprite.destroy();
   }
 
-  /** Llamas en el frente de cada tile que arde; humo de lo que arde y de la Tierra Quemada */
+  /** Muro de Escarcha: motas de hielo en los tiles helados, más densas cuantos más días le quedan */
+  private frostWall(chunk: ChunkData, cellTop: CellTop): void {
+    const key = Array.from(chunk.frozen, v => Math.ceil(v)).join(',');
+    if (key === this.frostKey) return;
+    this.frostKey = key;
+    for (const f of this.frost) f.destroy();
+    this.frost = [];
+    for (let j = 0; j < N; j++) {
+      for (let i = 0; i < N; i++) {
+        const days = chunk.frozen[tileIndex(i, j)];
+        if (days <= 0) continue;
+        const density = Math.min(1, days / FROST_FULL_DAYS);
+        for (let n = 0; n < 40; n++) {
+          if (hash(i * 97 + n, j, 21) > density) continue;
+          const u = hash(i, j * 31 + n, 22) * G, v = hash(i * 7 + n, j, 23) * G;
+          const top = cellTop(i * G + u - 0.5, j * G + v - 0.5);
+          const s = dot(FROST[Math.floor(hash(n, i, j) * FROST.length)]);
+          if (hash(n, j, i) < 0.3) s.width = 2;
+          s.position.set(Math.round(top.x), Math.round(top.y));
+          s.zIndex = top.y - 0.85;
+          this.view.addChild(s);
+          this.frost.push(s);
+        }
+      }
+    }
+  }
+
+  /** Escarcha del muro; llamas en el frente de cada tile que arde; humo de lo que arde y de la Tierra Quemada */
   private rescan(chunk: ChunkData, cellTop: CellTop): void {
+    this.frostWall(chunk, cellTop);
     for (const f of this.flames) f.sprite.destroy();
     this.flames = [];
     this.smokeFrom = [];

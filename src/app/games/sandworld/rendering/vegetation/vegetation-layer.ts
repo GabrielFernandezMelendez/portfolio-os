@@ -1,14 +1,14 @@
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 import { ChunkData, cellIndex } from '../../domain/models/chunk.model';
-import { GameTime, SeasonId } from '../../domain/models/time.model';
+import { GameTime } from '../../domain/models/time.model';
 import { PlantDef } from '../../domain/models/plant.model';
 import { PLANT_DEFS } from '../../config/plants.config';
 import { PLANT_ART } from '../../config/plant-art.config';
-import { FRUIT_REGROW_DAYS, FRUIT_RIPEN_DAYS, PLANT_ANIM_MS, REMAINS_DAYS } from '../../config/plant-life.config';
+import { PLANT_ANIM_MS, REMAINS_DAYS } from '../../config/plant-life.config';
 import { BRUSH_CELLS } from '../../config/brush.config';
 import { WORLD } from '../../domain/models/world.model';
 import {
-  DeathCause, PlantDeath, PlantInstance, PlantRemains, RevealedFn, Stage, drowning, dueForRecheck, layoutOf, plantDevFlags, remainsOf, stageOf,
+  DeathCause, PlantDeath, PlantInstance, PlantRemains, RevealedFn, Stage, drowning, dueForRecheck, fruitLevel, layoutOf, remainsOf, stageOf,
   takeBirths, takeDeaths,
 } from '../../application/vegetation/plant-layout';
 import { plantStress } from '../../application/vegetation/vegetation';
@@ -462,19 +462,8 @@ function artFor(def: PlantDef, stage: Stage): [string, boolean] {
   return [def.key, stage === Stage.YOUNG];
 }
 
-/**
- * Fruto que se ve ahora (0..1): solo en su temporada (madura en sus primeros días) y si no se lo han comido
- * (vuelve poco a poco). Solo las plantas con frutos dibujados. En modo desarrollo se puede ver todo el año.
- */
+/** Fruto que se ve ahora (0..1): el de la planta (fruitLevel), solo en las que tienen frutos dibujados */
 function fruitOf(def: PlantDef, inst: PlantInstance, time: GameTime): number {
   if (!def.food || !PLANT_ART[def.key]?.parts.some(p => p.kind === 'fruit')) return 0;
-  const seasons = def.food.seasons;
-  let ripe = 1;
-  if (seasons && !plantDevFlags.fruitAllYear) {
-    if (!seasons.includes(time.season)) return 0;
-    const prev = ((time.season + 3) % 4) as SeasonId;
-    if (!seasons.includes(prev)) ripe = Math.min(1, (time.dayOfSeason - 1 + time.minuteOfDay / 1440) / FRUIT_RIPEN_DAYS);
-  }
-  const regrow = Number.isFinite(inst.eatenAt) ? Math.min(1, (time.totalMinutes - inst.eatenAt) / (FRUIT_REGROW_DAYS * 1440)) : 1;
-  return ripe * regrow;
+  return fruitLevel(inst, time);
 }

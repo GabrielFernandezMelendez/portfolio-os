@@ -155,8 +155,8 @@ export const SAND_EFFECTS: Readonly<Record<SandId, SandEffect>> = {
     apply: (physics, gx, gy, amount) => {
       physics.thermal.shiftTemperature(gx, gy, -amount * ESCARCHA_CHILL);
       physics.freeze(gx, gy, amount * ESCARCHA_SNOW, amount * ESCARCHA_FREEZE);
-      // Apaga el fuego; sobre la Tierra Quemada, la nieve congela ese borde (no crece por ahí mientras dure)
-      physics.fire.douseAtCell(gx, gy);
+      // Apaga el fuego y deja el tile helado unos días: no prende, y la Tierra Quemada no crece por ahí (muro)
+      physics.fire.douseAtCell(gx, gy, amount);
     },
   },
 

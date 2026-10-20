@@ -22,6 +22,7 @@ import { CLOUD_CAMERA_MARGIN, REVEAL_ON_START } from './config/clouds.config';
 import { REBAKE_INTERVAL_MS } from './config/physics.config';
 import { POUR_EDGE_BAND, POUR_TAP_SECONDS } from './config/pour.config';
 import { ChunkCoord } from './domain/events/game-events';
+import { FaunaLayer, FaunaView, Ground } from './rendering/fauna/fauna-layer';
 
 /** Avisos del runtime hacia fuera (el componente los conecta con el servicio) */
 export interface RuntimeHooks {
@@ -33,6 +34,10 @@ export interface RuntimeHooks {
   atmosphere?(): { readonly weather: WeatherState; readonly season: SeasonBlend };
   /** Pincel de arena (lo implementa el servicio) */
   pour?: PourHooks;
+  /** Animales que dibujar (solo lectura) */
+  fauna?(): FaunaView;
+  /** Toque sobre un animal */
+  animalTap?(id: number): void;
 }
 
 /** Tile que se ha tocado (chunk + tile) y dónde está en pantalla */
@@ -63,6 +68,9 @@ export interface PourHooks {
 }
 
 const chunkKey = (cx: number, cy: number): string => `${cx},${cy}`;
+/** Al tocar un animal: si está por debajo de esta parte de la pantalla (la tapará su ficha), se sube a ANIMAL_SCREEN_Y */
+const ANIMAL_VISIBLE_UNTIL = 0.36;
+const ANIMAL_SCREEN_Y = 0.26;
 /** Cada cuántos ms se revisa el aspecto de estación de las plantas */
 const PLANT_LOOK_MS = 500;
 
@@ -79,6 +87,7 @@ export class SandworldRuntime {
   private devOverlay: DevTileOverlay | null = null;
   private readonly precipitation = new Precipitation();
   private readonly lightning = new Lightning();
+  private readonly fauna = new FaunaLayer();
   /** Punto de pantalla donde está el dedo que vierte, o null si no se está vertiendo */
   private brushPoint: { x: number; y: number } | null = null;
   private readonly terrains = new Map<string, TerrainLayer>();
@@ -161,8 +170,16 @@ export class SandworldRuntime {
       hover: (x, y) => this.pointAt(x, y),
       tap: (x, y) => {
         const G = WORLD.CELLS_PER_TILE;
-        // Primero, ¿hay una planta bajo el dedo? (su copa puede tapar celdas de detrás)
         const w = this.camera.screenToWorld(x, y);
+        // Primero, ¿hay un animal bajo el dedo? Después, ¿una planta? (su copa puede tapar celdas de detrás)
+        const animal = this.fauna.animalAt(w.x, w.y);
+        if (animal !== null) {
+          this.hooks.animalTap?.(animal);
+          // La ficha tapa la mitad de abajo: si el animal queda debajo, la cámara lo sube a la parte de arriba
+          const vh = this.camera.viewportHeight;
+          if (y > vh * ANIMAL_VISIBLE_UNTIL) this.camera.glideTo(w.x, w.y + (vh * (0.5 - ANIMAL_SCREEN_Y)) / this.camera.scale);
+          return;
+        }
         for (const layer of [...this.terrains.values()].sort((a, b) => b.view.zIndex - a.view.zIndex)) {
           const plant = layer.plantAt(w.x, w.y);
           const coords = layer.coords;
@@ -269,6 +286,7 @@ export class SandworldRuntime {
     this.clouds?.destroy();
     this.clouds = null;
     this.lightning.destroy();
+    this.fauna.destroy();
     this.stage.destroy();
   }
 
@@ -289,6 +307,8 @@ export class SandworldRuntime {
     // Aspecto de estación de las plantas (cambia en días de juego: basta con mirarlo dos veces por segundo)
     for (const t of this.terrains.values()) t.animatePlants(dt);
     this.lightning.update(dt);
+    const fauna = this.hooks.fauna?.();
+    if (fauna) this.fauna.update(dt, fauna, this.groundAt, this.engine.isPaused);
     this.plantClock += dt;
     if (this.plantClock >= PLANT_LOOK_MS) {
       this.plantClock = 0;
@@ -310,6 +330,15 @@ export class SandworldRuntime {
     const weather = atmosphere?.weather;
     this.precipitation.update(this.engine.isPaused ? 0 : dt, weather?.look ?? 'none', weather?.intensity ?? 0);
     this.hooks.frame?.(ticker.lastTime);
+  };
+
+  /** Suelo de una celda global para los animales: el contenedor de su chunk y sus puntos del mundo */
+  private readonly groundAt = (gx: number, gy: number): Ground | null => {
+    const C = WORLD.CELLS;
+    const cx = Math.floor(gx / C), cy = Math.floor(gy / C);
+    const layer = this.terrains.get(chunkKey(cx, cy));
+    if (!layer) return null;
+    return { container: layer.plantsView, point: (x, y) => layer.floatPoint(x - cx * C, y - cy * C) };
   };
 
   /** Re-hornea los chunks cambiados, cada uno como mucho cada REBAKE_INTERVAL_MS */

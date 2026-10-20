@@ -143,6 +143,17 @@ export const PIXEL_ICONS: Readonly<Record<string, readonly string[]>> = {
     'k.k.......',
     'k.........',
   ],
+  // Correr: doble flecha (ficha del animal)
+  run: [
+    'kk...kk...',
+    'kwk..kwk..',
+    '.kwk..kwk.',
+    '..kwk..kwk',
+    '..kwk..kwk',
+    '.kwk..kwk.',
+    'kwk..kwk..',
+    'kk...kk...',
+  ],
   bottle: [
     '...kkkk...',
     '...kcck...',

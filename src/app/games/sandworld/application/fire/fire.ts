@@ -7,7 +7,8 @@ import { MATERIAL_DEFS } from '../../config/materials.config';
 import { PLANT_DEFS } from '../../config/plants.config';
 import {
   ASH_FERTILITY, BURNED_MEMORY_DAYS, BURNT_FEED_BOOST, BURNT_FEED_DAYS, BURNT_FEED_PER_UNIT, BURNT_FROZEN_SHIFT,
-  BURNT_LAND_TILES, BURNT_SPREAD_PER_DAY, BURN_DAYS, DROUGHT_DRYNESS, DROUGHT_FULL_DAYS, FIRE_STOP_COVER, IGNITE_MIN,
+  BURNT_LAND_TILES, BURNT_SPREAD_PER_DAY, BURN_DAYS, DROUGHT_DRYNESS, DROUGHT_FULL_DAYS, FIRE_STOP_COVER, FROZEN_DAYS_PER_UNIT,
+  FROZEN_MAX_DAYS, IGNITE_MIN,
   LIGHTNING_CANDIDATES, RAIN_DOUSE_PER_DAY, RAIN_DRYNESS, REMIT_FERTILITY, REMIT_GRASS, REMIT_JITTER_DAYS, REMIT_RING_DAYS,
   REMIT_START_DAYS, SCORCH_DAYS, SEASON_DRYNESS, SPREAD_FROM_AGE, SPREAD_PER_DAY,
 } from '../../config/fire.config';
@@ -102,14 +103,16 @@ export class FireSystem {
     const base = tileIndex(i, j) * PLANT_SLOTS;
     let f = 0;
     for (const p of PLANT_DEFS) f += chunk.plants[base + p.id] * p.fuel;
-    let ground = 0;
+    let ground = 0, bare = 0;
     for (let dj = 0; dj < G; dj++) {
       for (let di = 0; di < G; di++) {
         const k = cellIndex(i * G + di, j * G + dj);
         if (chunk.sediment[k] > 0.05) ground += MATERIAL_DEFS[chunk.material[k] as MaterialId].fuel;
+        else bare++;
       }
     }
-    return Math.min(1, f + (ground / (G * G)) * 0.5);
+    // Donde la roca está desnuda (una zanja de Marea) no hay nada que arda, tenga el tile la hierba que tenga
+    return Math.min(1, f * (1 - bare / (G * G)) + (ground / (G * G)) * 0.5);
   }
 
   /** ¿Es Tierra Quemada el tile de esta celda global? */
@@ -126,10 +129,15 @@ export class FireSystem {
     return !!r && this.ignite(r, cause, 0, force);
   }
 
-  /** Escarcha sobre un fuego: lo apaga (sobre la Tierra Quemada, la nieve congela ese borde: no crece por ahí) */
-  douseAtCell(gx: number, gy: number): void {
+  /**
+   * Escarcha: apaga el fuego y deja el tile helado unos días (muro de Escarcha): no prende y, si es Tierra Quemada,
+   * no crece desde él. `amount` = arena vertida en la celda en este paso.
+   */
+  douseAtCell(gx: number, gy: number, amount = 1): void {
     const r = this.tileOfCell(gx, gy);
-    if (r && r.chunk.fire[r.t] > 0) this.extinguish(r);
+    if (!r) return;
+    if (r.chunk.fire[r.t] > 0) this.extinguish(r);
+    r.chunk.frozen[r.t] = Math.min(FROZEN_MAX_DAYS, r.chunk.frozen[r.t] + amount * FROZEN_DAYS_PER_UNIT);
   }
 
   /** Humus o Brasa: avivan un fuego y alimentan la Tierra Quemada (crece más deprisa unos días) */
@@ -199,6 +207,7 @@ export class FireSystem {
     const burning: TileRef[] = [];
     const burnt: TileRef[] = [];
     this.forEachTile(r => {
+      if (r.chunk.frozen[r.t] > 0) r.chunk.frozen[r.t] = Math.max(0, r.chunk.frozen[r.t] - dt);
       if (r.chunk.fire[r.t] > 0) burning.push(r);
       if (isBurnt(r.chunk, r.i, r.j)) burnt.push(r);
     });
@@ -211,7 +220,7 @@ export class FireSystem {
 
   private ignite(r: TileRef, cause: FireCause, from: number, force = false): boolean {
     const c = r.chunk;
-    if (c.fire[r.t] > 0 || isBurnt(c, r.i, r.j)) return false;
+    if (c.fire[r.t] > 0 || isBurnt(c, r.i, r.j) || c.frozen[r.t] > 0) return false;
     if (this.coverOf(c, r.i, r.j) > FIRE_STOP_COVER) return false;
     const fuel = this.fuel(c, r.i, r.j);
     const dry = this.dryness(c, r.i, r.j);
@@ -371,7 +380,7 @@ export class FireSystem {
   private spreadBurntLand(r: TileRef, dt: number): void {
     const c = r.chunk;
     // Un borde helado (Escarcha) no crece mientras dure el frío
-    if (this.coverOf(c, r.i, r.j) > FIRE_STOP_COVER || c.tempShift[r.t] < BURNT_FROZEN_SHIFT) return;
+    if (c.frozen[r.t] > 0 || this.coverOf(c, r.i, r.j) > FIRE_STOP_COVER || c.tempShift[r.t] < BURNT_FROZEN_SHIFT) return;
     const rate = BURNT_SPREAD_PER_DAY[this.conditions.season] * (1 + c.feed[r.t] * BURNT_FEED_BOOST);
     for (const [di, dj] of SIDES) {
       const n = this.tile(c.cx * N + r.i + di, c.cy * N + r.j + dj);

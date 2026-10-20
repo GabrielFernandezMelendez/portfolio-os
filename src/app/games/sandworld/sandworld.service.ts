@@ -37,6 +37,11 @@ import { PENDING_REDRAW_MINUTES } from './config/pour.config';
 import { Translator } from './i18n/translator';
 import { SETTINGS_STORAGE } from './infrastructure/settings-storage.token';
 import { DEFAULT_SEED } from './config/world.config';
+import { FaunaNews, FaunaSystem } from './application/fauna/fauna-system';
+import { FaunaWorldAdapter } from './application/fauna/fauna-world-adapter';
+import { AnimalOrder } from './domain/models/animal.model';
+import { SPECIES_DEFS } from './config/species.config';
+import { AnimalView, animalView } from './application/fauna/animal-view';
 
 /** El reloj de la interfaz avanza de 10 en 10 minutos de juego, como en Stardew */
 const CLOCK_STEP_MINUTES = 10;
@@ -44,6 +49,8 @@ const CLOCK_STEP_MINUTES = 10;
 const INSPECT_MS = 2500;
 /** Agua (en niveles) en la celda tocada a partir de la que la etiqueta dice "Agua" */
 const INSPECT_WATER = 0.05;
+/** Cada cuántos minutos de juego se refresca la ficha del animal elegido */
+const ANIMAL_VIEW_MINUTES = 5;
 /** Segundos que se ve la etiqueta "Isla viva · Nivel N" */
 const ISLAND_LABEL_MS = 3000;
 
@@ -77,6 +84,10 @@ export class SandworldService implements OnDestroy {
   readonly vegetation = new VegetationSystem(this.world, new SeededRandom(this.world.seed * 6151 + 11));
   /** Tiempo atmosférico: lluvia (o nieve), repartida al azar en cada estación según el registro de fenómenos */
   readonly weatherSystem = new WeatherSystem(this.physics, new SeededRandom(this.world.seed * 7907 + 3));
+  /** El mundo visto por la fauna (adaptador del puerto FaunaWorld) */
+  readonly faunaWorld = new FaunaWorldAdapter(this.world, this.vegetation);
+  /** Fauna: animales, manadas, celo y partos (bloque C: ciervos) */
+  readonly fauna = new FaunaSystem(this.faunaWorld, new SeededRandom(this.world.seed * 2903 + 19));
   /** Trazo en curso mientras el dedo vierte */
   private stroke: Stroke | null = null;
 
@@ -107,6 +118,9 @@ export class SandworldService implements OnDestroy {
   readonly inspected = signal<readonly { readonly id: number; readonly labelKey: string; readonly x: number; readonly y: number }[]>([]);
   private inspectId = 0;
   private inspectTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Animal elegido (tocado en el mapa): su ficha sale abajo. Su foto se refresca cada pocos minutos de juego. */
+  readonly selectedAnimal = signal<number | null>(null);
+  readonly animalView = signal<AnimalView | null>(null);
   /** Lo que le queda al trazo en curso (1 = botella llena). La botella del estante lo muestra. */
   readonly strokeLeft = signal(1);
 
@@ -144,6 +158,13 @@ export class SandworldService implements OnDestroy {
       this.reportWorldEvents();
       if (t.minute % BIOME_CHECK_MINUTES === 0) this.updateBiomes();
       if (t.minute % VEGETATION_CHECK_MINUTES === 0) this.updateVegetation(t.season);
+      this.fauna.minute(t);
+      this.reportFauna();
+      if (this.selectedAnimal() !== null && t.minute % ANIMAL_VIEW_MINUTES === 0) this.refreshAnimal();
+      if (t.minute === 0) {
+        const grazed = this.faunaWorld.takeChanges();
+        if (grazed.length) this.events.emit('vegetationChanged', grazed);
+      }
     });
     this.events.on('newSeason', t => {
       this.biomes.newSeason();
@@ -229,6 +250,7 @@ export class SandworldService implements OnDestroy {
 
   /** Los paneles de las tablas no pausan. Solo uno abierto a la vez. */
   togglePanel(panel: HudPanel): void {
+    this.closeAnimal();
     this.panel.update(p => (p === panel ? null : panel));
   }
 
@@ -342,6 +364,64 @@ export class SandworldService implements OnDestroy {
         case 'remit': tell('chronicle.fire.remit', 6); break;
       }
     }
+  }
+
+  /** Cuenta en la crónica lo que pasa en la fauna (un aviso por tipo y especie en cada minuto) */
+  private reportFauna(): void {
+    const news = this.fauna.news.splice(0);
+    if (!news.length) return;
+    const told = new Set<string>();
+    const tell = (n: FaunaNews, event: string, priority: number, params?: Record<string, string | number>) => {
+      const key = `chronicle.fauna.${SPECIES_DEFS[n.species].key}.${event}`;
+      if (told.has(key)) return;
+      told.add(key);
+      this.log({ type: 'species', key, params, priority });
+    };
+    for (const n of news) {
+      switch (n.type) {
+        case 'arrived': tell(n, 'arrived', 8, { count: n.count }); break;
+        case 'born': tell(n, n.twins ? 'twins' : 'born', 6, { name: n.name, mother: n.mother }); break;
+        case 'died': tell(n, `died.${n.cause}`, 6, { name: n.name }); break;
+        case 'herdSplit': tell(n, 'herdSplit', 5); break;
+        case 'hunger': tell(n, 'hunger', 8); break;
+        case 'poisoned': tell(n, 'poisoned', 6, { name: n.name, food: `@plant.${PLANT_DEFS[n.plant].key}` }); break;
+        case 'lost': tell(n, `lost.${n.outcome}`, 5, { name: n.name }); break;
+        case 'discovered':
+          // La crónica cuenta que una especie se come una planta: el jugador la conoce desde ahora
+          this.world.discoveredPlants.add(n.plant);
+          tell(n, 'discovered', 4, { food: `@plant.${PLANT_DEFS[n.plant].key}` });
+          break;
+      }
+    }
+  }
+
+  /** Orden del jugador a un animal desde su ficha (comer, dormir, correr). Devuelve si la acepta. */
+  orderAnimal(id: number, order: AnimalOrder): boolean {
+    const ok = this.fauna.order(id, order, this.engine.time.totalMinutes);
+    this.refreshAnimal();
+    return ok;
+  }
+
+  /** Se ha tocado un animal en el mapa: se abre su ficha (y se cierra el panel que hubiera) */
+  selectAnimal(id: number): void {
+    this.panel.set(null);
+    this.inspected.set([]);
+    this.selectedAnimal.set(id);
+    this.refreshAnimal();
+  }
+
+  closeAnimal(): void {
+    this.selectedAnimal.set(null);
+    this.animalView.set(null);
+  }
+
+  /** Nueva foto del animal elegido (si ya no existe, por ejemplo un cadáver que se deshizo, se cierra su ficha) */
+  private refreshAnimal(): void {
+    const id = this.selectedAnimal();
+    if (id === null) return;
+    const view = animalView(this.fauna, id, this.engine.time.totalMinutes);
+    if (!view) this.closeAnimal();
+    else this.animalView.set(view);
   }
 
   /** Revisa la vegetación: recoloca las plantas de los chunks que cambian y actualiza la barra de Vegetación */
@@ -483,6 +563,27 @@ export class SandworldService implements OnDestroy {
     this.events.emit('focus', { gx, gy });
   }
 
+  /**
+   * TEMPORAL (modo desarrollo): suelta una manada de ciervos (2 hembras, 1 macho y 1 cría) en un sitio al azar
+   * por el que se pueda andar y con comida. `herds` > 1: varias a la vez (para probar la sobrepoblación).
+   */
+  debugDeerHerd(herds = 1): void {
+    const now = this.engine.time.totalMinutes, season = this.engine.time.season;
+    const deer = SPECIES_DEFS[0];
+    let last: { gx: number; gy: number } | null = null;
+    for (let h = 0; h < herds; h++) {
+      const at = this.randomCell((c, k) => {
+        const C = WORLD.CELLS, gx = c.cx * C + (k % C), gy = c.cy * C + Math.floor(k / C);
+        return this.faunaWorld.walkable(gx, gy) && this.faunaWorld.foodAt(gx, gy, deer.diets, new Set(), now, season) > 0.05;
+      }, 4);
+      if (!at) continue;
+      this.fauna.spawnHerd(deer.key, at.gx + 0.5, at.gy + 0.5, now);
+      last = at;
+    }
+    this.reportFauna();
+    if (last) this.focus(last.gx, last.gy);
+  }
+
   /** TEMPORAL (modo desarrollo): despierta un claro sin sorteo en el tile sano más cercano al centro de la isla inicial */
   debugGlade(): void {
     if (this.biomes.forceGlade(0, 0)) this.updateBiomes();
@@ -507,6 +608,9 @@ export class SandworldService implements OnDestroy {
       case 'dryStorm': return this.weatherSystem.forceNow('dryStorm', this.engine.time.totalMinutes);
       case 'ignite': return this.debugIgnite();
       case 'burntLand': return this.debugBurntLand();
+      case 'deerHerd': return this.debugDeerHerd();
+      case 'overpopulate': return this.debugDeerHerd(6);
+      case 'ageAnimals': return this.fauna.ageAll(30);
       case 'drainLife':
         if (this.physics.fire.drainLife() > 0) this.log({ type: 'world', key: 'chronicle.fire.drained', priority: 6 });
         return;

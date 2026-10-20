@@ -2,8 +2,11 @@ import { ChunkData, PLANT_SLOTS, cellIndex, groundAt, tileIndex } from '../../do
 import { Material } from '../../domain/models/material.model';
 import { WORLD } from '../../domain/models/world.model';
 import { BURY_KILL, CROP_SPROUT_UNTIL, CROP_YOUNG_UNTIL, PLANT_DEFS, PLANT_MIN, SEEDLING } from '../../config/plants.config';
-import { BIRTH_MARGIN, DEATH_MARGIN, DROWN_DAYS, REMAINS_DAYS, SHORE_DROWN_FACTOR, STAGE_DAYS } from '../../config/plant-life.config';
+import {
+  BIRTH_MARGIN, DEATH_MARGIN, DROWN_DAYS, FRUIT_REGROW_DAYS, FRUIT_RIPEN_DAYS, REMAINS_DAYS, SHORE_DROWN_FACTOR, STAGE_DAYS,
+} from '../../config/plant-life.config';
 import { PlantKind } from '../../domain/models/plant.model';
+import { GameTime, SeasonId } from '../../domain/models/time.model';
 import { BRUSH_CELLS } from '../../config/brush.config';
 
 /** Una planta dibujada: qué planta es, en qué celda del chunk y su semilla (para variar su ritmo de estación) */
@@ -171,6 +174,30 @@ export function eatFruit(chunk: ChunkData, now: number): number {
     n++;
   }
   return n;
+}
+
+/**
+ * Fruto que tiene ahora una planta (0..1): solo las que dan fruto en temporada, en sus estaciones (madura en sus
+ * primeros días) y si no se lo han comido (vuelve poco a poco). En modo desarrollo, todo el año.
+ * Lo usan la fauna (qué fruta hay para comer) y el dibujo (cuánta fruta se ve).
+ */
+export function fruitLevel(inst: PlantInstance, time: GameTime): number {
+  const def = PLANT_DEFS[inst.plant];
+  if (!def.food) return 0;
+  const seasons = def.food.seasons;
+  let ripe = 1;
+  if (seasons && !plantDevFlags.fruitAllYear) {
+    if (!seasons.includes(time.season)) return 0;
+    const prev = ((time.season + 3) % 4) as SeasonId;
+    if (!seasons.includes(prev)) ripe = Math.min(1, (time.dayOfSeason - 1 + time.minuteOfDay / 1440) / FRUIT_RIPEN_DAYS);
+  }
+  const regrow = Number.isFinite(inst.eatenAt) ? Math.min(1, (time.totalMinutes - inst.eatenAt) / (FRUIT_REGROW_DAYS * 1440)) : 1;
+  return ripe * regrow;
+}
+
+/** Plantas ya colocadas en un chunk (las que se ven), sin volver a revisarlas; vacío si aún no se ha colocado */
+export function plantsOf(chunk: ChunkData): readonly PlantInstance[] {
+  return state.get(chunk)?.list ?? [];
 }
 
 /** Etapa de una planta ahora: los cultivos según su crecimiento; las silvestres según su edad */

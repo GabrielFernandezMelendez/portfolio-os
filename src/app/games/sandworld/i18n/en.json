@@ -42,7 +42,10 @@
       "dryStorm": "Test: dry storm",
       "ignite": "Test: start a fire (random)",
       "burntLand": "Test: Burnt Land 3×3 (random)",
-      "drainLife": "Test: drain Burnt Land of life"
+      "drainLife": "Test: drain Burnt Land of life",
+      "deerHerd": "Test: deer herd (random)",
+      "overpopulate": "Test: 6 deer herds",
+      "ageAnimals": "Test: age animals 30 days"
     }
   },
   "lang": {
@@ -128,6 +131,31 @@
       "burntLand": "The wildfire leaves Burnt Land behind.",
       "remit": "The Burnt Land recedes: life returns to its edges.",
       "drained": "The Burnt Land is left lifeless."
+    },
+    "fauna": {
+      "deer": {
+        "arrived": "A herd of {count} deer arrives on the island.",
+        "born": "A fawn is born: {name}, calf of {mother}.",
+        "twins": "{mother} had twins! One is called {name}.",
+        "died": {
+          "starvation": "{name} starved to death.",
+          "oldAge": "{name} died of old age.",
+          "poison": "{name} died of poisoning.",
+          "exhaustion": "{name} died of exhaustion.",
+          "fire": "{name} didn't escape the fire.",
+          "dehydration": "{name} died of thirst."
+        },
+        "herdSplit": "A deer herd has split up: there were too many of them.",
+        "hunger": "The deer are starving: there isn't enough food for everyone.",
+        "poisoned": "{name} ate {food} and is paying for it.",
+        "lost": {
+          "back": "{name} got lost running, but made it back to the herd.",
+          "joined": "{name} has joined another herd.",
+          "rejected": "Another herd chased {name} off with their antlers.",
+          "alone": "{name} got lost and is now on their own."
+        },
+        "discovered": "The deer eat {food}."
+      }
     }
   },
   "indicators": {
@@ -222,6 +250,109 @@
       "small": "Undiscovered plant",
       "bush": "Undiscovered shrub",
       "tree": "Undiscovered tree"
+    }
+  },
+  "species": {
+    "deer": "Red deer"
+  },
+  "animal": {
+    "sex": {
+      "male": "Male",
+      "female": "Female"
+    },
+    "stage": {
+      "young": "Calf",
+      "juvenile": "Young",
+      "adult": "Adult",
+      "elder": "Elder"
+    },
+    "action": {
+      "idle": "resting",
+      "walk": "walking",
+      "eat": "eating",
+      "sleep": "sleeping",
+      "run": "running",
+      "dead": "dead",
+      "drink": "drinking"
+    },
+    "factor": {
+      "goodFood": "Good food",
+      "favourite": "Favourite food",
+      "herd": "Herd",
+      "alone": "Alone",
+      "smallHerd": "Small herd",
+      "waterNear": "Water nearby",
+      "waterFar": "River far away",
+      "crowded": "Crowded",
+      "fear": "Fear",
+      "hungry": "Hunger",
+      "tired": "Tiredness",
+      "hurt": "Hurt",
+      "thirsty": "Thirst"
+    },
+    "diary": {
+      "born": "I was born. Everything is huge and smells of grass.",
+      "fire": "Fire! I ran without looking back.",
+      "favourite": "{food}. My life has meaning.",
+      "poison": {
+        "lethal": "I ate {food}. I feel awful, truly awful.",
+        "sick": "Something in {food} didn't agree with me.",
+        "confused": "I ate {food}. I can see colours."
+      },
+      "ran": "I ran until I couldn't feel my legs.",
+      "lostBack": "I got lost, but I found my way back to my herd.",
+      "alone": "I'm lost. I'm alone and I talk to the trees.",
+      "joinedGood": "I joined another herd. They welcomed me.",
+      "joinedBad": "Another herd chased me off with their antlers.",
+      "rut": "Autumn is here and {name} keeps looking at me funny.",
+      "birth": "My calf was born. Its name is {name}.",
+      "twins": "Twins! {name} and {name2}. Goodbye, sleep.",
+      "dream": "I dreamt I was a tree today. So peaceful.",
+      "spaghetti": "Why do I see spaghetti in the sky? And how do I know what spaghetti is?",
+      "starving": "I can't remember what grass tastes like.",
+      "hungry": "I'm so hungry I could eat a cactus.",
+      "crowded": "There are too many of us in this meadow. The good grass is gone.",
+      "waterFar": "No river nearby… but maybe there's squirrel pee.",
+      "lonely": "Still alone. The trees don't talk back.",
+      "cold": "It's freezing out here.",
+      "old": "My knees creak when I get up.",
+      "goodGrass": "The grass is better here.",
+      "thirsty": "My tongue feels like an old shoe.",
+      "parched": "I'd give my antlers for a puddle.",
+      "arrived": "I've arrived on the island. It smells of fresh grass and a hint of pasta."
+    },
+    "tab": {
+      "status": "Status",
+      "diary": "Diary"
+    },
+    "bar": {
+      "health": "Health",
+      "rest": "Sleep",
+      "satiety": "Hunger",
+      "hydration": "Thirst",
+      "happiness": "Happiness"
+    },
+    "daysAlive": "Days alive",
+    "affects": "Affected by",
+    "day": "day {day}",
+    "order": {
+      "eat": "Eat",
+      "sleep": "Sleep",
+      "run": "Run"
+    },
+    "herd": {
+      "leader": "Leads the herd ({count})",
+      "member": "{name}'s herd ({count})",
+      "alone": "On its own",
+      "none": "No herd"
+    },
+    "cause": {
+      "starvation": "Starved to death.",
+      "dehydration": "Died of thirst.",
+      "oldAge": "Died of old age.",
+      "poison": "Died of poisoning.",
+      "exhaustion": "Died of exhaustion.",
+      "fire": "Didn't escape the fire."
     }
   }
 }

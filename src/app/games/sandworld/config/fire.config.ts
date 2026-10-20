@@ -48,6 +48,12 @@ export const BURNT_FEED_BOOST = 3;
 export const BURNT_FEED_DAYS = 5;
 /** Desvío de temperatura del tile (Escarcha) por debajo del cual la Tierra Quemada no crece por ese borde */
 export const BURNT_FROZEN_SHIFT = -0.1;
+/**
+ * Muro de Escarcha: días que un tile queda helado (no prende y la Tierra Quemada no crece desde él) por cada unidad
+ * vertida en sus celdas, hasta FROZEN_MAX_DAYS. Hay que renovarlo: en verano dura pocos días.
+ */
+export const FROZEN_DAYS_PER_UNIT = 1.5;
+export const FROZEN_MAX_DAYS = 8;
 
 // ── Remisión (cuando ya no tiene vida) ──
 /** Días hasta que vuelve el primer anillo (el borde) y días más por cada anillo hacia dentro; más un azar de hasta JITTER */

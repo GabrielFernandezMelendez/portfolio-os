@@ -33,11 +33,18 @@ export class Translator {
     this.lang.set(lang);
   }
 
-  /** Traduce `key` sustituyendo {param} por su valor */
+  /**
+   * Traduce `key` sustituyendo {param} por su valor. Un valor que empieza por @ es otra clave y también se traduce
+   * (p. ej. {food: '@plant.oak'} → "Roble"): así la crónica y los diarios cambian de idioma enteros.
+   */
   t(key: string, params?: Readonly<Record<string, string | number>>): string {
     const text = DICTIONARIES[this.lang()][key] ?? DICTIONARIES[DEFAULT_LANG][key] ?? key;
     if (!params) return text;
-    return text.replace(/\{(\w+)\}/g, (m, name: string) => (name in params ? String(params[name]) : m));
+    return text.replace(/\{(\w+)\}/g, (m, name: string) => {
+      if (!(name in params)) return m;
+      const v = String(params[name]);
+      return v.startsWith('@') ? this.t(v.slice(1)) : v;
+    });
   }
 }
 

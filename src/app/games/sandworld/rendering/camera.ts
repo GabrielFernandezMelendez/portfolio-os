@@ -86,6 +86,11 @@ export class Camera {
     };
   }
 
+  /** Alto de la pantalla (px) */
+  get viewportHeight(): number {
+    return this.vh;
+  }
+
   /** Desliza la cámara con suavidad hasta centrar (x, y). El jugador la interrumpe al arrastrar. */
   glideTo(x: number, y: number): void {
     this.glide = { x, y };

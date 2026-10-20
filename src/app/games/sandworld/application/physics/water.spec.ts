@@ -114,7 +114,7 @@ describe('Agua', () => {
     expect(chunk.material[cellIndex(6, 6)]).toBe(Material.MUD);
     expect(chunk.material[cellIndex(23, 23)]).toBe(Material.SOIL);
     expect(chunk.material[cellIndex(20, 23)]).toBe(Material.SOIL);    // orilla del lago: tampoco
-  });
+  }, 20000);   // simula semanas de agua: en máquinas lentas pasa de los 5 s por defecto
 
   it('los lagos naturales (bajo el nivel freático) no se convierten en barro', () => {
     const world = new World(11);

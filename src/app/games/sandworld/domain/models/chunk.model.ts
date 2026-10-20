@@ -40,6 +40,7 @@ import { WORLD } from './world.model';
  *   burnt     1 si el tile es Tierra Quemada
  *   life      vida de la Tierra Quemada (0..1): hace de sus criaturas hasta que llegue la fauna
  *   feed      alimento extra de la Tierra Quemada (Humus, Brasa): crece más deprisa mientras dura
+ *   frozen    días que le quedan a un borde helado por la Escarcha: no prende ni deja crecer la Tierra Quemada
  *   remit     cuenta atrás (negativa, en días) para volver a ser tierra viva una vez sin vida; 0 = no empezada
  */
 export interface ChunkData {
@@ -92,6 +93,7 @@ export interface ChunkData {
   readonly life: Float32Array;
   readonly feed: Float32Array;
   readonly remit: Float32Array;
+  readonly frozen: Float32Array;
 }
 
 /** Plantas distintas que caben en un tile (el registro puede crecer hasta aquí sin cambiar el formato) */
@@ -147,6 +149,7 @@ export function createChunkData(cx: number, cy: number): ChunkData {
     life: new Float32Array(TILES_TOTAL),
     feed: new Float32Array(TILES_TOTAL),
     remit: new Float32Array(TILES_TOTAL),
+    frozen: new Float32Array(TILES_TOTAL),
   };
 }
 

@@ -25,6 +25,9 @@ export const DEV_ACTIONS = [
   'ignite',        // prender fuego en un sitio con vegetación al azar
   'burntLand',     // Tierra Quemada de 3 × 3 tiles en un sitio al azar
   'drainLife',     // la Tierra Quemada se queda sin vida (empieza a remitir)
+  'deerHerd',      // soltar una manada de ciervos en un sitio al azar
+  'overpopulate',  // soltar 6 manadas de ciervos a la vez (sobrepoblación)
+  'ageAnimals',    // todos los animales cumplen 30 días de golpe
 ] as const;
 
 export type DevAction = (typeof DEV_ACTIONS)[number];

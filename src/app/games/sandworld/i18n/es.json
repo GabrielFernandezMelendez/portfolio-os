@@ -42,7 +42,10 @@
       "dryStorm": "Probar: tormenta seca",
       "ignite": "Probar: prender fuego (al azar)",
       "burntLand": "Probar: Tierra Quemada 3×3 (al azar)",
-      "drainLife": "Probar: dejar sin vida la Tierra Quemada"
+      "drainLife": "Probar: dejar sin vida la Tierra Quemada",
+      "deerHerd": "Probar: manada de ciervos (al azar)",
+      "overpopulate": "Probar: 6 manadas de ciervos",
+      "ageAnimals": "Probar: envejecer animales 30 días"
     }
   },
   "lang": {
@@ -128,6 +131,31 @@
       "burntLand": "El incendio deja Tierra Quemada.",
       "remit": "La Tierra Quemada remite: vuelve la vida a sus bordes.",
       "drained": "La Tierra Quemada se queda sin vida."
+    },
+    "fauna": {
+      "deer": {
+        "arrived": "Llega a la isla una manada de {count} ciervos.",
+        "born": "Nace un cervatillo: {name}, cría de {mother}.",
+        "twins": "¡{mother} ha tenido gemelos! Uno se llama {name}.",
+        "died": {
+          "starvation": "{name} ha muerto de hambre.",
+          "oldAge": "{name} ha muerto de viejo.",
+          "poison": "{name} ha muerto envenenado.",
+          "exhaustion": "{name} ha muerto de agotamiento.",
+          "fire": "{name} no ha escapado del fuego.",
+          "dehydration": "{name} ha muerto de sed."
+        },
+        "herdSplit": "Una manada de ciervos se ha dividido: ya no cabían.",
+        "hunger": "Los ciervos pasan hambre: ya no hay comida para todos.",
+        "poisoned": "{name} se ha comido {food} y lo está pagando.",
+        "lost": {
+          "back": "{name} se perdió corriendo, pero ha vuelto con su manada.",
+          "joined": "{name} se ha unido a otra manada.",
+          "rejected": "Otra manada ha echado a {name} a cornadas.",
+          "alone": "{name} se ha perdido y ahora va solo."
+        },
+        "discovered": "Los ciervos comen {food}."
+      }
     }
   },
   "indicators": {
@@ -222,6 +250,109 @@
       "small": "Planta por descubrir",
       "bush": "Arbusto por descubrir",
       "tree": "Árbol por descubrir"
+    }
+  },
+  "species": {
+    "deer": "Ciervo rojo"
+  },
+  "animal": {
+    "sex": {
+      "male": "Macho",
+      "female": "Hembra"
+    },
+    "stage": {
+      "young": "Cría",
+      "juvenile": "Joven",
+      "adult": "Adulto",
+      "elder": "Anciano"
+    },
+    "action": {
+      "idle": "descansando",
+      "walk": "caminando",
+      "eat": "comiendo",
+      "sleep": "durmiendo",
+      "run": "corriendo",
+      "dead": "muerto",
+      "drink": "bebiendo"
+    },
+    "factor": {
+      "goodFood": "Buena comida",
+      "favourite": "Su comida favorita",
+      "herd": "Manada",
+      "alone": "Solo",
+      "smallHerd": "Manada pequeña",
+      "waterNear": "Agua cerca",
+      "waterFar": "Río lejos",
+      "crowded": "Abarrotado",
+      "fear": "Miedo",
+      "hungry": "Hambre",
+      "tired": "Cansancio",
+      "hurt": "Herido",
+      "thirsty": "Sed"
+    },
+    "diary": {
+      "born": "He nacido. Todo es enorme y huele a hierba.",
+      "fire": "¡Fuego! He salido corriendo sin mirar atrás.",
+      "favourite": "{food}. Mi vida tiene sentido.",
+      "poison": {
+        "lethal": "Me he comido {food}. Me encuentro fatal, fatal.",
+        "sick": "Algo de {food} me ha sentado mal.",
+        "confused": "Me he comido {food}. Veo colores."
+      },
+      "ran": "He corrido hasta no sentir las patas.",
+      "lostBack": "Me había perdido, pero he vuelto con los míos.",
+      "alone": "Me he perdido. Estoy solo y hablo con los árboles.",
+      "joinedGood": "Me he unido a otra manada. Me han recibido bien.",
+      "joinedBad": "Otra manada me ha echado a cornadas.",
+      "rut": "Ha llegado el otoño y {name} me mira raro.",
+      "birth": "Ha nacido mi cría. Se llama {name}.",
+      "twins": "¡Gemelos! {name} y {name2}. Ahora sí que no duermo.",
+      "dream": "Hoy he soñado que era un árbol. Qué tranquilidad.",
+      "spaghetti": "¿Por qué veo espaguetis en el cielo? ¿Cómo sé lo que son?",
+      "starving": "Ya no recuerdo el sabor de la hierba.",
+      "hungry": "Tengo tanta hambre que me comería un cactus.",
+      "crowded": "Somos demasiados en este prado. Ya no queda hierba buena.",
+      "waterFar": "No tengo un río cerca… pero igual hay pis de ardilla.",
+      "lonely": "Sigo solo. Los árboles no contestan.",
+      "cold": "Hace un frío que pela.",
+      "old": "Me crujen las rodillas al levantarme.",
+      "goodGrass": "Aquí la hierba está mejor.",
+      "thirsty": "Tengo la lengua como una suela de zapato.",
+      "parched": "Daría mi cornamenta por un charco.",
+      "arrived": "He llegado a la isla. Huele a hierba nueva y a algo de pasta."
+    },
+    "tab": {
+      "status": "Estado",
+      "diary": "Diario"
+    },
+    "bar": {
+      "health": "Vida",
+      "rest": "Sueño",
+      "satiety": "Hambre",
+      "hydration": "Sed",
+      "happiness": "Felicidad"
+    },
+    "daysAlive": "Días vivo",
+    "affects": "Le afecta",
+    "day": "día {day}",
+    "order": {
+      "eat": "Comer",
+      "sleep": "Dormir",
+      "run": "Correr"
+    },
+    "herd": {
+      "leader": "Guía de su manada ({count})",
+      "member": "Manada de {name} ({count})",
+      "alone": "Va solo",
+      "none": "Sin manada"
+    },
+    "cause": {
+      "starvation": "Murió de hambre.",
+      "dehydration": "Murió de sed.",
+      "oldAge": "Murió de viejo.",
+      "poison": "Murió envenenado.",
+      "exhaustion": "Murió de agotamiento.",
+      "fire": "No escapó del fuego."
     }
   }
 }

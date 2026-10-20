@@ -47,6 +47,11 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
     frame: now => this.game.tick(now),
     tileTap: t => this.zone.run(() => this.game.inspectTile(t)),
     atmosphere: () => ({ weather: this.game.weatherSystem.current, season: this.game.physics.climate.seasonBlend }),
+    fauna: () => ({
+      animals: this.game.fauna.animals, corpses: this.game.fauna.corpses,
+      selected: this.game.selectedAnimal(), now: this.game.engine.time.totalMinutes,
+    }),
+    animalTap: id => this.zone.run(() => this.game.selectAnimal(id)),
     pour: {
       begin: () => this.game.beginStroke(),
       at: (gx, gy, s) => this.game.pourAt(gx, gy, s),
