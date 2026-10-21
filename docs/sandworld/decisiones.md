@@ -26,6 +26,9 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   su cuenta hasta 1,5 islas de su manada (el ciervo) y por la noche vuelven a dormir juntos; huyendo se alejan hasta
   1 isla del peligro. Cruzan de una isla a otra. Quien no vuelve a dormir con los suyos se ha perdido.
 - Correr cansa pero no deja dormido: después de correr jadean un rato y la adrenalina no les deja dormirse.
+- **De lejos (zoom ×1 y ×1,5) cada manada es una moneda** con la cara de su especie y el número de animales,
+  encima de todo; desde ×2 se ven los animales. Tocar la moneda abre la ficha de la guía. Cada especie nueva
+  necesita su cara de moneda.
 - Los comportamientos naturales son comunes a todas las especies (espacio personal, reacciones, tiempo) y cada
   especie los ajusta con su registro y su temperamento.
 - Correr (orden) puede hacer que el animal pierda su manada; ese momento será una decisión del jugador (fase 5).
@@ -36,5 +39,6 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
 - Selfies pixel art graciosos de cada animal con complementos (parche, cigarro, monóculo, tupé…).
 - Afinar los nombres irónicos.
 - Feedback visual cuando la Marea o la Escarcha frenan la Tierra Quemada.
+- ¿"!" o "?" sobre la moneda de una manada (vista de lejos)? Se decide según lo que digan los jugadores.
 - Ajustar duraciones de animaciones, restos de plantas y árboles en el agua.
 - Ajustar todos los valores marcados como [PROPUESTA] en `config/`.

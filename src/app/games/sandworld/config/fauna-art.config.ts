@@ -61,3 +61,49 @@ export const SIGNAL_ANIM = {
   /** Altura del signo sobre los pies (px de arte) de cada tipo (el macho, por encima de las astas) y lo que sube si lleva la flecha de selección */
   head: { male: 21, female: 18, fawn: 13 }, selectedLift: 7,
 } as const;
+
+/**
+ * Vista de lejos: por debajo de este zoom (escala de la cámara) cada manada se dibuja como una moneda con la cara
+ * de su especie y el número de animales, en vez de un sprite por animal (se lee mejor y se dibuja mucho menos).
+ */
+export const FAUNA_LOD = { coinsBelow: 2 } as const;
+
+/** Moneda: diámetro (px de arte), colores del canto (luz, medio, sombra) y del fondo, e insignia del número */
+export const COIN = {
+  size: 17,
+  outline: 0x2e1a0d,
+  rim: [0xf6d87a, 0xe8b448, 0xb88028],
+  face: 0x6e8a3c,
+  faceShade: 0x566e2e,
+  badge: 0x5c3418,
+  digit: 0xfff1d0,
+  /** Sombra (px de arte de ancho) */
+  shadow: 15,
+} as const;
+
+/**
+ * Cara de cada especie en su moneda (9 px de ancho; '.' = fondo) y sus colores. Añadir una especie = su cara aquí.
+ */
+export const COIN_FACES: Readonly<Record<string, { readonly rows: readonly string[]; readonly colors: Readonly<Record<string, number>> }>> = {
+  deer: {
+    rows: [
+      'A.a...a.A',
+      '.aa...aa.',
+      'EiE...EiE',
+      '.EEHHHEE.',
+      '..HeHeH..',
+      '..hHHHh..',
+      '...hcH...',
+      '...cnc...',
+    ],
+    colors: { a: 0xc4aa78, A: 0xe2cea0, E: 0x7a401c, H: 0xba763c, h: 0x9a5828, e: 0x120c08, c: 0xf6e8c8, n: 0x22180f, i: 0xe6aa96 },
+  },
+};
+
+/** Cifras de 3 × 5 px para la insignia */
+export const COIN_DIGITS: readonly (readonly string[])[] = [
+  ['xxx', 'x.x', 'x.x', 'x.x', 'xxx'], ['.x.', 'xx.', '.x.', '.x.', 'xxx'], ['xx.', '..x', '.x.', 'x..', 'xxx'],
+  ['xx.', '..x', '.x.', '..x', 'xx.'], ['x.x', 'x.x', 'xxx', '..x', '..x'], ['xxx', 'x..', 'xx.', '..x', 'xx.'],
+  ['.xx', 'x..', 'xxx', 'x.x', 'xxx'], ['xxx', '..x', '.x.', '.x.', '.x.'], ['xxx', 'x.x', 'xxx', 'x.x', 'xxx'],
+  ['xxx', 'x.x', 'xxx', '..x', 'xx.'],
+];

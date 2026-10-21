@@ -1,8 +1,12 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { Animal } from '../../domain/models/animal.model';
 import { SPECIES_DEFS } from '../../config/species.config';
-import { DEER_CANVAS, DEER_SCALE, DEER_SHADOW, FAUNA_ANIM, FAUNA_SMOOTH_MS, SELECT_COLOR, SELECT_HALF_W, SIGNAL_ANIM } from '../../config/fauna-art.config';
+import {
+  COIN, DEER_CANVAS, DEER_SCALE, DEER_SHADOW, FAUNA_ANIM, FAUNA_LOD, FAUNA_SMOOTH_MS, SELECT_COLOR, SELECT_HALF_W, SIGNAL_ANIM,
+} from '../../config/fauna-art.config';
 import { signalTexture } from './signal-art';
+import { badgeTexture, coinTexture } from './coin-art';
+import { HerdMark } from '../../application/fauna/herds';
 import { DeerKind, DeerPose } from './deer-art';
 import { deerTexture } from './fauna-sprites';
 import { shadowTexture } from '../vegetation/plant-sprites';
@@ -15,6 +19,21 @@ export interface FaunaView {
   readonly selected: number | null;
   /** Minuto de juego (edad de cada animal y cadáveres que se desvanecen) */
   readonly now: number;
+  /** Manadas para la vista de lejos (solo se piden cuando hacen falta) */
+  herds(): readonly HerdMark[];
+}
+
+/** Moneda de una manada en la vista de lejos */
+interface Coin {
+  readonly view: Container;
+  readonly coin: Sprite;
+  readonly badge: Sprite;
+  readonly shadow: Sprite;
+  leader: number;
+  count: number;
+  x: number;
+  y: number;
+  placed: boolean;
 }
 
 /** Suelo de una celda global: contenedor del chunk (para ordenarse con sus plantas) y punto del mundo */
@@ -50,12 +69,22 @@ interface Shown {
  */
 export class FaunaLayer {
   private readonly shown = new Map<number, Shown>();
+  private readonly coins = new Map<number, Coin>();
+  /**
+   * Capa de las monedas, encima de todo el terreno y las plantas (de lejos tienen que leerse siempre, no
+   * esconderse detrás de un árbol). El runtime la añade al mundo; usa coordenadas del mundo.
+   */
+  readonly overlay = new Container();
+  /** ¿Vista de lejos (monedas)? */
+  private far = false;
   private readonly marker = new Container();
   private readonly ring = new Graphics();
   private readonly arrow = new Graphics();
   private clock = 0;
 
   constructor() {
+    this.overlay.zIndex = 1e5;
+    this.overlay.sortableChildren = true;
     // Rombo isométrico alrededor del pie: solo sus cuatro esquinas (como el cursor del pincel)
     const w = SELECT_HALF_W, h = w / 2, f = 0.3;
     const pts = [[0, -h], [w, 0], [0, h], [-w, 0]];
@@ -69,9 +98,31 @@ export class FaunaLayer {
     this.marker.visible = false;
   }
 
-  /** Un frame: coloca, anima y ordena a todos los animales (y cadáveres) */
-  update(dtMs: number, view: FaunaView, groundAt: GroundAt, paused: boolean): void {
+  /**
+   * Un frame: coloca, anima y ordena a todos los animales (y cadáveres). Con la cámara lejos (zoom por debajo de
+   * FAUNA_LOD.coinsBelow) dibuja una moneda por manada y no anima a nadie.
+   */
+  update(dtMs: number, view: FaunaView, groundAt: GroundAt, paused: boolean, zoom: number): void {
     if (!paused) this.clock += dtMs;
+    const far = zoom < FAUNA_LOD.coinsBelow;
+    if (far !== this.far) {
+      this.far = far;
+      // Al cambiar de vista, los que se ocultan dejan de verse y los que vuelven se colocan de golpe
+      for (const s of this.shown.values()) {
+        s.sprite.visible = s.shadow.visible = !far;
+        if (s.signal) s.signal.visible = false;
+        s.placed = false;
+      }
+      for (const c of this.coins.values()) {
+        c.view.visible = far;
+        c.placed = false;
+      }
+    }
+    if (far) {
+      this.marker.visible = false;
+      this.updateCoins(dtMs, view, groundAt);
+      return;
+    }
     const seen = new Set<number>();
     for (const a of [...view.animals, ...view.corpses]) {
       seen.add(a.id);
@@ -115,9 +166,20 @@ export class FaunaLayer {
     this.placeMarker(view.selected);
   }
 
-  /** Animal dibujado bajo un punto del mundo (el de delante), o null */
+  /** Animal dibujado bajo un punto del mundo (el de delante), o null. De lejos, la guía de la moneda tocada. */
   animalAt(wx: number, wy: number): number | null {
     let best: number | null = null, bestY = -Infinity;
+    if (this.far) {
+      const r = COIN.size / 2 + 2;
+      for (const c of this.coins.values()) {
+        if (!c.view.visible || Math.hypot(wx - c.x, wy - (c.y - r)) > r) continue;
+        if (c.y > bestY) {
+          bestY = c.y;
+          best = c.leader;
+        }
+      }
+      return best;
+    }
     for (const [id, s] of this.shown) {
       if (!s.sprite.visible) continue;
       const k = DEER_SCALE[s.kind];
@@ -132,6 +194,9 @@ export class FaunaLayer {
   }
 
   destroy(): void {
+    for (const c of this.coins.values()) c.view.destroy({ children: true });
+    this.coins.clear();
+    this.overlay.destroy({ children: true });
     for (const s of this.shown.values()) {
       s.sprite.destroy();
       s.shadow.destroy();
@@ -139,6 +204,61 @@ export class FaunaLayer {
     }
     this.shown.clear();
     this.marker.destroy({ children: true });
+  }
+
+  /** Una moneda por manada, donde está su guía (en la capa de encima, ordenadas entre ellas de atrás adelante) */
+  private updateCoins(dtMs: number, view: FaunaView, groundAt: GroundAt): void {
+    const seen = new Set<number>();
+    for (const h of view.herds()) {
+      const ground = groundAt(Math.floor(h.x), Math.floor(h.y));
+      if (!ground) continue;
+      seen.add(h.herd);
+      let c = this.coins.get(h.herd);
+      if (!c) {
+        c = this.createCoin(SPECIES_DEFS[h.species].key);
+        this.coins.set(h.herd, c);
+      }
+      if (c.view.parent !== this.overlay) this.overlay.addChild(c.view);
+      if (c.count !== h.count) {
+        c.count = h.count;
+        c.badge.texture = badgeTexture(h.count);
+      }
+      c.leader = h.leader;
+      c.view.visible = true;
+      // Posición suavizada, como la de los animales (salta si viene de lejos: otro chunk, otra guía)
+      const p = ground.point(h.x, h.y);
+      if (!c.placed || Math.hypot(p.x - c.x, p.y - c.y) > 40) {
+        c.x = p.x;
+        c.y = p.y;
+        c.placed = true;
+      } else {
+        const k = 1 - Math.exp(-dtMs / FAUNA_SMOOTH_MS);
+        c.x += (p.x - c.x) * k;
+        c.y += (p.y - c.y) * k;
+      }
+      c.view.position.set(Math.round(c.x), Math.round(c.y));
+      c.view.zIndex = c.y + 0.05;
+    }
+    for (const [id, c] of this.coins) {
+      if (seen.has(id)) continue;
+      c.view.destroy({ children: true });
+      this.coins.delete(id);
+    }
+  }
+
+  private createCoin(species: string): Coin {
+    const view = new Container();
+    const shadow = new Sprite(shadowTexture(COIN.shadow));
+    shadow.anchor.set(0.5, 0.5);
+    shadow.position.set(1, 0);
+    const coin = new Sprite(coinTexture(species));
+    coin.anchor.set(0.5, 1);
+    coin.position.set(0, 1);
+    const badge = new Sprite(badgeTexture(0));
+    badge.anchor.set(0, 1);
+    badge.position.set(3, 3);
+    view.addChild(shadow, coin, badge);
+    return { view, coin, badge, shadow, leader: -1, count: 0, x: 0, y: 0, placed: false };
   }
 
   private create(): Shown {

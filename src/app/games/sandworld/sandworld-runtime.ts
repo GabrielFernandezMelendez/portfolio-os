@@ -134,6 +134,8 @@ export class SandworldRuntime {
     // Rayos: el rayo dentro del mundo (encima de todo) y el destello sobre toda la pantalla
     this.lightning.view.zIndex = 1e6;
     this.stage.world.addChild(this.lightning.view);
+    // Monedas de las manadas (vista de lejos): encima de la isla, debajo del rayo
+    this.stage.world.addChild(this.fauna.overlay);
     app.stage.addChild(this.lightning.flash);
     this.lightning.resize(app.screen.width, app.screen.height);
 
@@ -308,7 +310,7 @@ export class SandworldRuntime {
     for (const t of this.terrains.values()) t.animatePlants(dt);
     this.lightning.update(dt);
     const fauna = this.hooks.fauna?.();
-    if (fauna) this.fauna.update(dt, fauna, this.groundAt, this.engine.isPaused);
+    if (fauna) this.fauna.update(dt, fauna, this.groundAt, this.engine.isPaused, this.camera.scale);
     this.plantClock += dt;
     if (this.plantClock >= PLANT_LOOK_MS) {
       this.plantClock = 0;

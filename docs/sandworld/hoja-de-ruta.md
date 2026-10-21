@@ -17,9 +17,11 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 | 4D | Comportamiento común de la fauna: espacio personal, estímulos (arenas, fuego, rayos, cadáveres), miedo interno, estampidas, costumbre, tiempo |
 | 4D2 | Correr deja jadeando (no dormido), huidas de hasta 1 isla, exploración en solitario (hasta 1,5 islas) y reagrupación nocturna, rutas que rodean lagos, signos "!" y "?", estado "Asustado" |
 
+| 4D3 | Vista de lejos: una moneda por manada (cara de la especie y cuántos son) a zoom ×1 y ×1,5; tocarla abre la ficha de la guía |
+
 ## Ahora
 
-- Moneda por manada al alejar la cámara (mockup pendiente de aprobar), común a todas las especies.
+- Siguiente especie (investigar antes en más juegos de colonias para contrastar).
 
 ## Después (fase 4)
 

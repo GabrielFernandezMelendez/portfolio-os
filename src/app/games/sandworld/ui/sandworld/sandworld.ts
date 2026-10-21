@@ -9,6 +9,8 @@ import { Translator } from '../../i18n/translator';
 import { SETTINGS_STORAGE } from '../../infrastructure/settings-storage.token';
 import { LocalSettingsStorage } from '../../infrastructure/local-settings-storage';
 import { HudComponent } from '../organisms/hud/hud';
+import { herdMarks } from '../../application/fauna/herds';
+import { SPECIES_DEFS } from '../../config/species.config';
 import { FRAME_VARS } from '../atoms/frame/pixel-frames';
 
 /**
@@ -50,6 +52,7 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
     fauna: () => ({
       animals: this.game.fauna.animals, corpses: this.game.fauna.corpses,
       selected: this.game.selectedAnimal(), now: this.game.engine.time.totalMinutes,
+      herds: () => herdMarks(this.game.fauna.animals, SPECIES_DEFS, this.game.engine.time.totalMinutes),
     }),
     animalTap: id => this.zone.run(() => this.game.selectAnimal(id)),
     pour: {

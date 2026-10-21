@@ -57,3 +57,31 @@ export function splitOff(members: readonly Animal[], s: SpeciesDef, now: number)
   }
   return [...leaving];
 }
+
+/** Una manada vista de lejos: dónde está su guía (el corazón de la manada) y cuántos son */
+export interface HerdMark {
+  readonly herd: number;
+  readonly species: number;
+  /** Id de la guía (tocar la moneda abre su ficha) y su posición */
+  readonly leader: number;
+  readonly x: number;
+  readonly y: number;
+  readonly count: number;
+}
+
+/** Monedas de la vista de lejos: una por manada, en su guía. Una sola pasada por los animales. */
+export function herdMarks(animals: readonly Animal[], species: readonly SpeciesDef[], now: number): HerdMark[] {
+  const groups = new Map<number, Animal[]>();
+  for (const a of animals) {
+    if (a.diedAt !== null) continue;
+    let g = groups.get(a.herd);
+    if (!g) groups.set(a.herd, (g = []));
+    g.push(a);
+  }
+  const out: HerdMark[] = [];
+  for (const [herd, members] of groups) {
+    const lead = leaderOf(members, species[members[0].species], now) ?? members[0];
+    out.push({ herd, species: lead.species, leader: lead.id, x: lead.x, y: lead.y, count: members.length });
+  }
+  return out;
+}

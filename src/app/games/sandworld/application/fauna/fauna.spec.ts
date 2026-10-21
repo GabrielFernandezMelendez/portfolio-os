@@ -8,7 +8,7 @@ import { SPECIES_DEFS } from '../../config/species.config';
 import { lifeStage } from './needs';
 import { tryConceive } from './breeding';
 import { animalView } from './animal-view';
-import { leaderOf } from './herds';
+import { herdMarks, leaderOf } from './herds';
 import { RUN_STOP } from '../../config/fauna.config';
 
 const DAY = 1440;
@@ -337,6 +337,21 @@ describe('Fauna: ciervos', () => {
 
   const meanNearest = (herd: { x: number; y: number }[]) =>
     herd.reduce((t, a) => t + Math.min(...herd.filter(b => b !== a).map(b => Math.hypot(a.x - b.x, a.y - b.y))), 0) / herd.length;
+
+  it('vista de lejos: una moneda por manada, en su guía y con cuántos son', () => {
+    const { fauna } = setup(24);
+    const t0 = at(Season.SUMMER);
+    const one = fauna.spawnHerd('deer', 20, 20, t0);
+    const two = fauna.spawnHerd('deer', 70, 70, t0);
+    const marks = herdMarks(fauna.animals, SPECIES_DEFS, t0);
+    expect(marks.length).toBe(2);
+    for (const herd of [one, two]) {
+      const lead = leaderOf(herd, deer, t0)!;
+      const m = marks.find(k => k.leader === lead.id)!;
+      expect(m.count).toBe(herd.length);
+      expect([m.x, m.y]).toEqual([lead.x, lead.y]);
+    }
+  });
 
   it('pastando guardan su espacio; de noche se apiñan', () => {
     const { island, fauna } = setup(24);
