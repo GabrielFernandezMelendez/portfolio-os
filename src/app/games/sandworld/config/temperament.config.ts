@@ -32,6 +32,19 @@ export const TEMPERAMENTS: Readonly<Record<string, Temperament>> = {
     thunder: { reaction: 'startle', fear: 0.3, radius: Infinity },
     corpse: { reaction: 'avoid', fear: 0.2, radius: 4, avoidHours: 24 },
   },
+  // El conejo: nervioso, poco curioso (lo nuevo le asusta antes que interesarle) y de alcance corto
+  rabbit: {
+    fire: { reaction: 'flee', fear: 1, radius: 8, avoidHours: 72 },
+    sandFall: { reaction: 'flee', fear: 0.8, radius: 6, avoidHours: 6 },
+    dig: { reaction: 'flee', fear: 0.6, radius: 5, avoidHours: 6 },
+    spring: { reaction: 'startle', fear: 0.4, radius: 6 },
+    heat: { reaction: 'avoid', fear: 0.4, radius: 4, avoidHours: 12 },
+    frost: { reaction: 'startle', fear: 0.3, radius: 4 },
+    glow: { reaction: 'curious', fear: 0.2, radius: 6 },
+    lightning: { reaction: 'flee', fear: 1, radius: 8, avoidHours: 48 },
+    thunder: { reaction: 'startle', fear: 0.4, radius: Infinity },
+    corpse: { reaction: 'avoid', fear: 0.3, radius: 3, avoidHours: 24 },
+  },
 };
 
 /** Qué estímulo provoca cada arena al caer (el Humus no asusta) */

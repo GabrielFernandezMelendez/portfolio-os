@@ -43,7 +43,7 @@ const BARS = [
 
       @if (tab() === 'status') {
         <div class="who">
-          <sw-animal-portrait [kind]="v.young ? 'fawn' : v.sex" [dead]="!v.alive" [size]="64" />
+          <sw-animal-portrait [species]="v.species" [young]="v.young" [sex]="v.sex" [dead]="!v.alive" [size]="64" />
           <div>
             <h3>{{ v.name }}</h3>
             <p class="ui">{{ 'species.' + v.species | t }} · {{ 'animal.sex.' + v.sex | t }}</p>
@@ -90,7 +90,7 @@ const BARS = [
         }
       } @else {
         <div class="who small">
-          <sw-animal-portrait [kind]="v.young ? 'fawn' : v.sex" [dead]="!v.alive" [size]="52" />
+          <sw-animal-portrait [species]="v.species" [young]="v.young" [sex]="v.sex" [dead]="!v.alive" [size]="52" />
           <div>
             <h3>{{ v.name }}</h3>
             <p class="ui">{{ 'species.' + v.species | t }} · {{ 'animal.day' | t: { day: v.days } }}</p>

@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, effect, input, viewChild } from '@angular/core';
-import { DeerKind } from '../../../rendering/fauna/deer-art';
-import { deerCanvas } from '../../../rendering/fauna/fauna-sprites';
+import { animalCanvas, artKind } from '../../../rendering/fauna/fauna-sprites';
 
 /** Rectángulo de los píxeles no transparentes de un canvas */
 function contentBox(c: HTMLCanvasElement): { x: number; y: number; w: number; h: number } {
@@ -30,7 +29,10 @@ function contentBox(c: HTMLCanvasElement): { x: number; y: number; w: number; h:
   `,
 })
 export class AnimalPortraitComponent {
-  readonly kind = input.required<DeerKind>();
+  /** Especie (clave del registro), si es cría y su sexo: de ahí sale qué dibujo toca */
+  readonly species = input.required<string>();
+  readonly young = input(false);
+  readonly sex = input<'male' | 'female'>('female');
   readonly dead = input(false);
   /** Lado del retrato en px de pantalla */
   readonly size = input(64);
@@ -44,7 +46,7 @@ export class AnimalPortraitComponent {
       c.height = size;
       const ctx = c.getContext('2d');
       if (!ctx) return;
-      const sprite = deerCanvas(this.kind(), this.dead() ? 'dead' : 'idle', 0, false);
+      const sprite = animalCanvas(this.species(), artKind(this.species(), this.young(), this.sex()), this.dead() ? 'dead' : 'idle', 0, false);
       // Solo lo dibujado (sin el aire del lienzo), a la mayor escala entera que quepa: píxeles nítidos
       const box = contentBox(sprite);
       const k = Math.max(1, Math.floor(Math.min((size - 6) / box.w, (size - 6) / box.h)));

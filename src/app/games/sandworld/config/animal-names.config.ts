@@ -24,6 +24,21 @@ export const ANIMAL_NAMES: Readonly<Record<string, NamePool>> = {
       willow: ['Sauce'],
     },
   },
+  // Conejos: nombres de tipo duro para el animal más asustadizo de la isla (y muchos: crían sin parar)
+  rabbit: {
+    male: ['Rambo', 'Conan', 'Sansón', 'Hércules', 'Goliat', 'Brutus', 'El Toro', 'Fermín', 'Gregorio', 'Duque', 'Toñito', 'Bigotes', 'Pancho', 'Lucifer'],
+    female: ['Pelusa', 'Doña Orejas', 'Maripili', 'Reme', 'Cuqui', 'Puri', 'Chelo', 'Amparo', 'Tata', 'Fina', 'Nieves', 'Conchi', 'Feli', 'Loli'],
+    food: {
+      grass: ['Brizna', 'Hierbajo'],
+      clover: ['Trébol', 'Suerte'],
+      sage: ['Salvia'],
+      thistle: ['Cardo', 'Pincho'],
+      bramble: ['Zarza'],
+      glowFlower: ['Lucecita'],
+      rockMoss: ['Musgo'],
+      reed: ['Junco'],
+    },
+  },
 };
 
 /** Probabilidad de que una cría se llame como la comida favorita de su madre (o la suya) */

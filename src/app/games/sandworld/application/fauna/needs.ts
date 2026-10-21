@@ -67,6 +67,8 @@ export interface Mood {
   /** Densidad de su especie en la isla (población / capacidad) */
   readonly crowded: boolean;
   readonly fear: boolean;
+  /** Enfermo (contagioso) */
+  readonly sick?: boolean;
 }
 
 /**
@@ -90,6 +92,7 @@ export function updateHappiness(a: Animal, mood: Mood, minutes: number): void {
   add('hurt', -0.1, a.health < 0.5);
   // El miedo resta felicidad; en la ficha sale como estado ("Asustado"), sin barra
   add('fear', -0.2, mood.fear);
+  add('sick', -0.3, !!mood.sick);
   const base = 0.25 * a.satiety + 0.2 * a.hydration + 0.15 * a.rest + 0.25 * a.health;
   const target = Math.max(0, Math.min(1, base + factors.reduce((s, f) => s + f.value, 0)));
   const step = Math.min(1, (HAPPY_RATE * minutes) / DAY);

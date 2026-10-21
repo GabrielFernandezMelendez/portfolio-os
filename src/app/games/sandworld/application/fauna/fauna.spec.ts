@@ -6,10 +6,12 @@ import { SeededRandom } from '../../infrastructure/seeded-random';
 import { PLANT_DEFS } from '../../config/plants.config';
 import { SPECIES_DEFS } from '../../config/species.config';
 import { lifeStage } from './needs';
-import { tryConceive } from './breeding';
+import { litterSize, tryConceive } from './breeding';
+import { SeasonBreeding } from '../../domain/models/species.model';
 import { animalView } from './animal-view';
 import { herdMarks, leaderOf } from './herds';
 import { RUN_STOP } from '../../config/fauna.config';
+import { Material } from '../../domain/models/material.model';
 
 const DAY = 1440;
 const G = 4;
@@ -88,6 +90,10 @@ class FakeIsland implements FaunaWorld {
     return best ? { x: best.x, y: best.y } : null;
   }
   snowAt(): boolean { return this.snow; }
+  /** Todo es tierra que se puede cavar, salvo las celdas de `rock` */
+  rock = new Set<string>();
+  materialAt(gx: number, gy: number) { return this.t(gx, gy) < 0 ? null : this.rock.has(`${gx},${gy}`) ? Material.ROCK : Material.SOIL; }
+  flooded(gx: number, gy: number): boolean { return this.water.has(`${gx},${gy}`); }
   dropSeed(): void {}
   fertilize(): void {}
   totalFood(diets: readonly Diet[]): number {
@@ -544,5 +550,165 @@ describe('Fauna: ciervos', () => {
     run(hot.fauna, hot.island, noon, 2 * 60);
     expect(herd2.filter(a => a.action === 'sleep').length).toBeGreaterThanOrEqual(2);
     expect(herd2.some(a => a.diary.some(d => d.key === 'siesta'))).toBe(true);
+  });
+});
+
+describe('Fauna: conejos', () => {
+  const rabbit = SPECIES_DEFS[1];
+  const hourOf = (season: SeasonId, day: number, hour: number) => (season * 30 + day) * DAY + hour * 60;
+
+  it('cavan su madriguera, duermen dentro de día y salen a comer de noche', () => {
+    const { island, fauna } = setup(16);
+    const t0 = hourOf(Season.SUMMER, 1, 20);
+    const colony = fauna.spawnHerd('rabbit', 30, 30, t0);
+    expect(colony.length).toBe(5);
+    // Sin madriguera, la cavan (y tarda unas horas en estar lista)
+    run(fauna, island, t0, 30);
+    const herd = fauna.herds.get(colony[0].herd)!;
+    expect(herd.burrow).not.toBeNull();
+    expect(fauna.burrows.usable(herd, t0 + 30)).toBeUndefined();
+    // Al día siguiente, a mediodía, casi todos dentro; a medianoche, casi todos fuera
+    run(fauna, island, t0 + 30, hourOf(Season.SUMMER, 3, 12) - t0 - 30);
+    expect(colony.filter(a => a.inside !== null).length).toBeGreaterThanOrEqual(3);
+    run(fauna, island, hourOf(Season.SUMMER, 3, 12), 12 * 60);
+    expect(colony.filter(a => a.inside === null).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('camadas de 2 a 7 crías por tirada (4 o 5 lo más común); con superpoblación o hambre, menos', () => {
+    const b = rabbit.breeding as SeasonBreeding;
+    const random = new SeededRandom(3);
+    const roll = (sat: number, crowded: boolean) => Array.from({ length: 2000 }, () => litterSize(b, sat, crowded, random));
+    const fine = roll(0.9, false), bad = roll(0.3, true);
+    expect(Math.min(...fine)).toBe(2);
+    expect(Math.max(...fine)).toBe(7);
+    const mean = (v: number[]) => v.reduce((s, x) => s + x, 0) / v.length;
+    expect(mean(fine)).toBeGreaterThan(4.2);
+    expect(mean(fine)).toBeLessThan(5);
+    expect(Math.min(...bad)).toBe(2);
+    expect(mean(bad)).toBeLessThan(mean(fine) - 1.5);
+  });
+
+  it('crían en primavera: camadas que nacen dentro de la madriguera y pasan allí sus primeros días', () => {
+    const { island, fauna } = setup(24);
+    const t0 = hourOf(Season.SPRING, 0, 20);
+    const colony = fauna.spawnHerd('rabbit', 48, 48, t0, true);
+    run(fauna, island, t0, 25 * DAY);
+    const kits = fauna.animals.filter(a => a.species === 1 && a.mother !== null);
+    expect(kits.length).toBeGreaterThan(4);
+    expect(fauna.news.some(n => n.type === 'born' && n.count >= 2)).toBe(true);
+    expect(kits.some(k => colony.some(m => m.id === k.mother))).toBe(true);
+  });
+
+  it('ante un susto, unos se quedan quietos y otros corren a la madriguera (y se meten)', () => {
+    let froze = 0, total = 0, sheltered = 0;
+    for (let seed = 1; seed <= 25; seed++) {
+      const { island, fauna } = setup(16, 0.8, seed);
+      const t0 = hourOf(Season.SUMMER, 2, 23);
+      const colony = fauna.spawnHerd('rabbit', 30, 30, t0, true);
+      for (const a of colony) {
+        a.inside = null;
+        a.x += 4;
+        a.action = 'idle';
+      }
+      fauna.sense({ type: 'sandFall', gx: colony[0].x + 1, gy: colony[0].y, strength: 1 }, t0);
+      for (const a of colony) if (a.fear >= 0.5) {
+        total++;
+        if (a.frozenUntil > t0) froze++;
+      }
+      run(fauna, island, t0, 40);
+      sheltered += colony.filter(a => a.inside !== null).length;
+    }
+    expect(froze / total).toBeGreaterThan(0.35);
+    expect(froze / total).toBeLessThan(0.75);
+    expect(sheltered).toBeGreaterThan(25);
+  });
+
+  it('la Marea derrumba la madriguera (a veces) y entierra a algunos; la Duna la tapa', () => {
+    let collapsed = 0, buried = 0, escaped = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      const { fauna } = setup(16, 0.8, seed);
+      const t0 = hourOf(Season.SUMMER, 2, 12);
+      const colony = fauna.spawnHerd('rabbit', 30, 30, t0, true);
+      const b = fauna.burrows.get(fauna.herds.get(colony[0].herd)!.burrow)!;
+      for (const a of colony) {
+        a.inside = b.id;
+        a.x = b.x;
+        a.y = b.y;
+      }
+      fauna.sense({ type: 'dig', gx: b.x, gy: b.y, strength: 1 }, t0);
+      if (!fauna.burrows.get(b.id)) collapsed++;
+      buried += colony.filter(a => a.cause === 'buried').length;
+      escaped += colony.filter(a => a.diary.some(d => d.key === 'collapse')).length;
+    }
+    expect(collapsed).toBeGreaterThan(8);
+    expect(collapsed).toBeLessThan(22);
+    expect(buried).toBeGreaterThan(0);
+    expect(escaped).toBeGreaterThan(buried * 0.8);
+    const { fauna } = setup(16);
+    const colony = fauna.spawnHerd('rabbit', 30, 30, 0, true);
+    const b = fauna.burrows.get(fauna.herds.get(colony[0].herd)!.burrow)!;
+    fauna.sense({ type: 'sandFall', gx: b.x, gy: b.y, strength: 1 }, 0);
+    expect(b.blocked).toBe(true);
+  });
+
+  it('una madriguera inundada: casi todos salen a tiempo, alguno se ahoga', () => {
+    let out = 0, drowned = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      const { island, fauna } = setup(16, 0.8, seed);
+      const t0 = hourOf(Season.SUMMER, 2, 10);
+      const colony = fauna.spawnHerd('rabbit', 30, 30, t0, true);
+      const b = fauna.burrows.get(fauna.herds.get(colony[0].herd)!.burrow)!;
+      for (const a of colony) {
+        a.inside = b.id;
+        a.x = b.x;
+        a.y = b.y;
+      }
+      island.water.add(`${Math.floor(b.x)},${Math.floor(b.y)}`);
+      run(fauna, island, t0, 3 * 60);
+      out += colony.filter(a => a.diary.some(d => d.key === 'flood')).length;
+      drowned += colony.filter(a => a.cause === 'drowned').length;
+    }
+    expect(out).toBeGreaterThan(drowned * 3);
+    expect(drowned).toBeGreaterThan(0);
+  });
+
+  it('la enfermedad se contagia dentro de la colonia, mata a muchos y deja inmunes a los que la pasan', () => {
+    let died = 0, immune = 0, sick = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      const { island, fauna } = setup(16, 0.8, seed);
+      const t0 = hourOf(Season.AUTUMN, 2, 10);
+      const colony = fauna.spawnHerd('rabbit', 30, 30, t0, true);
+      colony[0].sickUntil = t0 + 5 * DAY;
+      run(fauna, island, t0, 20 * DAY);
+      sick += colony.filter(a => a.immune || a.cause === 'disease').length;
+      died += colony.filter(a => a.cause === 'disease').length;
+      immune += colony.filter(a => a.immune).length;
+    }
+    expect(sick).toBeGreaterThan(30);
+    expect(died / sick).toBeGreaterThan(0.4);
+    expect(died / sick).toBeLessThan(0.8);
+    expect(immune).toBeGreaterThan(0);
+  });
+
+  it('al hacerse adultos, más machos que hembras dejan la colonia para fundar otra', () => {
+    let males = 0, females = 0, maleLeft = 0, femaleLeft = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const { island, fauna } = setup(24, 0.8, seed);
+      const t0 = hourOf(Season.AUTUMN, 2, 10);
+      const colony = fauna.spawnHerd('rabbit', 48, 48, t0, true);
+      // Dos jóvenes que cumplen la edad adulta mañana
+      const kids = colony.slice(0, 2);
+      kids[0] = Object.assign(kids[0], { sex: 'male', bornAt: t0 - (rabbit.adultDays - 0.5) * DAY });
+      kids[1] = Object.assign(kids[1], { sex: 'female', bornAt: t0 - (rabbit.adultDays - 0.5) * DAY });
+      const herd = kids[0].herd;
+      run(fauna, island, t0, DAY + 4 * 60);
+      males++;
+      females++;
+      if (kids[0].herd !== herd) maleLeft++;
+      if (kids[1].herd !== herd) femaleLeft++;
+    }
+    expect(maleLeft / males).toBeGreaterThan(0.4);
+    expect(femaleLeft / females).toBeLessThan(0.45);
+    expect(maleLeft).toBeGreaterThan(femaleLeft);
   });
 });

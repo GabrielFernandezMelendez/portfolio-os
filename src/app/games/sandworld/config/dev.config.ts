@@ -28,6 +28,11 @@ export const DEV_ACTIONS = [
   'deerHerd',      // soltar una manada de ciervos en un sitio al azar
   'overpopulate',  // soltar 6 manadas de ciervos a la vez (sobrepoblación)
   'ageAnimals',    // todos los animales cumplen 30 días de golpe
+  'rabbitColony',  // soltar una colonia de conejos con su madriguera ya cavada
+  'rabbitBoom',    // soltar 6 colonias de conejos a la vez (superpoblación: hambre y enfermedad)
+  'rabbitLitter',  // las conejas adultas paren dentro de una hora (camadas de 2 a 7)
+  'rabbitOutbreak', // brota la enfermedad ahora en la colonia más grande
+  'findBurrow',    // llevar la cámara a una madriguera (para probar la Marea, la Duna o el agua encima)
 ] as const;
 
 export type DevAction = (typeof DEV_ACTIONS)[number];

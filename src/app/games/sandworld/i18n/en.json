@@ -45,7 +45,12 @@
       "drainLife": "Test: drain Burnt Land of life",
       "deerHerd": "Test: deer herd (random)",
       "overpopulate": "Test: 6 deer herds",
-      "ageAnimals": "Test: age animals 30 days"
+      "ageAnimals": "Test: age animals 30 days",
+      "rabbitColony": "Test: rabbit colony (random)",
+      "rabbitBoom": "Test: 6 rabbit colonies",
+      "rabbitLitter": "Test: rabbits give birth now",
+      "rabbitOutbreak": "Test: disease outbreak (rabbits)",
+      "findBurrow": "Test: go to a burrow"
     }
   },
   "lang": {
@@ -160,6 +165,46 @@
         "stampede": "Stampede! Something spooked a herd of deer.",
         "herdRun": "The deer herd runs off together.",
         "herdRunSplit": "The deer herd runs off; {count} break away from the group."
+      },
+      "rabbit": {
+        "arrived": "A colony of {count} rabbits reaches the island.",
+        "born": "A kit is born: {name}, child of {mother}.",
+        "twins": "{mother} has had two kits. One is called {name}.",
+        "litter": "{mother} has had {count} kits. One is called {name}.",
+        "died": {
+          "starvation": "{name} has starved to death.",
+          "oldAge": "{name} has died of old age.",
+          "poison": "{name} has been poisoned.",
+          "exhaustion": "{name} has died of exhaustion.",
+          "fire": "{name} didn't escape the fire.",
+          "dehydration": "{name} has died of thirst.",
+          "lightning": "{name} was struck by lightning.",
+          "buried": "{name} was buried in its burrow.",
+          "disease": "{name} has died of the disease.",
+          "drowned": "{name} has drowned in its burrow.",
+          "orphaned": "{name} didn't make it without its mother."
+        },
+        "herdSplit": "A rabbit colony has split up: the burrow wasn't big enough.",
+        "hunger": "The rabbits are going hungry: there isn't enough grass for so many.",
+        "poisoned": "{name} ate {food} and is paying for it.",
+        "lost": {
+          "back": "{name} spent the night out, but has made it back to the burrow.",
+          "joined": "{name} has joined another colony.",
+          "rejected": "Another colony has chased {name} off with bites.",
+          "alone": "{name} got lost and is on its own now."
+        },
+        "discovered": "Rabbits eat {food}.",
+        "stampede": "Scatter! Something has spooked a rabbit colony.",
+        "herdRun": "The rabbit colony bolts for its burrow.",
+        "herdRunSplit": "The rabbit colony bolts; {count} lose their way.",
+        "burrow": {
+          "dug": "A rabbit colony has dug its burrow.",
+          "collapsed": "A rabbit burrow has caved in!",
+          "blocked": "Sand has blocked the entrance to a rabbit burrow.",
+          "flooded": "A rabbit burrow is flooding!"
+        },
+        "outbreak": "{name} is the first to fall ill as a disease breaks out among the rabbits.",
+        "dispersed": "{name} leaves its colony to found its own."
       }
     }
   },
@@ -258,7 +303,8 @@
     }
   },
   "species": {
-    "deer": "Red deer"
+    "deer": "Red deer",
+    "rabbit": "European rabbit"
   },
   "animal": {
     "sex": {
@@ -278,7 +324,8 @@
       "sleep": "sleeping",
       "run": "running",
       "dead": "dead",
-      "drink": "drinking"
+      "drink": "drinking",
+      "inside": "in the burrow"
     },
     "factor": {
       "goodFood": "Good food",
@@ -293,7 +340,8 @@
       "hungry": "Hunger",
       "tired": "Tiredness",
       "hurt": "Hurt",
-      "thirsty": "Thirst"
+      "thirsty": "Thirst",
+      "sick": "Sick"
     },
     "diary": {
       "born": "I was born. Everything is huge and smells of grass.",
@@ -353,7 +401,20 @@
       "storm": "Nobody can sleep with this thunder.",
       "stormShelter": "We've gone under the trees to wait out the storm.",
       "rain": "I took shelter under a tree. Rain puts me in a bad mood.",
-      "siesta": "Too hot to do anything. Siesta in the shade."
+      "siesta": "Too hot to do anything. Siesta in the shade.",
+      "digging": "I got stuck with the digging. The others watch and give opinions.",
+      "newHome": "We found an empty burrow. It smells of strangers, but it's ours now.",
+      "mated": "{name} and I... well, you know how rabbits are.",
+      "litter": "{count} kits! I named one {name}. I'll get to the rest.",
+      "rainHome": "It's raining. Off to the burrow; I'm not a duck.",
+      "sunbathe": "Came out to sunbathe by the entrance for a bit. On guard, of course.",
+      "flood": "Water in the burrow! I paddled out as best I could.",
+      "dugOut": "Someone blocked our entrance. I dug until I saw the sky.",
+      "blocked": "Something blocked the burrow entrance. It's pitch dark in here.",
+      "collapse": "Our burrow caved in on us. I got out by a whisker.",
+      "sick": "My eyes are swollen and I don't even fancy clover.",
+      "recovered": "I got over the disease. I'm practically indestructible now.",
+      "leaveHome": "I'm all grown up. Off to find a burrow of my own."
     },
     "tab": {
       "status": "Status",
@@ -388,7 +449,10 @@
       "exhaustion": "Died of exhaustion.",
       "fire": "Didn't escape the fire.",
       "lightning": "Struck by lightning.",
-      "buried": "Buried under the sand."
+      "buried": "Buried under the sand.",
+      "disease": "Died of the disease.",
+      "drowned": "Drowned in its burrow.",
+      "orphaned": "Didn't make it without its mother."
     }
   }
 }

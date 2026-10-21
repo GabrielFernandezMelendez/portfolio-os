@@ -1,4 +1,5 @@
 import { DEER_CANVAS, DEER_COLORS as K, DEER_SCALE } from '../../config/fauna-art.config';
+import { Pixels, clamp, over } from './pixel-canvas';
 
 /*
   Ciervo isométrico generado por código (sin imágenes): piezas (cuerpo, cuello, cabeza, orejas, cornamenta,
@@ -23,56 +24,6 @@ export interface DeerArt {
 const { w: W, h: H, ground: GROUND, footX: FOOT_X } = DEER_CANVAS;
 const FUR = K.fur, CREAM = K.cream, ANT = K.antler;
 
-/** Lienzo de píxeles: lo último que se pinta queda encima */
-class Pixels {
-  readonly px = new Int32Array(W * H).fill(-1);
-  put(x: number, y: number, c: number): void {
-    const ix = Math.trunc(x), iy = Math.trunc(y);
-    if (ix >= 0 && ix < W && iy >= 0 && iy < H) this.px[iy * W + ix] = c;
-  }
-  /** Elipse orientada a lo largo de (ux, uy): semieje `a` en esa dirección y `b` en la perpendicular */
-  ellipse(cx: number, cy: number, ux: number, uy: number, a: number, b: number, shade: (x: number, y: number, d: number) => number): void {
-    const vx = -uy, vy = ux;
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        const dx = x + 0.5 - cx, dy = y + 0.5 - cy;
-        const p = dx * ux + dy * uy, q = dx * vx + dy * vy;
-        const d = (p / a) ** 2 + (q / b) ** 2;
-        if (d <= 1) this.put(x, y, shade(x, y, d));
-      }
-    }
-  }
-  line(x0: number, y0: number, x1: number, y1: number, c: number): void {
-    const n = Math.trunc(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * 2) + 1;
-    for (let i = 0; i <= n; i++) {
-      const t = i / n;
-      this.put(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, c);
-    }
-  }
-  /** Contorno de 1 px alrededor de lo pintado (solo por los 4 lados) */
-  outlined(): Int32Array {
-    const out = this.px.slice();
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        if (this.px[y * W + x] >= 0) continue;
-        const near = (x > 0 && this.px[y * W + x - 1] >= 0) || (x < W - 1 && this.px[y * W + x + 1] >= 0) ||
-          (y > 0 && this.px[(y - 1) * W + x] >= 0) || (y < H - 1 && this.px[(y + 1) * W + x] >= 0);
-        if (near) out[y * W + x] = K.outline;
-      }
-    }
-    return out;
-  }
-}
-
-/** Pone `top` encima de `base` (los transparentes de `top` dejan ver `base`) */
-function over(base: Int32Array, top: Int32Array): Int32Array {
-  const out = base.slice();
-  for (let k = 0; k < out.length; k++) if (top[k] >= 0) out[k] = top[k];
-  return out;
-}
-
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-
 /**
  * Un fotograma. `t` (0..1) es el momento de la animación: el paso al andar o correr, el cabeceo al estar quieto.
  * `back`: de espaldas (va hacia arriba en la pantalla).
@@ -90,10 +41,10 @@ export function deerArt(kind: DeerKind, pose: DeerPose, t: number, back: boolean
   if (pose === 'dead') cy = GROUND - 2.2 * s;
   const a = (pose === 'dead' ? 5.8 : 6.4) * s, b = (pose === 'dead' ? 2.4 : 2.7) * s;
 
-  const body = new Pixels();
-  const farLegs = new Pixels();
-  const nearLegs = new Pixels();
-  const antlers = new Pixels();
+  const body = new Pixels(W, H);
+  const farLegs = new Pixels(W, H);
+  const nearLegs = new Pixels(W, H);
+  const antlers = new Pixels(W, H);
 
   // ── Patas: delante y detrás a lo largo del cuerpo; cerca y lejos a los lados. Las de delante pisan más abajo (profundidad).
   const legs: { near: boolean; tx: number; ty: number; fx: number; fy: number }[] = [];
@@ -203,7 +154,7 @@ export function deerArt(kind: DeerKind, pose: DeerPose, t: number, back: boolean
   }
   drawLegs(nearLegs, true);
 
-  let colors = over(farLegs.px, body.outlined());
+  let colors = over(farLegs.px, body.outlined(K.outline));
   colors = back ? over(antlers.px, colors) : over(colors, antlers.px);
   colors = over(colors, nearLegs.px);
   return { w: W, h: H, footX: FOOT_X, footY: GROUND, colors };

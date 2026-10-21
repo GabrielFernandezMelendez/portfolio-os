@@ -1,14 +1,13 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { Animal } from '../../domain/models/animal.model';
+import { Animal, Burrow } from '../../domain/models/animal.model';
 import { SPECIES_DEFS } from '../../config/species.config';
 import {
-  COIN, DEER_CANVAS, DEER_SCALE, DEER_SHADOW, FAUNA_ANIM, FAUNA_LOD, FAUNA_SMOOTH_MS, SELECT_COLOR, SELECT_HALF_W, SIGNAL_ANIM,
+  COIN, FAUNA_ANIM, FAUNA_LOD, FAUNA_SMOOTH_MS, SELECT_COLOR, SELECT_HALF_W, SIGNAL_ANIM, SPECIES_ART,
 } from '../../config/fauna-art.config';
 import { signalTexture } from './signal-art';
 import { badgeTexture, coinTexture } from './coin-art';
 import { HerdMark } from '../../application/fauna/herds';
-import { DeerKind, DeerPose } from './deer-art';
-import { deerTexture } from './fauna-sprites';
+import { FaunaPose, animalTexture, artKind, burrowTexture } from './fauna-sprites';
 import { shadowTexture } from '../vegetation/plant-sprites';
 import { ageDays } from '../../application/fauna/needs';
 
@@ -21,6 +20,14 @@ export interface FaunaView {
   readonly now: number;
   /** Manadas para la vista de lejos (solo se piden cuando hacen falta) */
   herds(): readonly HerdMark[];
+  /** Madrigueras (entradas en el suelo) */
+  readonly burrows: readonly Burrow[];
+}
+
+/** Entrada de madriguera dibujada */
+interface Hole {
+  readonly sprite: Sprite;
+  state: 'digging' | 'open' | 'blocked';
 }
 
 /** Moneda de una manada en la vista de lejos */
@@ -51,10 +58,13 @@ interface Shown {
   x: number;
   y: number;
   placed: boolean;
-  pose: DeerPose;
+  pose: FaunaPose;
   frame: number;
   frameMs: number;
-  kind: DeerKind;
+  species: string;
+  kind: string;
+  /** Dentro de su madriguera: no se dibuja (pero sigue aquí, para el marcador de selección en la entrada) */
+  hidden: boolean;
   /** Signo sobre la cabeza ('!' o '?'): se crea al primer susto; `signalAt` = cuál está enseñando, `signalMs` = desde cuándo */
   signal: Sprite | null;
   signalAt: number;
@@ -70,6 +80,7 @@ interface Shown {
 export class FaunaLayer {
   private readonly shown = new Map<number, Shown>();
   private readonly coins = new Map<number, Coin>();
+  private readonly holes = new Map<number, Hole>();
   /**
    * Capa de las monedas, encima de todo el terreno y las plantas (de lejos tienen que leerse siempre, no
    * esconderse detrás de un árbol). El runtime la añade al mundo; usa coordenadas del mundo.
@@ -118,6 +129,7 @@ export class FaunaLayer {
         c.placed = false;
       }
     }
+    this.updateHoles(view, groundAt);
     if (far) {
       this.marker.visible = false;
       this.updateCoins(dtMs, view, groundAt);
@@ -136,7 +148,10 @@ export class FaunaLayer {
         s = this.create();
         this.shown.set(a.id, s);
       }
-      s.sprite.visible = s.shadow.visible = true;
+      // Dentro de la madriguera no se ve (ni su sombra, ni su signo)
+      s.hidden = a.inside !== null;
+      s.sprite.visible = s.shadow.visible = !s.hidden;
+      if (s.hidden && s.signal) s.signal.visible = false;
       // Contenedor del chunk en el que está
       if (s.parent !== ground.container) {
         ground.container.addChild(s.shadow, s.sprite);
@@ -153,6 +168,7 @@ export class FaunaLayer {
         s.x += (p.x - s.x) * k;
         s.y += (p.y - s.y) * k;
       }
+      if (s.hidden) continue;
       this.animate(s, a, view.now, paused ? 0 : dtMs);
       this.showSignal(s, a, view, paused ? 0 : dtMs);
     }
@@ -182,8 +198,8 @@ export class FaunaLayer {
     }
     for (const [id, s] of this.shown) {
       if (!s.sprite.visible) continue;
-      const k = DEER_SCALE[s.kind];
-      const half = 9 * k, top = 22 * k;
+      const art = SPECIES_ART[s.species], k = art.scale[s.kind] / Math.max(...Object.values(art.scale));
+      const half = art.hit.half * k, top = art.hit.top * k;
       if (wx < s.x - half || wx > s.x + half || wy < s.y - top || wy > s.y + 3) continue;
       if (s.y > bestY) {
         bestY = s.y;
@@ -196,6 +212,8 @@ export class FaunaLayer {
   destroy(): void {
     for (const c of this.coins.values()) c.view.destroy({ children: true });
     this.coins.clear();
+    for (const h of this.holes.values()) h.sprite.destroy();
+    this.holes.clear();
     this.overlay.destroy({ children: true });
     for (const s of this.shown.values()) {
       s.sprite.destroy();
@@ -261,19 +279,62 @@ export class FaunaLayer {
     return { view, coin, badge, shadow, leader: -1, count: 0, x: 0, y: 0, placed: false };
   }
 
+  /**
+   * Entradas de madriguera: en el contenedor de su chunk, justo por debajo de los animales que pasan por encima.
+   * Mientras la cavan, solo el montón de tierra; tapada por la Duna, con arena en el agujero.
+   */
+  private updateHoles(view: FaunaView, groundAt: GroundAt): void {
+    const seen = new Set<number>();
+    for (const b of view.burrows) {
+      const ground = groundAt(Math.floor(b.x), Math.floor(b.y));
+      if (!ground) continue;
+      seen.add(b.id);
+      let h = this.holes.get(b.id);
+      if (!h) {
+        const sprite = new Sprite();
+        sprite.anchor.set(0.5, 0.55);
+        h = { sprite, state: 'open' };
+        h.sprite.texture = burrowTexture('open');
+        this.holes.set(b.id, h);
+        const p = ground.point(b.x, b.y);
+        sprite.position.set(Math.round(p.x), Math.round(p.y));
+        sprite.zIndex = p.y - 0.8;
+        ground.container.addChild(sprite);
+      }
+      const state = b.readyAt > view.now ? 'digging' : b.blocked ? 'blocked' : 'open';
+      if (state !== h.state) {
+        h.state = state;
+        h.sprite.texture = burrowTexture(state);
+      }
+    }
+    for (const [id, h] of this.holes) {
+      if (seen.has(id)) continue;
+      h.sprite.destroy();
+      this.holes.delete(id);
+    }
+  }
+
   private create(): Shown {
     const sprite = new Sprite();
-    sprite.anchor.set(DEER_CANVAS.footX / DEER_CANVAS.w, DEER_CANVAS.ground / DEER_CANVAS.h);
     const shadow = new Sprite();
     shadow.anchor.set(0.5, 0.5);
-    return { sprite, shadow, parent: null, x: 0, y: 0, placed: false, pose: 'idle', frame: 0, frameMs: 0, kind: 'female', signal: null, signalAt: -1, signalMs: 0 };
+    return {
+      sprite, shadow, parent: null, x: 0, y: 0, placed: false, pose: 'idle', frame: 0, frameMs: 0, species: '', kind: 'female', hidden: false,
+      signal: null, signalAt: -1, signalMs: 0,
+    };
   }
 
   /** Textura del fotograma que toca, espejo según hacia dónde mira, profundidad y sombra */
   private animate(s: Shown, a: Animal, now: number, dtMs: number): void {
     const species = SPECIES_DEFS[a.species];
-    const kind: DeerKind = ageDays(a, now) < species.youngDays ? 'fawn' : a.sex;
-    const pose: DeerPose = a.action;
+    const art = SPECIES_ART[species.key];
+    if (s.species !== species.key) {
+      // Cada especie tiene su lienzo: el pie (punto de apoyo) en su sitio
+      s.species = species.key;
+      s.sprite.anchor.set(art.canvas.footX / art.canvas.w, art.canvas.ground / art.canvas.h);
+    }
+    const kind = artKind(species.key, ageDays(a, now) < species.youngDays, a.sex);
+    const pose: FaunaPose = a.action;
     if (pose !== s.pose) {
       s.pose = pose;
       s.frame = 0;
@@ -287,7 +348,7 @@ export class FaunaLayer {
       s.frame = (s.frame + 1) % anim.frames;
     }
     s.kind = kind;
-    s.sprite.texture = deerTexture(kind, pose, s.frame, a.back);
+    s.sprite.texture = animalTexture(species.key, kind, pose, s.frame, a.back);
     // El dibujo mira a la izquierda de frente y a la derecha de espaldas: el resto, en espejo
     const flip = a.back ? a.facing === -1 : a.facing === 1;
     s.sprite.scale.x = flip ? -1 : 1;
@@ -298,7 +359,7 @@ export class FaunaLayer {
       const left = species.corpseDays - (now - a.diedAt) / 1440;
       s.sprite.alpha = Math.max(0, Math.min(1, left));
     } else s.sprite.alpha = 1;
-    s.shadow.texture = shadowTexture(Math.round(DEER_SHADOW * (DEER_SCALE[kind] / DEER_SCALE.female)));
+    s.shadow.texture = shadowTexture(Math.round(art.shadow * (art.scale[kind] / art.scale['female'])));
     s.shadow.position.set(Math.round(s.x) + 1, Math.round(s.y));
     s.shadow.zIndex = s.y - 0.6;
     s.shadow.alpha = s.sprite.alpha;
@@ -333,14 +394,15 @@ export class FaunaLayer {
     const lift = view.selected === a.id ? SIGNAL_ANIM.selectedLift : 0;
     s.signal.visible = s.sprite.visible;
     s.signal.alpha = Math.min(1, (SIGNAL_ANIM.ms - t) / SIGNAL_ANIM.fadeMs) * (popFrame === 0 ? 0.6 : 1);
-    s.signal.position.set(Math.round(s.x), Math.round(s.y) - SIGNAL_ANIM.head[s.kind] - lift + dy);
+    s.signal.position.set(Math.round(s.x), Math.round(s.y) - SPECIES_ART[s.species].head[s.kind] - lift + dy);
     s.signal.zIndex = s.y + 0.06;
   }
 
   /** Rombo y flecha sobre el seleccionado (en el contenedor de su chunk, encima de todo lo de ese chunk) */
   private placeMarker(selected: number | null): void {
     const s = selected !== null ? this.shown.get(selected) : undefined;
-    if (!s || !s.parent || !s.sprite.visible) {
+    // Dentro de la madriguera también se marca (en la entrada), para saber dónde está
+    if (!s || !s.parent || (!s.sprite.visible && !s.hidden)) {
       this.marker.visible = false;
       return;
     }
@@ -349,7 +411,7 @@ export class FaunaLayer {
     this.marker.position.set(Math.round(s.x), Math.round(s.y));
     this.marker.zIndex = s.y + 0.04;
     const bob = Math.round(Math.abs(Math.sin(this.clock / 260)) * 2);
-    this.arrow.position.set(0, -Math.round(26 * DEER_SCALE[s.kind]) - bob);
+    this.arrow.position.set(0, -(s.hidden ? 6 : SPECIES_ART[s.species].arrow[s.kind]) - bob);
     this.arrow.zIndex = 1;
   }
 }

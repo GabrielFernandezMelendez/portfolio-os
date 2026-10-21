@@ -15,7 +15,8 @@ export interface AnimalView {
   /** Cría (dibujo pequeño) o adulto */
   readonly young: boolean;
   readonly stage: LifeStage;
-  readonly action: AnimalAction;
+  /** Lo que hace (o 'inside': está en su madriguera y no se le ve) */
+  readonly action: AnimalAction | 'inside';
   readonly alive: boolean;
   readonly cause: DeathCause | null;
   readonly health: number;
@@ -49,20 +50,23 @@ export function animalView(fauna: FaunaSystem, id: number, now: number): AnimalV
   const leader = leaderOf(members, s, now);
   return {
     id: a.id, name: a.name, species: s.key, sex: a.sex, young: ageDays(a, at) < s.youngDays,
-    stage: lifeStage(a, s, at), action: a.action, alive, cause: a.cause,
+    stage: lifeStage(a, s, at), action: alive && a.inside !== null ? 'inside' : a.action, alive, cause: a.cause,
     health: Math.max(0, a.health), rest: a.rest, satiety: a.satiety, hydration: a.hydration, happiness: a.happiness,
     days: Math.floor(ageDays(a, at)), life: Math.min(1, ageDays(a, at) / max),
     marks: [s.youngDays / max, s.adultDays / max, (s.lifespanDays[0] * ELDER_FROM) / max],
     herdSize: members.length, leader: leader && leader !== a ? leader.name : null,
-    factors: liveFactors(a.factors, alive && a.fear >= STARTLE_FEAR), diary: [...a.diary], order: a.order, canRun: alive && a.rest >= RUN_MIN,
+    factors: liveFactors(a.factors, alive && a.fear >= STARTLE_FEAR, alive && a.sickUntil !== null), diary: [...a.diary], order: a.order, canRun: alive && a.rest >= RUN_MIN,
   };
 }
 
 /**
- * "Le afecta" con el miedo al día: los factores se calculan cada hora, pero un susto dura minutos. "Asustado" sale
- * (el primero) mientras lo esté y desaparece en cuanto se le pasa.
+ * "Le afecta" al día: los factores se calculan cada hora, pero un susto dura minutos. "Asustado" y "Enfermo" salen
+ * (los primeros) mientras lo esté y desaparecen en cuanto se le pasa.
  */
-function liveFactors(factors: readonly Factor[], scared: boolean): Factor[] {
-  const rest = factors.filter(f => f.key !== 'fear');
-  return scared ? [{ key: 'fear', value: -0.2 }, ...rest].slice(0, 4) : rest;
+function liveFactors(factors: readonly Factor[], scared: boolean, sick: boolean): Factor[] {
+  const rest = factors.filter(f => f.key !== 'fear' && f.key !== 'sick');
+  const now: Factor[] = [];
+  if (sick) now.push({ key: 'sick', value: -0.3 });
+  if (scared) now.push({ key: 'fear', value: -0.2 });
+  return [...now, ...rest].slice(0, 4);
 }

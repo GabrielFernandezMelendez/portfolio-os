@@ -1,4 +1,5 @@
 import { Diet } from '../models/plant.model';
+import { MaterialId } from '../models/material.model';
 import { SeasonId } from '../models/time.model';
 
 /** Lo que se ha comido un animal de una vez */
@@ -39,6 +40,10 @@ export interface FaunaWorld {
   shelterNear(gx: number, gy: number, max: number): { readonly x: number; readonly y: number } | null;
   /** ¿Hay nieve o hielo bajo sus patas? (se duerme peor) */
   snowAt(gx: number, gy: number): boolean;
+  /** Material del suelo de una celda (para saber si se puede cavar) o null si no hay isla */
+  materialAt(gx: number, gy: number): MaterialId | null;
+  /** ¿Hay agua de verdad en la celda (no se pisa)? (madrigueras inundadas) */
+  flooded(gx: number, gy: number): boolean;
   /** Comida de toda la isla para estas dietas (para la capacidad de cada especie) */
   totalFood(diets: readonly Diet[], now: number, season: SeasonId): number;
 }

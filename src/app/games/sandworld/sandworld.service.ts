@@ -414,7 +414,10 @@ export class SandworldService implements OnDestroy {
     for (const n of news) {
       switch (n.type) {
         case 'arrived': tell(n, 'arrived', 8, { count: n.count }); break;
-        case 'born': tell(n, n.twins ? 'twins' : 'born', 6, { name: n.name, mother: n.mother }); break;
+        case 'born': tell(n, n.count > 2 ? 'litter' : n.twins ? 'twins' : 'born', 6, { name: n.name, mother: n.mother, count: n.count }); break;
+        case 'burrow': tell(n, `burrow.${n.what}`, n.what === 'dug' ? 4 : 7); break;
+        case 'outbreak': tell(n, 'outbreak', 9, { name: n.name }); break;
+        case 'dispersed': tell(n, 'dispersed', 4, { name: n.name }); break;
         case 'died': tell(n, `died.${n.cause}`, 6, { name: n.name }); break;
         case 'herdSplit': tell(n, 'herdSplit', 5); break;
         case 'hunger': tell(n, 'hunger', 8); break;
@@ -611,20 +614,37 @@ export class SandworldService implements OnDestroy {
    * por el que se pueda andar y con comida. `herds` > 1: varias a la vez (para probar la sobrepoblación).
    */
   debugDeerHerd(herds = 1): void {
+    this.debugHerd('deer', herds);
+  }
+
+  /**
+   * TEMPORAL (modo desarrollo): suelta `herds` manadas de una especie en sitios al azar con comida (y, si la
+   * especie tiene madriguera, donde se pueda cavar: la colonia llega con ella ya cavada).
+   */
+  debugHerd(speciesKey: string, herds = 1): void {
     const now = this.engine.time.totalMinutes, season = this.engine.time.season;
-    const deer = SPECIES_DEFS[0];
+    const s = SPECIES_DEFS.find(d => d.key === speciesKey)!;
     let last: { gx: number; gy: number } | null = null;
     for (let h = 0; h < herds; h++) {
       const at = this.randomCell((c, k) => {
         const C = WORLD.CELLS, gx = c.cx * C + (k % C), gy = c.cy * C + Math.floor(k / C);
-        return this.faunaWorld.walkable(gx, gy) && this.faunaWorld.foodAt(gx, gy, deer.diets, new Set(), now, season) > 0.05;
+        const m = this.faunaWorld.materialAt(gx, gy);
+        if (s.refuge && (m === null || !s.refuge.digIn.includes(m))) return false;
+        return this.faunaWorld.walkable(gx, gy) && this.faunaWorld.foodAt(gx, gy, s.diets, new Set(), now, season) > 0.05;
       }, 4);
       if (!at) continue;
-      this.fauna.spawnHerd(deer.key, at.gx + 0.5, at.gy + 0.5, now);
+      this.fauna.spawnHerd(s.key, at.gx + 0.5, at.gy + 0.5, now, !!s.refuge);
       last = at;
     }
     this.reportFauna();
     if (last) this.focus(last.gx, last.gy);
+  }
+
+  /** TEMPORAL (modo desarrollo): lleva la cámara a una madriguera al azar */
+  debugFindBurrow(): void {
+    const list = this.fauna.burrows.list;
+    const b = list[Math.floor(Math.random() * list.length)];
+    if (b) this.focus(Math.floor(b.x), Math.floor(b.y));
   }
 
   /** TEMPORAL (modo desarrollo): despierta un claro sin sorteo en el tile sano más cercano al centro de la isla inicial */
@@ -654,6 +674,11 @@ export class SandworldService implements OnDestroy {
       case 'deerHerd': return this.debugDeerHerd();
       case 'overpopulate': return this.debugDeerHerd(6);
       case 'ageAnimals': return this.fauna.ageAll(30);
+      case 'rabbitColony': return this.debugHerd('rabbit');
+      case 'rabbitBoom': return this.debugHerd('rabbit', 6);
+      case 'rabbitLitter': this.fauna.debugBirths('rabbit', this.engine.time.totalMinutes); return;
+      case 'rabbitOutbreak': this.fauna.debugOutbreak('rabbit', this.engine.time.totalMinutes); this.reportFauna(); return;
+      case 'findBurrow': return this.debugFindBurrow();
       case 'drainLife':
         if (this.physics.fire.drainLife() > 0) this.log({ type: 'world', key: 'chronicle.fire.drained', priority: 6 });
         return;

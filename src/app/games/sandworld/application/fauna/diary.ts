@@ -45,6 +45,8 @@ export function nameFor(species: string, sex: 'male' | 'female', favourite: numb
   const base = pick(pool[sex]) ?? '?';
   // Si ya están todos los nombres, el segundo es "II", el tercero "III"...
   if (!taken.has(base)) return base;
-  for (const suffix of ['II', 'III', 'IV', 'V', 'VI']) if (!taken.has(`${base} ${suffix}`)) return `${base} ${suffix}`;
+  // (los conejos llegan a ser muchos: más allá de XII, con número)
+  for (const suffix of ['II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']) if (!taken.has(`${base} ${suffix}`)) return `${base} ${suffix}`;
+  for (let n = 13; n < 1000; n++) if (!taken.has(`${base} ${n}`)) return `${base} ${n}`;
   return base;
 }

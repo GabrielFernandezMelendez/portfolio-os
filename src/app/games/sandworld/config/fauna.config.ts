@@ -40,6 +40,19 @@ export const RUN_STOP = 0.15;
 export const RUN_MIN = 0.3;
 /** Con adrenalina solo se duerme si está así de agotado */
 export const COLLAPSE = 0.05;
+/** Minutos que se queda clavado del susto (si le toca quedarse quieto) antes de echar a correr */
+export const FREEZE_MINUTES = 8;
+
+// ── Madrigueras ──
+/** Celdas alrededor de la manada en que busca dónde cavar, y alcance (celdas) de una arena que cae en su entrada */
+export const BURROW_SEARCH = 12;
+export const BURROW_HIT = 2;
+/** Llegando a la entrada (celdas) se mete dentro */
+export const BURROW_ENTER = 0.8;
+/** Días que aguanta una madriguera abandonada antes de hundirse (si nadie la ocupa) */
+export const BURROW_ABANDON_DAYS = 30;
+/** Dentro sale si el hambre o la sed aprietan */
+export const INSIDE_HUNGRY = 0.3;
 
 // ── Explorar y volver a dormir con los suyos ──
 /** Probabilidad, cada vez que piensa estando tranquilo, de irse de excursión por su cuenta, y horas que dura */

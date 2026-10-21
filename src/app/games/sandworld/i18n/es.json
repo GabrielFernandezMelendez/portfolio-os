@@ -45,7 +45,12 @@
       "drainLife": "Probar: dejar sin vida la Tierra Quemada",
       "deerHerd": "Probar: manada de ciervos (al azar)",
       "overpopulate": "Probar: 6 manadas de ciervos",
-      "ageAnimals": "Probar: envejecer animales 30 días"
+      "ageAnimals": "Probar: envejecer animales 30 días",
+      "rabbitColony": "Probar: colonia de conejos (al azar)",
+      "rabbitBoom": "Probar: 6 colonias de conejos",
+      "rabbitLitter": "Probar: las conejas paren ya",
+      "rabbitOutbreak": "Probar: brote de enfermedad (conejos)",
+      "findBurrow": "Probar: ir a una madriguera"
     }
   },
   "lang": {
@@ -160,6 +165,46 @@
         "stampede": "¡Estampida! Algo ha espantado a una manada de ciervos.",
         "herdRun": "La manada de ciervos sale corriendo en grupo.",
         "herdRunSplit": "La manada de ciervos sale corriendo; {count} se separan del grupo."
+      },
+      "rabbit": {
+        "arrived": "Llega a la isla una colonia de {count} conejos.",
+        "born": "Nace un gazapo: {name}, cría de {mother}.",
+        "twins": "{mother} ha tenido dos gazapos. Uno se llama {name}.",
+        "litter": "{mother} ha tenido {count} gazapos. Uno se llama {name}.",
+        "died": {
+          "starvation": "{name} ha muerto de hambre.",
+          "oldAge": "{name} ha muerto de viejo.",
+          "poison": "{name} ha muerto envenenado.",
+          "exhaustion": "{name} ha muerto de agotamiento.",
+          "fire": "{name} no ha escapado del fuego.",
+          "dehydration": "{name} ha muerto de sed.",
+          "lightning": "A {name} le ha caído un rayo.",
+          "buried": "{name} ha quedado sepultado en su madriguera.",
+          "disease": "{name} ha muerto de la enfermedad.",
+          "drowned": "{name} se ha ahogado en su madriguera.",
+          "orphaned": "{name} no ha salido adelante sin su madre."
+        },
+        "herdSplit": "Una colonia de conejos se ha dividido: ya no cabían en la madriguera.",
+        "hunger": "Los conejos pasan hambre: ya no hay hierba para tantos.",
+        "poisoned": "{name} se ha comido {food} y lo está pagando.",
+        "lost": {
+          "back": "{name} pasó la noche fuera, pero ha vuelto a su madriguera.",
+          "joined": "{name} se ha unido a otra colonia.",
+          "rejected": "Otra colonia ha echado a {name} a mordiscos.",
+          "alone": "{name} se ha perdido y ahora va solo."
+        },
+        "discovered": "Los conejos comen {food}.",
+        "stampede": "¡Desbandada! Algo ha espantado a una colonia de conejos.",
+        "herdRun": "La colonia de conejos sale corriendo hacia su madriguera.",
+        "herdRunSplit": "La colonia de conejos sale corriendo; {count} se despistan por el camino.",
+        "burrow": {
+          "dug": "Una colonia de conejos ha cavado su madriguera.",
+          "collapsed": "¡Se ha derrumbado una madriguera de conejos!",
+          "blocked": "La arena ha tapado la entrada de una madriguera de conejos.",
+          "flooded": "¡Se inunda una madriguera de conejos!"
+        },
+        "outbreak": "Brota una enfermedad entre los conejos. {name} es el primero en caer enfermo.",
+        "dispersed": "{name} deja su colonia para fundar la suya."
       }
     }
   },
@@ -258,7 +303,8 @@
     }
   },
   "species": {
-    "deer": "Ciervo rojo"
+    "deer": "Ciervo rojo",
+    "rabbit": "Conejo de monte"
   },
   "animal": {
     "sex": {
@@ -278,7 +324,8 @@
       "sleep": "durmiendo",
       "run": "corriendo",
       "dead": "muerto",
-      "drink": "bebiendo"
+      "drink": "bebiendo",
+      "inside": "en la madriguera"
     },
     "factor": {
       "goodFood": "Buena comida",
@@ -293,7 +340,8 @@
       "hungry": "Hambre",
       "tired": "Cansancio",
       "hurt": "Herido",
-      "thirsty": "Sed"
+      "thirsty": "Sed",
+      "sick": "Enfermo"
     },
     "diary": {
       "born": "He nacido. Todo es enorme y huele a hierba.",
@@ -353,7 +401,20 @@
       "storm": "No hay quien duerma con estos truenos.",
       "stormShelter": "Nos hemos metido bajo los árboles a esperar que pase la tormenta.",
       "rain": "Me he refugiado bajo un árbol. La lluvia me pone de mal humor.",
-      "siesta": "Hace demasiado calor para hacer nada. Siesta a la sombra."
+      "siesta": "Hace demasiado calor para hacer nada. Siesta a la sombra.",
+      "digging": "Me ha tocado cavar. Los demás miran y opinan.",
+      "newHome": "Hemos encontrado una madriguera vacía. Huele a otros, pero es nuestra.",
+      "mated": "{name} y yo... bueno, ya sabéis cómo somos los conejos.",
+      "litter": "¡{count} gazapos! A uno lo he llamado {name}. Con el resto ya veré.",
+      "rainHome": "Llueve. Me voy a la madriguera, que no soy un pato.",
+      "sunbathe": "He salido un rato a tomar el sol a la entrada. Vigilando, claro.",
+      "flood": "¡Agua en la madriguera! He salido nadando como he podido.",
+      "dugOut": "Nos habían tapado la entrada. He cavado hasta ver el cielo.",
+      "blocked": "Algo ha tapado la entrada de la madriguera. Está todo oscuro.",
+      "collapse": "Se nos ha caído la madriguera encima. He salido de milagro.",
+      "sick": "Tengo los ojos hinchados y no me apetece ni el trébol.",
+      "recovered": "He pasado la enfermedad. Ahora soy prácticamente indestructible.",
+      "leaveHome": "Ya soy mayor. Me voy a buscar mi propia madriguera."
     },
     "tab": {
       "status": "Estado",
@@ -388,7 +449,10 @@
       "exhaustion": "Murió de agotamiento.",
       "fire": "No escapó del fuego.",
       "lightning": "Le cayó un rayo.",
-      "buried": "Quedó sepultado bajo la arena."
+      "buried": "Quedó sepultado bajo la arena.",
+      "disease": "Murió de la enfermedad.",
+      "drowned": "Se ahogó en su madriguera.",
+      "orphaned": "No salió adelante sin su madre."
     }
   }
 }

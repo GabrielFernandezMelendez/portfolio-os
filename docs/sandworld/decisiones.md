@@ -33,6 +33,13 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   probabilidad (ciervo) y se separa con un 25 %; las crías van con su madre. El separado anda despistado: si se
   cruza con los suyos los encuentra; si no, al caer la tarde los encuentra con un 60 % y, si no, pasa la noche
   perdido (y entonces vuelve, se une a otra manada o se queda solo).
+- **Conejo**: vive en colonias con madriguera (dentro duermen, crían y se esconden; dentro no se ven). Nocturno.
+  Cría en primavera y verano: cada camada es una tirada de 2 a 7 crías (4 o 5 lo más común; con superpoblación o
+  hambre, menos). Ante un susto se queda quieto (55 %) o corre a la madriguera en zigzag. Los machos se alejan más
+  que las hembras y los jóvenes se van a fundar colonias (60 % machos, 25 % hembras). La enfermedad brota con
+  superpoblación y es su freno hasta que llegue un depredador. La Marea derrumba la madriguera, el agua la inunda y
+  la Duna la tapa. Sacan casi toda el agua de lo que comen.
+- Las madrigueras abandonadas las ocupa otra colonia o se hunden solas en 30 días.
 - Los comportamientos naturales son comunes a todas las especies (espacio personal, reacciones, tiempo) y cada
   especie los ajusta con su registro y su temperamento.
 - Correr (orden) puede hacer que el animal pierda su manada; ese momento será una decisión del jugador (fase 5).

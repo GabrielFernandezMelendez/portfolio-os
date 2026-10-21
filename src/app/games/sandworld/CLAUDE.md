@@ -19,7 +19,8 @@ Antes de proponer nada, lee `docs/sandworld/` (hoja de ruta y decisiones de dise
 
 El juego tiene que crecer a ~20 especies, decenas de plantas, arenas y cartas sin reescribir nada. Por eso:
 - **Añadir contenido = añadir datos, no tocar lógica.** Una especie nueva es una entrada en `species.config.ts`,
-  otra en `temperament.config.ts`, su dibujo y sus textos. Si para añadirla hay que meter un `if (especie === …)`
+  otra en `temperament.config.ts`, su dibujo (`SPECIES_ART` + su generador en `fauna-sprites.ts` + su cara de
+  moneda en `COIN_FACES`), sus nombres y sus textos. Si para añadirla hay que meter un `if (especie === …)`
   en la lógica, el diseño está mal: se generaliza el sistema y el dato decide.
 - **Comportamientos comunes, parámetros por especie.** Lo natural (espacio personal, miedo, sed, refugio, celo…)
   se escribe una vez para todos los animales; cada especie solo ajusta números y reacciones.

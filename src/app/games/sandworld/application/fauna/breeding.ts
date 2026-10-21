@@ -1,5 +1,5 @@
 import { Animal } from '../../domain/models/animal.model';
-import { SpeciesDef } from '../../domain/models/species.model';
+import { RutBreeding, SeasonBreeding, SpeciesDef } from '../../domain/models/species.model';
 import { CALENDAR, DAYS_PER_YEAR, SeasonId } from '../../domain/models/time.model';
 import { RandomSource } from '../../domain/ports/random-source.port';
 import { BIRTH_SPREAD_DAYS, BREED_HAPPINESS } from '../../config/fauna.config';
@@ -25,7 +25,7 @@ export function nextSeasonStart(now: number, season: SeasonId): number {
 export function tryConceive(
   female: Animal, herd: readonly Animal[], s: SpeciesDef, now: number, year: number, days: number, random: RandomSource,
 ): Animal | null {
-  const b = s.breeding;
+  const b = s.breeding as RutBreeding;
   if (female.sex !== 'female' || female.diedAt !== null || female.dueAt !== null) return null;
   if (female.lastRutYear === year || ageDays(female, now) < s.adultDays) return null;
   if (female.satiety < b.minSatiety || female.happiness < BREED_HAPPINESS) return null;
@@ -36,4 +36,36 @@ export function tryConceive(
   female.dueAt = nextSeasonStart(now, b.birthSeason) + Math.floor(random.next() * BIRTH_SPREAD_DAYS * DAY);
   const males = herd.filter(m => m.sex === 'male' && m.diedAt === null && ageDays(m, now) >= s.adultDays);
   return males[Math.floor(random.next() * males.length)] ?? null;
+}
+
+/**
+ * Cría por temporada (conejo): durante sus estaciones de cría, cada día una hembra adulta, bien comida, con un
+ * macho adulto en su manada y sin estar ya preñada, queda preñada con `conceivePerDay` (también nada más parir).
+ * Cuántas crías espera es otra tirada (litterSize). Devuelve el macho o null.
+ */
+export function tryConceiveSeason(
+  female: Animal, herd: readonly Animal[], s: SpeciesDef, now: number, crowded: boolean, random: RandomSource,
+): Animal | null {
+  const b = s.breeding as SeasonBreeding;
+  if (female.sex !== 'female' || female.diedAt !== null || female.dueAt !== null || female.sickUntil !== null) return null;
+  if (ageDays(female, now) < s.adultDays || female.satiety < b.minSatiety) return null;
+  if (!hasAdultMale(herd, s, now)) return null;
+  if (random.next() >= b.conceivePerDay) return null;
+  female.litter = litterSize(b, female.satiety, crowded, random);
+  female.dueAt = now + b.gestationDays * DAY;
+  const males = herd.filter(m => m.sex === 'male' && m.diedAt === null && ageDays(m, now) >= s.adultDays);
+  return males[Math.floor(random.next() * males.length)] ?? null;
+}
+
+/**
+ * Cuántas crías: una tirada con los pesos de la especie (unas tienen pocas, otras muchas). Con superpoblación o
+ * hambre la tirada baja unos puestos, pero nunca por debajo del mínimo.
+ */
+export function litterSize(b: SeasonBreeding, satiety: number, crowded: boolean, random: RandomSource): number {
+  const { sizes, weights } = b.litter;
+  const total = weights.reduce((t, w) => t + w, 0);
+  let r = random.next() * total, i = 0;
+  while (i < weights.length - 1 && r >= weights[i]) r -= weights[i++];
+  const shift = (crowded ? b.crowdShift : 0) + (satiety < 0.5 ? b.hungryShift : 0);
+  return sizes[Math.max(0, i - shift)];
 }

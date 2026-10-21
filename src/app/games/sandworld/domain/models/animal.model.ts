@@ -10,7 +10,8 @@ export type AnimalAction = 'idle' | 'walk' | 'eat' | 'drink' | 'sleep' | 'run' |
 export type AnimalOrder = 'eat' | 'sleep' | 'run';
 
 /** Por qué murió */
-export type DeathCause = 'starvation' | 'dehydration' | 'oldAge' | 'poison' | 'exhaustion' | 'fire' | 'lightning' | 'buried';
+export type DeathCause =
+  | 'starvation' | 'dehydration' | 'oldAge' | 'poison' | 'exhaustion' | 'fire' | 'lightning' | 'buried' | 'disease' | 'drowned' | 'orphaned';
 
 /** Algo que le afecta ahora a su felicidad (la ficha lo enseña como "Le afecta") */
 export interface Factor {
@@ -44,6 +45,24 @@ export interface Herd {
   zones: { x: number; y: number; r: number; until: number }[];
   /** Sitio donde la manada se junta a dormir esta noche (lo elige la guía al caer la tarde; de día, null) */
   bed: { x: number; y: number } | null;
+  /** Su madriguera (id) si la especie tiene refugio, o null */
+  burrow: number | null;
+}
+
+/**
+ * Madriguera: entrada en una celda; dentro duermen, crían y se esconden. Se cava en unas horas (`readyAt`), una
+ * Duna la tapa (`blocked`) y la Marea la derrumba (desaparece).
+ */
+export interface Burrow {
+  readonly id: number;
+  readonly species: number;
+  herd: number;
+  readonly x: number;
+  readonly y: number;
+  readyAt: number;
+  blocked: boolean;
+  /** Minuto desde el que nadie la usa (su manada ya no existe) o null; abandonada mucho tiempo, se hunde */
+  abandonedAt: number | null;
 }
 
 /** Signo sobre la cabeza: '!' se asusta, '?' algo le da curiosidad (el dibujo lo enseña unos segundos) */
@@ -111,6 +130,18 @@ export interface Animal {
    */
   path: number[] | null;
   stuckUntil: number;
+  /** Dentro de su madriguera (id; no se ve) o null. Si sale a tomar el sol, hasta qué minuto se queda fuera */
+  inside: number | null;
+  outUntil: number;
+  /** Quieto del susto hasta este minuto (antes de echar a correr) */
+  frozenUntil: number;
+  /** Huyendo hacia un sitio (su madriguera) en vez de lejos del peligro, o null */
+  runTo: { x: number; y: number } | null;
+  /** Enfermo hasta este minuto (null = sano) y si ya pasó la enfermedad (inmune) */
+  sickUntil: number | null;
+  immune: boolean;
+  /** Manada de la que se fue al hacerse adulto (no vuelve a unirse a ella) o null */
+  leftHerd: number | null;
   /**
    * Despistado tras separarse en una carrera de la manada: 0 = no; 1 = no sabe dónde están los suyos (al caer la
    * tarde los buscará, con suerte); 2 = no los ha encontrado (si no se cruza con ellos, esta noche se pierde).

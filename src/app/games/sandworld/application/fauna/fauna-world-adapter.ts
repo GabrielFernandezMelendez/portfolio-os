@@ -1,5 +1,5 @@
 import { ChunkData, PLANT_SLOTS, cellIndex, groundAt, tileIndex } from '../../domain/models/chunk.model';
-import { Material } from '../../domain/models/material.model';
+import { Material, MaterialId } from '../../domain/models/material.model';
 import { Diet, PlantDef } from '../../domain/models/plant.model';
 import { SeasonId, toGameTime } from '../../domain/models/time.model';
 import { WORLD } from '../../domain/models/world.model';
@@ -80,6 +80,16 @@ export class FaunaWorldAdapter implements FaunaWorld {
   snowAt(gx: number, gy: number): boolean {
     const c = this.cell(gx, gy);
     return !!c && c.chunk.cover[c.k] > SNOWY;
+  }
+
+  materialAt(gx: number, gy: number): MaterialId | null {
+    const c = this.cell(gx, gy);
+    return c ? (c.chunk.material[c.k] as MaterialId) : null;
+  }
+
+  flooded(gx: number, gy: number): boolean {
+    const c = this.cell(gx, gy);
+    return !!c && c.chunk.water[c.k] >= DEEP;
   }
 
   height(gx: number, gy: number): number {
