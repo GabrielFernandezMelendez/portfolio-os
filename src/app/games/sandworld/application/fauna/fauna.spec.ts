@@ -338,6 +338,46 @@ describe('Fauna: ciervos', () => {
   const meanNearest = (herd: { x: number; y: number }[]) =>
     herd.reduce((t, a) => t + Math.min(...herd.filter(b => b !== a).map(b => Math.hypot(a.x - b.x, a.y - b.y))), 0) / herd.length;
 
+  it('correr con toda la manada: ~3 de cada 4 salen juntos y el resto se separa (probabilidad, no regla)', () => {
+    let adults = 0, split = 0;
+    for (let seed = 1; seed <= 80; seed++) {
+      const { fauna } = setup(24, 0.8, seed);
+      const t0 = at(Season.SUMMER);
+      const herd = fauna.spawnHerd('deer', 48, 48, t0);
+      for (const a of herd) a.rest = 1;
+      expect(fauna.orderHerd(herd[0].id, t0)).toBe(true);
+      expect(herd.every(a => a.action === 'run')).toBe(true);
+      const grown = herd.filter(a => a.mother === null);
+      adults += grown.length;
+      split += grown.filter(a => a.strayed === 1).length;
+      // La cría corre con su madre (y como ella)
+      const calf = herd.find(a => a.mother !== null)!, mum = herd.find(a => a.id === calf.mother)!;
+      expect(calf.strayed).toBe(mum.strayed);
+      expect(fauna.news.some(n => n.type === 'herdRun')).toBe(true);
+    }
+    expect(split / adults).toBeGreaterThan(0.15);
+    expect(split / adults).toBeLessThan(0.35);
+  });
+
+  it('el que se separa anda por su cuenta y al caer la tarde encuentra a los suyos o pasa la noche perdido', () => {
+    let found = 0, lost = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      const { island, fauna } = setup(40, 0.8, seed);
+      const t0 = at(Season.SUMMER, 2) - 9 * 60 + 10 * 60;       // 10:00
+      const herd = fauna.spawnHerd('deer', 80, 80, t0);
+      for (const a of herd) a.rest = 1;
+      fauna.orderHerd(herd[0].id, t0);
+      const strays = herd.filter(a => a.strayed === 1 && a.mother === null);
+      run(fauna, island, t0, 17 * 60);                          // hasta las 3:00
+      for (const a of strays) {
+        if (a.diary.some(d => d.key === 'foundHerd')) found++;
+        if (fauna.news.some(n => n.type === 'lost' && n.id === a.id)) lost++;
+      }
+    }
+    expect(found).toBeGreaterThan(0);
+    expect(lost).toBeGreaterThan(0);
+  });
+
   it('vista de lejos: una moneda por manada, en su guía y con cuántos son', () => {
     const { fauna } = setup(24);
     const t0 = at(Season.SUMMER);

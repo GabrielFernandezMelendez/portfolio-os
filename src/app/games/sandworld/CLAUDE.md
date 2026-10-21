@@ -28,6 +28,18 @@ El juego tiene que crecer a ~20 especies, decenas de plantas, arenas y cartas si
 - **Sistemas desacoplados.** Se comunican por puertos, eventos y estímulos, no llamándose por dentro. Un sistema
   nuevo (depredación, enfermedades…) se enchufa sin cambiar los que ya existen.
 
+## Gameplay emergente
+
+Buscamos lo de Dwarf Fortress y RimWorld: que la historia nazca sola de sistemas sencillos que se cruzan, y que
+cada individuo, aunque vaya en grupo, no sea una copia de los demás.
+- **Nada pasa el 100 % de las veces.** Cada decisión de un animal (seguir al grupo, separarse, volver, huir, ir a
+  mirar...) es una **probabilidad**, no una regla fija. Las probabilidades viven en el registro de cada especie
+  (`config/`), nunca escritas a mano en la lógica, y se tiran con `RandomSource` (así los tests son repetibles).
+- **Cada individuo decide por su cuenta**: en una misma situación, unos hacen una cosa y otros otra.
+- **Lo que pasa se cuenta**: diario y crónica, para que el jugador pueda reconstruir la historia.
+- Los tests de comportamiento comprueban **proporciones** en muchas tiradas (p. ej. "entre el 15 y el 35 % se
+  separa"), no un resultado concreto.
+
 ## Arquitectura (hexagonal)
 
 ```

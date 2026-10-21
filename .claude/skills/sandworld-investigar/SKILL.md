@@ -10,7 +10,10 @@ cualquier mecánica nueva (depredación, enfermedades, sociedades…). La idea e
 y es divertido en otros juegos, no inventarlo desde cero.
 
 ## 1. Dónde mirar
-- **Colonias y gestión:** RimWorld, Dwarf Fortress, Oxygen Not Included, Banished, Going Medieval, Timberborn.
+- **Siempre, las dos referencias principales: Dwarf Fortress y RimWorld.** De ellas sale el tipo de detalle que
+  buscamos: historias que nacen solas, individuos con carácter propio dentro del grupo, consecuencias que duran.
+  Wiki de Dwarf Fortress, charlas y textos de Tarn Adams; textos y charlas de Tynan Sylvester (RimWorld).
+- **Otras colonias y gestión:** Oxygen Not Included, Banished, Going Medieval, Timberborn.
 - **Ecosistemas y vida salvaje:** Equilinox, Eco, Terra Nil, Planet Zoo, WorldBox, Ecosystem, The Sapling, Spore (fase de criatura).
 - **Criaturas con personalidad:** Creatures, Black & White, Niche, Ancestors.
 - **Comportamiento real:** la etología de la especie (cómo vive, come, se agrupa, se reproduce y huye),
@@ -19,6 +22,8 @@ y es divertido en otros juegos, no inventarlo desde cero.
 Busca en la web (wikis de los juegos, análisis, postmortems, foros de modding) y no te fíes solo de lo que recuerdas.
 
 ## 2. Qué sacar
+- Qué tiene de **azar** cada comportamiento (qué probabilidad, de qué depende) y qué variación hay entre individuos.
+- Cómo nace una historia de ese comportamiento (qué recuerda el jugador después).
 - Necesidades y cómo se cubren (y qué pasa cuando no).
 - Reacciones a amenazas, al clima y al jugador.
 - Vida social: grupos, jerarquía, crías, duelo, rivalidad.
@@ -30,13 +35,14 @@ Busca en la web (wikis de los juegos, análisis, postmortems, foros de modding) 
 - Si es natural para muchos animales, va al **comportamiento común**; la especie solo aporta parámetros
   (registro y temperamento). Nada de lógica escrita para una sola especie.
 - Ten en cuenta el coste en móvil: cuántos animales y cada cuánto se calcula.
+- **Nada al 100 %**: propón cada comportamiento con su probabilidad (y de qué depende), como dato de la especie.
 - Encaja con el riesgo doble del equilibrio (superpoblación → hambruna; grupos pequeños → vulnerables).
 
 ## 4. Cómo presentárselo a Gabriel
 Antes de programar nada, una lista breve:
 
-| Mecánica | Juego o fuente | Cómo quedaría en Sandworld | Común o de la especie | Coste |
-|---|---|---|---|---|
+| Mecánica | Juego o fuente | Cómo quedaría en Sandworld | Probabilidad propuesta | Común o de la especie | Coste |
+|---|---|---|---|---|---|
 
 Después, tu recomendación (qué meter ahora, qué dejar para más adelante) y las fuentes enlazadas.
 Gabriel elige; con eso se hace la lista de tareas.

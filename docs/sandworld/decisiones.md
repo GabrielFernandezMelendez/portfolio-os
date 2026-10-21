@@ -29,6 +29,10 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
 - **De lejos (zoom ×1 y ×1,5) cada manada es una moneda** con la cara de su especie y el número de animales,
   encima de todo; desde ×2 se ven los animales. Tocar la moneda abre la ficha de la guía. Cada especie nueva
   necesita su cara de moneda.
+- **Correr desde la vista de moneda hace correr a toda la manada.** Cada adulto sale con el grupo con un 75 % de
+  probabilidad (ciervo) y se separa con un 25 %; las crías van con su madre. El separado anda despistado: si se
+  cruza con los suyos los encuentra; si no, al caer la tarde los encuentra con un 60 % y, si no, pasa la noche
+  perdido (y entonces vuelve, se une a otra manada o se queda solo).
 - Los comportamientos naturales son comunes a todas las especies (espacio personal, reacciones, tiempo) y cada
   especie los ajusta con su registro y su temperamento.
 - Correr (orden) puede hacer que el animal pierda su manada; ese momento será una decisión del jugador (fase 5).
@@ -36,6 +40,8 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   un lobo "Conejito" por la comida favorita de su padre).
 
 ## Para la fase de pulido (no hacer antes)
+- **Carácter de cada individuo** (al estilo de Dwarf Fortress): rasgos que cambian sus probabilidades (miedoso,
+  curioso, solitario...), gustos y recuerdos que se vean en el diario.
 - Selfies pixel art graciosos de cada animal con complementos (parche, cigarro, monóculo, tupé…).
 - Afinar los nombres irónicos.
 - Feedback visual cuando la Marea o la Escarcha frenan la Tierra Quemada.

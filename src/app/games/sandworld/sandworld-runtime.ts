@@ -23,6 +23,7 @@ import { REBAKE_INTERVAL_MS } from './config/physics.config';
 import { POUR_EDGE_BAND, POUR_TAP_SECONDS } from './config/pour.config';
 import { ChunkCoord } from './domain/events/game-events';
 import { FaunaLayer, FaunaView, Ground } from './rendering/fauna/fauna-layer';
+import { FAUNA_LOD } from './config/fauna-art.config';
 
 /** Avisos del runtime hacia fuera (el componente los conecta con el servicio) */
 export interface RuntimeHooks {
@@ -36,6 +37,8 @@ export interface RuntimeHooks {
   pour?: PourHooks;
   /** Animales que dibujar (solo lectura) */
   fauna?(): FaunaView;
+  /** La cámara pasa a la vista de lejos (monedas de las manadas) o vuelve de ella */
+  farView?(far: boolean): void;
   /** Toque sobre un animal */
   animalTap?(id: number): void;
 }
@@ -88,6 +91,7 @@ export class SandworldRuntime {
   private readonly precipitation = new Precipitation();
   private readonly lightning = new Lightning();
   private readonly fauna = new FaunaLayer();
+  private farView = false;
   /** Punto de pantalla donde está el dedo que vierte, o null si no se está vertiendo */
   private brushPoint: { x: number; y: number } | null = null;
   private readonly terrains = new Map<string, TerrainLayer>();
@@ -311,6 +315,12 @@ export class SandworldRuntime {
     this.lightning.update(dt);
     const fauna = this.hooks.fauna?.();
     if (fauna) this.fauna.update(dt, fauna, this.groundAt, this.engine.isPaused, this.camera.scale);
+    // Vista de lejos (monedas): se avisa al cambiar (desde ahí las órdenes son para toda la manada)
+    const far = this.camera.scale < FAUNA_LOD.coinsBelow;
+    if (far !== this.farView) {
+      this.farView = far;
+      this.hooks.farView?.(far);
+    }
     this.plantClock += dt;
     if (this.plantClock >= PLANT_LOOK_MS) {
       this.plantClock = 0;

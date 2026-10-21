@@ -33,6 +33,11 @@ export interface SpeciesDef {
   readonly range: { readonly roam: number; readonly flee: number };
   /** Tras correr: minutos que se queda jadeando (quieto) y minutos sin poder dormirse (la adrenalina) */
   readonly afterRun: { readonly pant: number; readonly awake: number };
+  /**
+   * Correr con toda la manada (orden desde la vista de lejos): probabilidad de que cada adulto salga con el grupo
+   * (si no, se separa y sale por su cuenta) y de que uno separado encuentre a los suyos al caer la tarde.
+   */
+  readonly herdRun: { readonly together: number; readonly findBack: number };
   /** Horas antes de dormir en que la manada empieza a juntarse en su sitio de descanso (los lejanos salen antes) */
   readonly gatherHours: number;
 

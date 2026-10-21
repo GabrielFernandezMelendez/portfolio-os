@@ -23,6 +23,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     // Después de correr jadea 20 minutos y en 2 horas no pega ojo
     afterRun: { pant: 20, awake: 120 },
     gatherHours: 2,
+    // Si corre toda la manada: 3 de cada 4 salen juntos; el que se separa encuentra a los suyos 6 de cada 10 veces
+    herdRun: { together: 0.75, findBack: 0.6 },
     youngDays: 20, adultDays: 60, lifespanDays: [180, 300],
     breeding: {
       rutSeason: Season.AUTUMN, birthSeason: Season.SPRING,

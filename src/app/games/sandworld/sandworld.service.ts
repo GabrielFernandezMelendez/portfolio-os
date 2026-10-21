@@ -421,6 +421,7 @@ export class SandworldService implements OnDestroy {
         case 'poisoned': tell(n, 'poisoned', 6, { name: n.name, food: `@plant.${PLANT_DEFS[n.plant].key}` }); break;
         case 'lost': tell(n, `lost.${n.outcome}`, 5, { name: n.name }); break;
         case 'stampede': tell(n, 'stampede', 7); break;
+        case 'herdRun': tell(n, n.split ? 'herdRunSplit' : 'herdRun', 6, { count: n.split }); break;
         case 'discovered':
           // La crónica cuenta que una especie se come una planta: el jugador la conoce desde ahora
           this.world.discoveredPlants.add(n.plant);
@@ -430,9 +431,16 @@ export class SandworldService implements OnDestroy {
     }
   }
 
-  /** Orden del jugador a un animal desde su ficha (comer, dormir, correr). Devuelve si la acepta. */
+  /** ¿La cámara está lejos (monedas)? Desde ahí, Correr hace correr a toda la manada */
+  herdView = false;
+
+  /**
+   * Orden del jugador a un animal desde su ficha (comer, dormir, correr). Con la cámara lejos, Correr es para toda
+   * su manada. Devuelve si la acepta.
+   */
   orderAnimal(id: number, order: AnimalOrder): boolean {
-    const ok = this.fauna.order(id, order, this.engine.time.totalMinutes);
+    const now = this.engine.time.totalMinutes;
+    const ok = order === 'run' && this.herdView ? this.fauna.orderHerd(id, now) : this.fauna.order(id, order, now);
     this.refreshAnimal();
     return ok;
   }

@@ -111,6 +111,11 @@ export interface Animal {
    */
   path: number[] | null;
   stuckUntil: number;
+  /**
+   * Despistado tras separarse en una carrera de la manada: 0 = no; 1 = no sabe dónde están los suyos (al caer la
+   * tarde los buscará, con suerte); 2 = no los ha encontrado (si no se cruza con ellos, esta noche se pierde).
+   */
+  strayed: 0 | 1 | 2;
 
   action: AnimalAction;
   /** Minuto en que empezó la acción (para animarla) */

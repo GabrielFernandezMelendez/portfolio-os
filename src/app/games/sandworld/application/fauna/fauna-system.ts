@@ -45,7 +45,9 @@ export type FaunaNews =
    */
   | { readonly type: 'lost'; readonly species: number; readonly name: string; readonly outcome: 'back' | 'joined' | 'rejected' | 'alone'; readonly id: number }
   /** Una manada sale huyendo a la vez (un susto contagiado) */
-  | { readonly type: 'stampede'; readonly species: number };
+  | { readonly type: 'stampede'; readonly species: number }
+  /** El jugador ha hecho correr a toda una manada: cuántos se han separado del grupo */
+  | { readonly type: 'herdRun'; readonly species: number; readonly split: number };
 
 /** El tiempo que hace, tal como lo notan los animales (lo pone quien lleva el reloj y el tiempo atmosférico) */
 export interface FaunaConditions {
@@ -223,6 +225,47 @@ export class FaunaSystem {
     return true;
   }
 
+  /**
+   * Correr con toda la manada (orden desde la vista de lejos). Nada es seguro: cada adulto, con probabilidad
+   * `herdRun.together`, sale con el grupo hacia el mismo lado (cada uno con su pequeña desviación); si no, se separa
+   * y sale por su cuenta. Las crías van con su madre. Los separados se despistan: no vuelven solos con la manada y,
+   * al caer la tarde, puede que no la encuentren (`herdRun.findBack`). Devuelve false si nadie puede correr.
+   */
+  orderHerd(id: number, now: number): boolean {
+    const a = this.animals.find(x => x.id === id);
+    if (!a) return false;
+    const s = SPECIES_DEFS[a.species];
+    const members = this.members(a.herd);
+    const base = this.random.next() * Math.PI * 2;
+    const chosen = new Map<number, { angle: number; together: boolean }>();
+    let split = 0;
+    // Primero los adultos (cada uno decide), luego las crías (van con su madre)
+    for (const m of members) {
+      if (ageDays(m, now) < s.youngDays || m.rest < RUN_MIN) continue;
+      const together = this.random.next() < s.herdRun.together;
+      const side = this.random.next() < 0.5 ? 1 : -1;
+      const angle = together ? base + (this.random.next() - 0.5) * 0.5 : base + side * Math.PI * (0.35 + this.random.next() * 0.65);
+      chosen.set(m.id, { angle, together });
+      if (!together) split++;
+    }
+    for (const m of members) {
+      if (ageDays(m, now) >= s.youngDays || m.rest < RUN_MIN) continue;
+      chosen.set(m.id, chosen.get(m.mother ?? -1) ?? { angle: base, together: true });
+    }
+    if (!chosen.size) return false;
+    for (const m of members) {
+      const c = chosen.get(m.id);
+      if (!c) continue;
+      m.pantUntil = 0;
+      m.roam = null;
+      m.order = 'run';
+      m.strayed = c.together ? 0 : 1;
+      this.startRun(m, Math.cos(c.angle), Math.sin(c.angle), now);
+    }
+    this.news.push({ type: 'herdRun', species: a.species, split });
+    return true;
+  }
+
   // ── Paso del tiempo ──
 
   /** Un minuto de juego */
@@ -322,7 +365,7 @@ export class FaunaSystem {
     if (sleepy && (!c.storm || a.rest < COLLAPSE)) {
       // De noche se duerme con los suyos: si está lejos de su sitio, antes vuelve (salvo que no pueda más)
       const bed = herd?.bed;
-      if (night && bed && leader !== a && a.rest > COLLAPSE * 2 && now >= a.stuckUntil && Math.hypot(a.x - bed.x, a.y - bed.y) > s.herd.cohesion * 2) {
+      if (night && bed && leader !== a && !a.strayed && a.rest > COLLAPSE * 2 && now >= a.stuckUntil && Math.hypot(a.x - bed.x, a.y - bed.y) > s.herd.cohesion * 2) {
         return this.goToBed(a, s, bed, now);
       }
       // Antes de tumbarse, si el suelo está nevado o llueve, busca refugio bajo los árboles
@@ -378,7 +421,16 @@ export class FaunaSystem {
     const reach = mother ? s.herd.cohesion * 0.6 : spread;
     // Al caer la tarde vuelve con los suyos, al sitio donde dormirá la manada
     const bed = herd?.bed;
-    if (gather && !mother) {
+    // Despistado tras una carrera: si se cruza con los suyos, los ha encontrado; al caer la tarde los busca y
+    // los encuentra con algo de suerte; si no, anda por su cuenta (y esta noche se perderá)
+    if (a.strayed) {
+      if (anchor && dist(a, anchor) <= s.herd.cohesion * 3) this.foundHerd(a, now);
+      else if (a.strayed === 1 && gather) {
+        if (this.random.next() < s.herdRun.findBack) this.foundHerd(a, now);
+        else a.strayed = 2;
+      } else if (a.strayed === 2 && !gather) a.strayed = 1;
+    }
+    if (gather && !mother && !a.strayed) {
       if (a.roam) {
         a.roam = null;
         write(a, 'regroup', now);
@@ -389,7 +441,7 @@ export class FaunaSystem {
     // De excursión por su cuenta (hasta su alcance): se acaba al cumplir su tiempo o si toca apiñarse
     const range = this.roamRange(a, s, now, leader);
     if (a.roam && (now > a.roam.until || huddle || gather || !anchor || dist(a, anchor) > range * 1.15)) a.roam = null;
-    if (!a.roam && anchor && dist(a, anchor) > reach * 1.4) {
+    if (!a.roam && !a.strayed && anchor && dist(a, anchor) > reach * 1.4) {
       const [ox, oy] = this.offset(a.id, reach);
       return this.walkTo(a, anchor.x + ox, anchor.y + oy, now);
     }
@@ -404,7 +456,7 @@ export class FaunaSystem {
     if (members.length === 1 && this.random.next() < 0.1) this.tryJoin(a, s, now);
     // A veces se va por su cuenta a ver mundo (de día, tranquilo y sin tener que apiñarse); antes que picar algo
     // más aquí, que con hierba de sobra se pasaría el día comiendo en el mismo sitio
-    if (!a.roam && range > 0 && anchor && !huddle && !gather && this.random.next() < ROAM_CHANCE && this.startRoam(a, s, anchor, range, now, t.season)) return;
+    if (!a.roam && !a.strayed && range > 0 && anchor && !huddle && !gather && this.random.next() < ROAM_CHANCE && this.startRoam(a, s, anchor, range, now, t.season)) return;
     // De excursión: sigue hasta su sitio (si tiene hambre de verdad ya habrá parado a comer antes)
     if (a.roam && Math.hypot(a.x - a.roam.x, a.y - a.roam.y) > 2) {
       if (a.action !== 'walk' || Math.hypot(a.tx - a.roam.x, a.ty - a.roam.y) > 0.5) this.walkTo(a, a.roam.x, a.roam.y, now);
@@ -416,7 +468,7 @@ export class FaunaSystem {
     }
     if (this.random.next() < 0.3) {
       const [ox, oy] = this.offset(this.random.next() * 1000, spread);
-      const base = a.roam ?? anchor ?? a;
+      const base = a.roam ?? (a.strayed ? a : anchor) ?? a;
       if (!inZone(herd, base.x + ox, base.y + oy, now)) this.walkTo(a, base.x + ox, base.y + oy, now);
     } else if (a.action === 'walk' && reached(a)) this.setAction(a, 'idle', now);
   }
@@ -734,12 +786,18 @@ export class FaunaSystem {
   private endRun(a: Animal, s: SpeciesDef, now: number): void {
     this.setAction(a, 'idle', now);
     if (a.order === 'run') a.order = null;
-    write(a, a.fleeing ? 'fled' : 'ran', now);
+    write(a, a.fleeing ? 'fled' : a.strayed ? 'split' : 'ran', now, undefined, a.strayed === 1);
     if (a.fleeing) this.face(a, a.fearX - a.x, a.fearY - a.y);
     a.fleeing = false;
     a.roam = null;
     a.pantUntil = now + s.afterRun.pant;
     a.awakeUntil = now + s.afterRun.awake;
+  }
+
+  /** Despistado, ha vuelto a dar con los suyos */
+  private foundHerd(a: Animal, now: number): void {
+    a.strayed = 0;
+    write(a, 'foundHerd', now, undefined, true);
   }
 
   /**
@@ -748,6 +806,7 @@ export class FaunaSystem {
    */
   private lostAtNight(a: Animal, s: SpeciesDef, now: number): void {
     let outcome: 'back' | 'joined' | 'rejected' | 'alone';
+    a.strayed = 0;
     if (this.random.next() < RETURN_CHANCE) {
       outcome = 'back';
       write(a, 'nightAlone', now, undefined, true);
@@ -936,7 +995,7 @@ export class FaunaSystem {
       id: this.nextId++, species: s.id, sex, name, bornAt, lifespan: lo + this.random.next() * (hi - lo), favourite,
       mother: mother?.id ?? null, x, y, tx: x, ty: y, facing: this.random.next() < 0.5 ? 1 : -1, back: false, herd,
       health: 1, rest: 0.8, satiety: 0.8, hydration: 0.8, happiness: 0.6, factors: [], action: 'idle', actionSince: now, order: null,
-      fear: 0, fearX: x, fearY: y, curious: null, fleeing: false, signal: null, pantUntil: 0, awakeUntil: 0, roam: null, path: null, stuckUntil: 0,
+      fear: 0, fearX: x, fearY: y, curious: null, fleeing: false, signal: null, pantUntil: 0, awakeUntil: 0, roam: null, path: null, stuckUntil: 0, strayed: 0,
       runDx: 0, runDy: 0, runX: x, runY: y, dueAt: null, litter: 0, lastRutYear: -1, seeds: [], diary: [], diaryDay: -1,
       diaryToday: 0, diedAt: null, cause: null,
     };

@@ -157,7 +157,9 @@
           "alone": "{name} se ha perdido y ahora va solo."
         },
         "discovered": "Los ciervos comen {food}.",
-        "stampede": "¡Estampida! Algo ha espantado a una manada de ciervos."
+        "stampede": "¡Estampida! Algo ha espantado a una manada de ciervos.",
+        "herdRun": "La manada de ciervos sale corriendo en grupo.",
+        "herdRunSplit": "La manada de ciervos sale corriendo; {count} se separan del grupo."
       }
     }
   },
@@ -302,6 +304,8 @@
         "confused": "Me he comido {food}. Veo colores."
       },
       "ran": "He corrido hasta no sentir las patas.",
+      "split": "En plena carrera me he separado de los míos. ¿Dónde se han metido?",
+      "foundHerd": "¡Los he encontrado! Hago como que no me había perdido.",
       "explore": "Me voy a dar una vuelta. Si alguien pregunta, he salido a por tabaco.",
       "regroup": "Se hace tarde. Vuelvo con los míos, que de noche todo da más miedo.",
       "fled": "He corrido sin mirar atrás. Bueno, ahora sí miro. Uf.",

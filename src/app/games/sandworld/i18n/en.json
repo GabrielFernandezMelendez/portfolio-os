@@ -157,7 +157,9 @@
           "alone": "{name} got lost and is now on their own."
         },
         "discovered": "The deer eat {food}.",
-        "stampede": "Stampede! Something spooked a herd of deer."
+        "stampede": "Stampede! Something spooked a herd of deer.",
+        "herdRun": "The deer herd runs off together.",
+        "herdRunSplit": "The deer herd runs off; {count} break away from the group."
       }
     }
   },
@@ -302,6 +304,8 @@
         "confused": "I ate {food}. I can see colours."
       },
       "ran": "I ran until I couldn't feel my legs.",
+      "split": "I got separated from my herd mid-run. Where did they go?",
+      "foundHerd": "Found them! I'm acting like I was never lost.",
       "explore": "Off for a wander. If anyone asks, I went out for cigarettes.",
       "regroup": "It's getting late. Back to my lot; everything is scarier at night.",
       "fled": "I ran without looking back. Fine, now I'm looking. Phew.",

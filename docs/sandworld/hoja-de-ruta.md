@@ -18,6 +18,7 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 | 4D2 | Correr deja jadeando (no dormido), huidas de hasta 1 isla, exploración en solitario (hasta 1,5 islas) y reagrupación nocturna, rutas que rodean lagos, signos "!" y "?", estado "Asustado" |
 
 | 4D3 | Vista de lejos: una moneda por manada (cara de la especie y cuántos son) a zoom ×1 y ×1,5; tocarla abre la ficha de la guía |
+| 4D4 | Correr desde la vista de moneda: corre toda la manada; 75 % juntos y 25 % se separan, que luego quizá encuentran a los suyos |
 
 ## Ahora
 
