@@ -1,4 +1,4 @@
-import { Animal, AnimalOrder, DeathCause, Herd, Sex } from '../../domain/models/animal.model';
+import { Animal, AnimalOrder, AnimalSignal, DeathCause, Herd, Sex } from '../../domain/models/animal.model';
 import { SpeciesDef } from '../../domain/models/species.model';
 import { GameTime, SeasonId, CALENDAR } from '../../domain/models/time.model';
 import { FaunaWorld } from '../../domain/ports/fauna-world.port';
@@ -7,10 +7,11 @@ import { WORLD } from '../../domain/models/world.model';
 import { PLANT_DEFS } from '../../config/plants.config';
 import { SPECIES_BY_KEY, SPECIES_DEFS } from '../../config/species.config';
 import {
-  CAPACITY_DAYS, CORPSE_FERTILITY, CROWDED, DRINK_RANGE, EAT_BELOW, FIRE_HEALTH_PER_MINUTE,
-  FOOD_HERE, FORAGE_RADIUS, FORAGE_SAMPLES, FULL, JOIN_RANGE, LOST_DISTANCE, MAX_STEP, REJECT_HEALTH, RETURN_CHANCE,
-  RUN_MIN, RUN_STOP, RUN_TIRE_PER_MINUTE, SEED_GUT_HOURS, SLEEP_BELOW, SOIL_DAMAGE, SOIL_DAMAGE_FROM, THINK_MINUTES,
-  THIRST_BELOW, TOXIC_HEALTH, TRAMPLE, WELCOME_CHANCE,
+  CAPACITY_DAYS, COLLAPSE, CORPSE_FERTILITY, CROWDED, DRINK_RANGE, EAT_BELOW, FIRE_HEALTH_PER_MINUTE,
+  FOOD_HERE, FORAGE_RADIUS, FORAGE_SAMPLES, FULL, GATHER_MARGIN, JOIN_RANGE, LOST_NIGHT, MAX_STEP, PATH_FROM, PATH_NODES,
+  REJECT_HEALTH, RETURN_CHANCE, ROAM_CHANCE, ROAM_HOURS, RUN_MIN, RUN_STOP, RUN_TIRE_PER_MINUTE, SEED_GUT_HOURS,
+  SLEEP_BELOW, SOIL_DAMAGE, SOIL_DAMAGE_FROM, STUCK_MINUTES, THINK_MINUTES, THIRST_BELOW, TOXIC_HEALTH, TRAMPLE,
+  WELCOME_CHANCE,
 } from '../../config/fauna.config';
 import { NeedMods, ageDays, appetite, lifeStage, passTime, updateHappiness } from './needs';
 import { Stimulus } from '../../domain/models/stimulus.model';
@@ -21,9 +22,12 @@ import { addZone, fearOf, habitLevel, habituate, inZone } from './reactions';
 import { centre, leaderOf, splitOff } from './herds';
 import { tryConceive } from './breeding';
 import { nameFor, write } from './diary';
+import { findPath } from './pathfinding';
 
 const DAY = CALENDAR.MINUTES_PER_DAY;
 const G = WORLD.CELLS_PER_TILE;
+/** Celdas por lado de una isla: las distancias de cada especie se dan en islas */
+const ISLAND = WORLD.CELLS;
 
 /** Lo que pasa en la fauna y se cuenta en la crónica (se vacía al leerlo) */
 export type FaunaNews =
@@ -36,8 +40,8 @@ export type FaunaNews =
   /** Una especie come por primera vez una planta (el jugador la descubre) */
   | { readonly type: 'discovered'; readonly species: number; readonly plant: number }
   /**
-   * Un animal se ha alejado corriendo de su manada: vuelve, se une a otra (bien o mal) o se queda solo.
-   * Es el momento en que, más adelante, podrá saltar una decisión del jugador.
+   * Un animal no ha vuelto a dormir con su manada: volverá por la mañana, se une a otra (bien o mal) o se queda
+   * solo. Es el momento en que, más adelante, podrá saltar una decisión del jugador.
    */
   | { readonly type: 'lost'; readonly species: number; readonly name: string; readonly outcome: 'back' | 'joined' | 'rejected' | 'alone'; readonly id: number }
   /** Una manada sale huyendo a la vez (un susto contagiado) */
@@ -140,14 +144,10 @@ export class FaunaSystem {
       const fear = fearOf(def, d, stim.strength, harmed ? 0 : habitLevel(herd, stim.type, now));
       if (herd) touched.set(herd, (touched.get(herd) ?? false) || harmed);
       if (fear <= 0.02 && !harmed) continue;
-      if (fear > a.fear) {
-        a.fear = fear;
-        a.fearX = stim.gx;
-        a.fearY = stim.gy;
-      }
+      this.frighten(a, fear, stim.gx, stim.gy, now);
       const used = habitLevel(herd, stim.type, now) > 0.5;
       write(a, used ? 'used' : `scare.${stim.type}`, now);
-      if (def.reaction === 'curious') a.curious = { x: stim.gx, y: stim.gy, until: now + 6 * 60, key: stim.type };
+      if (def.reaction === 'curious') a.curious = { x: stim.gx, y: stim.gy, until: now + 6 * 60, key: stim.type, seen: false };
       if (def.avoidHours && herd) addZone(herd, stim.gx, stim.gy, Math.max(2, def.radius * 0.5), now + def.avoidHours * 60);
     }
     for (const [herd, harmed] of touched) habituate(herd, stim.type, now, harmed);
@@ -214,6 +214,7 @@ export class FaunaSystem {
     if (order === 'run') {
       if (a.rest < RUN_MIN) return false;
       const angle = this.random.next() * Math.PI * 2;
+      a.pantUntil = 0;
       this.startRun(a, Math.cos(angle), Math.sin(angle), now);
     }
     a.order = order;
@@ -246,9 +247,7 @@ export class FaunaSystem {
     const danger = this.world.danger(Math.floor(a.x), Math.floor(a.y));
     if (danger.level > 0 && danger.level >= a.fear) {
       if (a.fear < FLEE_FEAR) write(a, 'scare.fire', now);
-      a.fear = Math.max(a.fear, danger.level);
-      a.fearX = danger.fromX;
-      a.fearY = danger.fromY;
+      this.frighten(a, danger.level, danger.fromX, danger.fromY, now, true);
     }
     const members = this.members(a.herd);
     // La alarma se contagia: si un vecino de su manada huye, le entra el miedo y huye hacia el mismo lado
@@ -257,13 +256,12 @@ export class FaunaSystem {
         if (m === a || !m.fleeing || dist(m, a) > ALARM_RANGE) continue;
         // Si uno sale corriendo, salen todos (los ya asustados, con más motivo)
         // (solo si el que huye va de verdad asustado: así la ola no rebota sin fin entre ellos)
-        a.fear = Math.max(a.fear, m.fear * ALARM_SHARE, m.fear >= FLEE_FEAR + 0.1 ? FLEE_FEAR : 0);
-        a.fearX = m.fearX;
-        a.fearY = m.fearY;
+        this.frighten(a, Math.max(m.fear * ALARM_SHARE, m.fear >= FLEE_FEAR + 0.1 ? FLEE_FEAR : 0), m.fearX, m.fearY, now, true);
       }
     }
-    // Mucho miedo: huye corriendo, lejos de lo que le asusta, hasta relajarse
-    if (a.fear >= FLEE_FEAR && a.rest > RUN_STOP) {
+    // Mucho miedo: huye corriendo, lejos de lo que le asusta, hasta ponerse a salvo (si ya lo está, solo vigila)
+    const safe = Math.hypot(a.x - a.fearX, a.y - a.fearY) >= s.range.flee * ISLAND;
+    if (a.fear >= FLEE_FEAR && a.rest > RUN_STOP && !safe) {
       a.fleeing = true;
       a.order = null;
       const away = Math.hypot(a.x - a.fearX, a.y - a.fearY) > 0.1 ? [a.x - a.fearX, a.y - a.fearY] : [this.random.next() - 0.5, this.random.next() - 0.5];
@@ -278,6 +276,11 @@ export class FaunaSystem {
     if (a.fear >= STARTLE_FEAR) {
       if (a.action !== 'idle') this.setAction(a, 'idle', now);
       this.face(a, a.fearX - a.x, a.fearY - a.y);
+      return;
+    }
+    // Recién parado de correr: jadea un rato, quieto (nada de tumbarse ni de echar a andar)
+    if (now < a.pantUntil) {
+      if (a.action !== 'idle') this.setAction(a, 'idle', now);
       return;
     }
     // Órdenes del jugador
@@ -305,15 +308,28 @@ export class FaunaSystem {
       if (a.rest > 0.5 && (!night || a.satiety < 0.3 || a.hydration < 0.2) && !siesta) this.setAction(a, 'idle', now);
       else return;
     }
-    const sleepy = a.rest < SLEEP_BELOW || (night && a.rest < 0.9);
-    if (sleepy && (!c.storm || a.rest < 0.05)) {
+    const herd = this.herds.get(a.herd);
+    const leader = leaderOf(members, s, now);
+    const gather = this.gatherTime(a, s, t, leader);
+    // La guía elige al caer la tarde dónde dormirá la manada (bajo los árboles si los hay); de día no hay sitio
+    if (herd && leader === a) {
+      if (!gather) herd.bed = null;
+      else if (!herd.bed) herd.bed = this.world.shelterNear(Math.floor(a.x), Math.floor(a.y), 14) ?? { x: a.x, y: a.y };
+    }
+    // Con la adrenalina de una carrera no hay quien duerma (salvo que se caiga de agotamiento)
+    const wired = now < a.awakeUntil && a.rest > COLLAPSE;
+    const sleepy = (a.rest < SLEEP_BELOW || (night && a.rest < 0.9)) && !wired;
+    if (sleepy && (!c.storm || a.rest < COLLAPSE)) {
+      // De noche se duerme con los suyos: si está lejos de su sitio, antes vuelve (salvo que no pueda más)
+      const bed = herd?.bed;
+      if (night && bed && leader !== a && a.rest > COLLAPSE * 2 && now >= a.stuckUntil && Math.hypot(a.x - bed.x, a.y - bed.y) > s.herd.cohesion * 2) {
+        return this.goToBed(a, s, bed, now);
+      }
       // Antes de tumbarse, si el suelo está nevado o llueve, busca refugio bajo los árboles
       if ((this.world.snowAt(Math.floor(a.x), Math.floor(a.y)) || c.rain > 0.3) && a.rest > SLEEP_BELOW && this.toShelter(a, s, now, 8)) return;
       return this.setAction(a, 'sleep', now);
     }
 
-    const herd = this.herds.get(a.herd);
-    const leader = leaderOf(members, s, now);
     if (herd && leader === a) this.lead(a, herd, s, now, t.season);
 
     // Sed: bebe hasta llenarse; si tiene sed va al agua (antes que a comer, salvo que el hambre apriete más)
@@ -322,10 +338,11 @@ export class FaunaSystem {
       this.setAction(a, 'idle', now);
     }
     if (a.hydration < THIRST_BELOW && a.satiety >= a.hydration * 0.6) return this.goDrink(a, s, now);
-    if (a.action === 'eat' && a.satiety < FULL) return;
+    if (a.action === 'eat' && a.satiety < FULL && !gather) return;
     // Comen sobre todo al amanecer y al atardecer; con calor, a mediodía apenas
     const eatBelow = inAnyHours(s.activeHours, t.hour) ? 0.85 : siesta ? 0.4 : EAT_BELOW;
-    if (a.satiety < eatBelow) return this.goEat(a, s, now, t.season, false);
+    // De excursión come por allí (no vuelve con la manada a comer)
+    if (a.satiety < eatBelow && !(gather && a.satiety > 0.3)) return this.goEat(a, s, now, t.season, !!a.roam);
     // Siesta a la sombra con calor; refugio bajo los árboles con lluvia o tormenta
     if (siesta) {
       if (this.toShelter(a, s, now, 10)) return;
@@ -340,18 +357,39 @@ export class FaunaSystem {
     if (a.curious) {
       if (now > a.curious.until) a.curious = null;
       else if (a.fear < CURIOUS_BELOW) {
-        if (Math.hypot(a.x - a.curious.x, a.y - a.curious.y) > 2) return this.walkTo(a, a.curious.x, a.curious.y, now);
+        if (Math.hypot(a.x - a.curious.x, a.y - a.curious.y) > 2) {
+          // Le sale el '?' al echar a andar hacia lo que le llamó la atención
+          if (!a.curious.seen) {
+            a.curious.seen = true;
+            this.signal(a, 'curious', now);
+          }
+          return this.walkTo(a, a.curious.x, a.curious.y, now);
+        }
         write(a, `curious.${a.curious.key}`, now);
         a.curious = null;
       }
     }
 
     // Las crías siguen a su madre; los demás, a la manada (abierta al pastar, apiñada con miedo, sueño, frío o tormenta)
-    const spread = s.herd.cohesion * (this.huddling(a, s, t) ? s.spacing.huddle : s.spacing.graze);
+    const huddle = this.huddling(a, s, t);
+    const spread = s.herd.cohesion * (huddle ? s.spacing.huddle : s.spacing.graze);
     const mother = a.mother !== null && ageDays(a, now) < s.youngDays ? this.animals.find(m => m.id === a.mother) : undefined;
     const anchor = mother ?? (leader && leader !== a ? leader : null);
     const reach = mother ? s.herd.cohesion * 0.6 : spread;
-    if (anchor && dist(a, anchor) > reach * 1.4) {
+    // Al caer la tarde vuelve con los suyos, al sitio donde dormirá la manada
+    const bed = herd?.bed;
+    if (gather && !mother) {
+      if (a.roam) {
+        a.roam = null;
+        write(a, 'regroup', now);
+      }
+      const home = bed ?? (leader !== a ? anchor : null);
+      if (home && now >= a.stuckUntil && Math.hypot(a.x - home.x, a.y - home.y) > reach * 1.4) return this.goToBed(a, s, home, now);
+    }
+    // De excursión por su cuenta (hasta su alcance): se acaba al cumplir su tiempo o si toca apiñarse
+    const range = this.roamRange(a, s, now, leader);
+    if (a.roam && (now > a.roam.until || huddle || gather || !anchor || dist(a, anchor) > range * 1.15)) a.roam = null;
+    if (!a.roam && anchor && dist(a, anchor) > reach * 1.4) {
       const [ox, oy] = this.offset(a.id, reach);
       return this.walkTo(a, anchor.x + ox, anchor.y + oy, now);
     }
@@ -364,15 +402,88 @@ export class FaunaSystem {
     }
     // Solo: busca otra manada a la vista
     if (members.length === 1 && this.random.next() < 0.1) this.tryJoin(a, s, now);
+    // A veces se va por su cuenta a ver mundo (de día, tranquilo y sin tener que apiñarse); antes que picar algo
+    // más aquí, que con hierba de sobra se pasaría el día comiendo en el mismo sitio
+    if (!a.roam && range > 0 && anchor && !huddle && !gather && this.random.next() < ROAM_CHANCE && this.startRoam(a, s, anchor, range, now, t.season)) return;
+    // De excursión: sigue hasta su sitio (si tiene hambre de verdad ya habrá parado a comer antes)
+    if (a.roam && Math.hypot(a.x - a.roam.x, a.y - a.roam.y) > 2) {
+      if (a.action !== 'walk' || Math.hypot(a.tx - a.roam.x, a.ty - a.roam.y) > 0.5) this.walkTo(a, a.roam.x, a.roam.y, now);
+      return;
+    }
     // Tranquilo: come si le apetece y hay comida, o da un paseíto
     if (a.satiety < FULL && this.world.foodAt(Math.floor(a.x), Math.floor(a.y), s.diets, this.avoid(a), now, t.season) > FOOD_HERE) {
       return this.setAction(a, 'eat', now);
     }
     if (this.random.next() < 0.3) {
       const [ox, oy] = this.offset(this.random.next() * 1000, spread);
-      const base = anchor ?? a;
+      const base = a.roam ?? anchor ?? a;
       if (!inZone(herd, base.x + ox, base.y + oy, now)) this.walkTo(a, base.x + ox, base.y + oy, now);
     } else if (a.action === 'walk' && reached(a)) this.setAction(a, 'idle', now);
+  }
+
+  /** Celdas que puede alejarse de su manada explorando: las crías y la guía, nada; una madre con cría, la mitad */
+  private roamRange(a: Animal, s: SpeciesDef, now: number, leader: Animal | null): number {
+    if (leader === a || ageDays(a, now) < s.youngDays) return 0;
+    const calf = this.animals.some(k => k.mother === a.id && ageDays(k, now) < s.youngDays);
+    return s.range.roam * ISLAND * (calf ? 0.5 : 1);
+  }
+
+  /** Se va de excursión: a un sitio con buena comida a su alcance (lejos o cerca, según caiga) */
+  private startRoam(a: Animal, s: SpeciesDef, home: Animal, range: number, now: number, season: SeasonId): boolean {
+    const herd = this.herds.get(a.herd);
+    let best: { x: number; y: number } | null = null, bestFood = FOOD_HERE;
+    for (let n = 0; n < FORAGE_SAMPLES; n++) {
+      const angle = this.random.next() * Math.PI * 2, r = range * (0.25 + 0.75 * this.random.next());
+      const x = Math.floor(home.x + Math.cos(angle) * r), y = Math.floor(home.y + Math.sin(angle) * r);
+      if (!this.world.walkable(x, y) || inZone(herd, x + 0.5, y + 0.5, now)) continue;
+      const food = this.world.foodAt(x, y, s.diets, this.avoid(a), now, season);
+      if (food > bestFood) {
+        bestFood = food;
+        best = { x: x + 0.5, y: y + 0.5 };
+      }
+    }
+    if (!best) return false;
+    const [lo, hi] = ROAM_HOURS;
+    a.roam = { ...best, until: now + (lo + this.random.next() * (hi - lo)) * 60 };
+    write(a, 'explore', now);
+    this.walkTo(a, best.x, best.y, now);
+    return true;
+  }
+
+  /**
+   * ¿Toca juntarse para dormir? De noche, en las horas de antes (gatherHours) o, si está lejos, cuando ya no le
+   * queda más tiempo que el que tarda en volver andando.
+   */
+  private gatherTime(a: Animal, s: SpeciesDef, t: GameTime, leader: Animal | null): boolean {
+    if (sleepTime(s, t.hour)) return true;
+    const left = (s.sleepHours[0] * 60 - t.minuteOfDay + DAY) % DAY;
+    const home = leader && leader !== a ? Math.hypot(a.x - leader.x, a.y - leader.y) : 0;
+    return left <= Math.max(s.gatherHours * 60, (home / s.speed.walk) * 1.3 + GATHER_MARGIN);
+  }
+
+  /** Va (andando) a su sitio de dormir, a su hueco junto a los demás */
+  private goToBed(a: Animal, s: SpeciesDef, bed: { x: number; y: number }, now: number): void {
+    const [ox, oy] = this.offset(a.id, s.herd.cohesion * s.spacing.huddle);
+    const x = bed.x + ox, y = bed.y + oy;
+    if (a.action === 'walk' && Math.hypot(a.tx - x, a.ty - y) < 0.5) return;
+    this.walkTo(a, x, y, now);
+  }
+
+  /**
+   * Le entra miedo (si es más del que ya tenía) desde (x, y). Al cruzar el umbral del susto le sale el '!'.
+   * `quiet`: sin '!' si ya estaba asustado (el contagio y el fuego se repiten cada vez que piensa).
+   */
+  private frighten(a: Animal, fear: number, x: number, y: number, now: number, quiet = false): void {
+    if (fear <= a.fear) return;
+    const before = a.fear;
+    a.fear = fear;
+    a.fearX = x;
+    a.fearY = y;
+    if (fear >= STARTLE_FEAR && (before < STARTLE_FEAR || !quiet)) this.signal(a, 'alarm', now);
+  }
+
+  private signal(a: Animal, kind: AnimalSignal, now: number): void {
+    a.signal = { kind, at: now };
   }
 
   /** Ir a beber: a la orilla del agua más cercana (a un paso del agua); si no hay a la vista, vaga buscándola */
@@ -456,7 +567,7 @@ export class FaunaSystem {
         if (a.hydration >= 1) this.setAction(a, 'idle', now);
         break;
       case 'walk':
-        if (!this.step(a, s.speed.walk)) this.setAction(a, 'idle', now);
+        if (!this.step(a, s.speed.walk, now)) this.setAction(a, 'idle', now);
         break;
       case 'run': this.runStep(a, s, now); break;
     }
@@ -514,11 +625,34 @@ export class FaunaSystem {
     if (a.health <= 0) this.die(a, 'poison', now);
   }
 
-  /** Avanza hacia su destino. Devuelve false si ya ha llegado o no puede seguir. */
-  private step(a: Animal, speed: number): boolean {
-    const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy);
-    if (d < 0.05) return false;
-    const k = Math.min(1, speed / d);
+  /**
+   * Avanza hacia su destino (o hacia el siguiente punto de su ruta). Devuelve false si ya ha llegado o no puede
+   * seguir. Anda en línea recta; si algo le corta el paso y el destino está lejos, busca un camino (una vez por
+   * destino: si no lo hay, rodea como pueda y no lo vuelve a buscar en un rato). Lo pequeño lo rodea girando.
+   */
+  private step(a: Animal, speed: number, now: number): boolean {
+    let onPath = !!a.path?.length;
+    let gx = onPath ? a.path![0] : a.tx, gy = onPath ? a.path![1] : a.ty;
+    let dx = gx - a.x, dy = gy - a.y, d = Math.hypot(dx, dy);
+    if (d < 0.05) {
+      if (!onPath) return false;
+      a.path!.splice(0, 2);
+      return true;
+    }
+    let k = Math.min(1, speed / d);
+    // Bloqueado de frente con el destino lejos: busca un camino
+    if (!onPath && a.path === null && now >= a.stuckUntil && Math.hypot(a.tx - a.x, a.ty - a.y) > PATH_FROM &&
+        !this.canStep(a.x, a.y, a.x + dx * k, a.y + dy * k)) {
+      a.path = findPath(Math.floor(a.x), Math.floor(a.y), Math.floor(a.tx), Math.floor(a.ty), this.heightAt, MAX_STEP, PATH_NODES) ?? [];
+      if (!a.path.length) a.stuckUntil = now + STUCK_MINUTES;
+      else {
+        onPath = true;
+        [gx, gy] = [a.path[0], a.path[1]];
+        [dx, dy] = [gx - a.x, gy - a.y];
+        d = Math.hypot(dx, dy);
+        k = Math.min(1, speed / Math.max(d, 1e-6));
+      }
+    }
     // Si algo le corta el paso (agua, una terraza alta), lo rodea probando a girar cada vez más
     for (const turn of DETOURS) {
       const c = Math.cos(turn), sn = Math.sin(turn);
@@ -527,28 +661,44 @@ export class FaunaSystem {
       this.face(a, sx, sy);
       a.x += sx;
       a.y += sy;
-      return d > speed;
+      if (!onPath) return d > speed;
+      if (d <= speed) a.path!.splice(0, 2);
+      return true;
     }
+    // Ni rodeando: se da por vencido (y la ruta, si la había, ya no vale)
+    if (onPath) a.path = [];
     return false;
   }
 
   private runStep(a: Animal, s: SpeciesDef, now: number): void {
     a.rest = Math.max(0, a.rest - RUN_TIRE_PER_MINUTE);
-    let nx = a.x + a.runDx * s.speed.run, ny = a.y + a.runDy * s.speed.run;
-    if (!this.canStep(a.x, a.y, nx, ny)) {
-      // Choca con algo: gira hacia un lado al azar
-      const turn = (this.random.next() < 0.5 ? 1 : -1) * (Math.PI / 2 + this.random.next() * 0.6);
+    // Hacia dónde le conviene ir: huyendo, lejos del peligro; corriendo por orden, hacia donde iba
+    const fx = a.x - a.fearX, fy = a.y - a.fearY, fd = Math.hypot(fx, fy);
+    const [wx, wy] = a.fleeing && fd > 0.1 ? [fx / fd, fy / fd] : [a.runDx, a.runDy];
+    let moved = false;
+    for (const turn of a.fleeing || !this.canStep(a.x, a.y, a.x + a.runDx * s.speed.run, a.y + a.runDy * s.speed.run) ? RUN_TURNS : [0]) {
+      // Choca con algo: gira hacia el lado que más le aleje del peligro (el menor giro, si da igual)
       const c = Math.cos(turn), sn = Math.sin(turn);
-      [a.runDx, a.runDy] = [a.runDx * c - a.runDy * sn, a.runDx * sn + a.runDy * c];
-      nx = a.x;
-      ny = a.y;
+      const dx = a.runDx * c - a.runDy * sn, dy = a.runDx * sn + a.runDy * c;
+      if (turn !== 0 && dx * wx + dy * wy < -0.2) continue;   // nunca de vuelta hacia el peligro
+      if (!this.canStep(a.x, a.y, a.x + dx * s.speed.run, a.y + dy * s.speed.run)) continue;
+      a.runDx = dx;
+      a.runDy = dy;
+      a.x += dx * s.speed.run;
+      a.y += dy * s.speed.run;
+      moved = true;
+      break;
     }
     this.face(a, a.runDx, a.runDy);
-    a.x = nx;
-    a.y = ny;
-    // Por orden, corre hasta cansarse; huyendo, hasta relajarse (o hasta no poder más)
-    if (a.rest < RUN_STOP || (a.fleeing && a.fear < RELAXED)) this.endRun(a, s, now);
+    // Para al ponerse a salvo (a la distancia de huida de su especie; antes si ya se le pasó el susto y ha
+    // puesto media distancia de por medio), al haber corrido esa distancia por orden, al agotarse o si no puede seguir
+    const far = s.range.flee * ISLAND;
+    const away = a.fleeing ? fd : Math.hypot(a.x - a.runX, a.y - a.runY);
+    if (!moved || a.rest < RUN_STOP || away >= far || (a.fleeing && a.fear < RELAXED && away >= far * 0.5)) this.endRun(a, s, now);
   }
+
+  /** Altura de una celda para las rutas (NaN si no se pisa) */
+  private readonly heightAt = (x: number, y: number): number => (this.world.walkable(x, y) ? this.world.height(x, y) : NaN);
 
   private canStep(x: number, y: number, nx: number, ny: number): boolean {
     const cx = Math.floor(nx), cy = Math.floor(ny);
@@ -568,26 +718,39 @@ export class FaunaSystem {
     const d = Math.hypot(dx, dy) || 1;
     a.runDx = dx / d;
     a.runDy = dy / d;
+    if (a.action !== 'run') {
+      a.runX = a.x;
+      a.runY = a.y;
+    }
+    a.path = null;
     this.setAction(a, 'run', now);
   }
 
   /**
-   * Para de correr. Si se ha alejado mucho de su manada se ha perdido: puede volver, unirse a otra manada
-   * (que lo acoge o lo echa) o quedarse solo.
+   * Para de correr: se queda jadeando un rato y, con la adrenalina, tarda en poder dormirse. Si huía, se vuelve
+   * a mirar atrás (si el peligro sigue ahí, volverá a salir corriendo). Lejos de los suyos no pasa nada aún:
+   * tiene hasta la noche para volver (si no, se ha perdido).
    */
   private endRun(a: Animal, s: SpeciesDef, now: number): void {
     this.setAction(a, 'idle', now);
     if (a.order === 'run') a.order = null;
-    if (!a.fleeing) write(a, 'ran', now);
+    write(a, a.fleeing ? 'fled' : 'ran', now);
+    if (a.fleeing) this.face(a, a.fearX - a.x, a.fearY - a.y);
     a.fleeing = false;
-    const others = this.members(a.herd).filter(m => m !== a);
-    const c = centre(others);
-    if (!c || Math.hypot(c.x - a.x, c.y - a.y) <= LOST_DISTANCE) return;
+    a.roam = null;
+    a.pantUntil = now + s.afterRun.pant;
+    a.awakeUntil = now + s.afterRun.awake;
+  }
+
+  /**
+   * Pasada la medianoche sigue lejos del sitio de dormir de su manada: se ha perdido. Volverá con los suyos por
+   * la mañana, se une a otra manada (que lo acoge o lo echa) o se queda solo.
+   */
+  private lostAtNight(a: Animal, s: SpeciesDef, now: number): void {
     let outcome: 'back' | 'joined' | 'rejected' | 'alone';
     if (this.random.next() < RETURN_CHANCE) {
       outcome = 'back';
-      write(a, 'lostBack', now, undefined, true);
-      this.walkTo(a, c.x, c.y, now);
+      write(a, 'nightAlone', now, undefined, true);
     } else {
       const joined = this.tryJoin(a, s, now);
       outcome = joined === null ? 'alone' : joined ? 'joined' : 'rejected';
@@ -676,6 +839,17 @@ export class FaunaSystem {
       this.world.fertilize(Math.floor(c.x), Math.floor(c.y), CORPSE_FERTILITY);
       this.corpses.splice(n, 1);
     }
+    // Quien no ha vuelto a dormir con los suyos, se ha perdido
+    for (const h of [...this.herds.values()]) {
+      const s = SPECIES_DEFS[h.species];
+      if (!h.bed || t.hour !== (s.sleepHours[0] + 2) % 24) continue;
+      const members = this.members(h.id);
+      if (members.length < 2) continue;
+      for (const a of members) {
+        if (ageDays(a, now) < s.youngDays) continue;
+        if (Math.hypot(a.x - h.bed.x, a.y - h.bed.y) > s.herd.cohesion * LOST_NIGHT) this.lostAtNight(a, s, now);
+      }
+    }
     if (t.hour === 12) this.daily(t);
     // Manadas demasiado grandes se dividen
     for (const h of [...this.herds.values()]) {
@@ -762,7 +936,8 @@ export class FaunaSystem {
       id: this.nextId++, species: s.id, sex, name, bornAt, lifespan: lo + this.random.next() * (hi - lo), favourite,
       mother: mother?.id ?? null, x, y, tx: x, ty: y, facing: this.random.next() < 0.5 ? 1 : -1, back: false, herd,
       health: 1, rest: 0.8, satiety: 0.8, hydration: 0.8, happiness: 0.6, factors: [], action: 'idle', actionSince: now, order: null,
-      fear: 0, fearX: x, fearY: y, curious: null, fleeing: false, runDx: 0, runDy: 0, dueAt: null, litter: 0, lastRutYear: -1, seeds: [], diary: [], diaryDay: -1,
+      fear: 0, fearX: x, fearY: y, curious: null, fleeing: false, signal: null, pantUntil: 0, awakeUntil: 0, roam: null, path: null, stuckUntil: 0,
+      runDx: 0, runDy: 0, runX: x, runY: y, dueAt: null, litter: 0, lastRutYear: -1, seeds: [], diary: [], diaryDay: -1,
       diaryToday: 0, diedAt: null, cause: null,
     };
     write(a, 'born', now, undefined, true);
@@ -788,7 +963,7 @@ export class FaunaSystem {
   }
 
   private newHerd(species: number, x: number, y: number): Herd {
-    const h: Herd = { id: this.nextHerd++, species, tx: x, ty: y, avoid: new Set(), habit: new Map(), zones: [] };
+    const h: Herd = { id: this.nextHerd++, species, tx: x, ty: y, avoid: new Set(), habit: new Map(), zones: [], bed: null };
     this.herds.set(h.id, h);
     return h;
   }
@@ -845,6 +1020,8 @@ export class FaunaSystem {
   }
 
   private walkTo(a: Animal, x: number, y: number, now: number): void {
+    // Destino nuevo: la ruta de antes ya no vale
+    if (Math.hypot(a.tx - x, a.ty - y) > 0.5) a.path = null;
     a.tx = x;
     a.ty = y;
     this.setAction(a, 'walk', now);
@@ -867,6 +1044,8 @@ export class FaunaSystem {
 const EMPTY: ReadonlySet<number> = new Set();
 /** Giros que prueba para rodear un obstáculo (primero recto) */
 const DETOURS = [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8];
+/** Giros que prueba corriendo, de menor a mayor (huyendo, nunca hacia el peligro) */
+const RUN_TURNS = [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.6, -1.6, 2.1, -2.1, 2.6, -2.6];
 const dist = (a: Animal, b: Animal): number => Math.hypot(a.x - b.x, a.y - b.y);
 const reached = (a: Animal): boolean => Math.hypot(a.tx - a.x, a.ty - a.y) < 0.1;
 

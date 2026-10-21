@@ -4,6 +4,7 @@ import { ELDER_FROM, RUN_MIN } from '../../config/fauna.config';
 import { FaunaSystem } from './fauna-system';
 import { LifeStage, ageDays, lifeStage } from './needs';
 import { leaderOf } from './herds';
+import { STARTLE_FEAR } from '../../config/temperament.config';
 
 /** Lo que enseña la ficha de un animal (una foto de su estado: la interfaz no toca el animal) */
 export interface AnimalView {
@@ -53,6 +54,15 @@ export function animalView(fauna: FaunaSystem, id: number, now: number): AnimalV
     days: Math.floor(ageDays(a, at)), life: Math.min(1, ageDays(a, at) / max),
     marks: [s.youngDays / max, s.adultDays / max, (s.lifespanDays[0] * ELDER_FROM) / max],
     herdSize: members.length, leader: leader && leader !== a ? leader.name : null,
-    factors: [...a.factors], diary: [...a.diary], order: a.order, canRun: alive && a.rest >= RUN_MIN,
+    factors: liveFactors(a.factors, alive && a.fear >= STARTLE_FEAR), diary: [...a.diary], order: a.order, canRun: alive && a.rest >= RUN_MIN,
   };
+}
+
+/**
+ * "Le afecta" con el miedo al día: los factores se calculan cada hora, pero un susto dura minutos. "Asustado" sale
+ * (el primero) mientras lo esté y desaparece en cuanto se le pasa.
+ */
+function liveFactors(factors: readonly Factor[], scared: boolean): Factor[] {
+  const rest = factors.filter(f => f.key !== 'fear');
+  return scared ? [{ key: 'fear', value: -0.2 }, ...rest].slice(0, 4) : rest;
 }

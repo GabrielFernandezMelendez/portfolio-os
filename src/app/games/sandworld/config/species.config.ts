@@ -16,7 +16,13 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     spacing: { personal: 3, graze: 1.8, huddle: 0.35 },
     // Crepuscular: come sobre todo al amanecer y al atardecer; con calor sestea a mediodía
     activeHours: [[5, 9], [18, 22]], siestaHours: [12, 16],
-    speed: { walk: 0.12, run: 0.4 },
+    // Corriendo va unas 6 veces más rápido que andando (un ciervo de verdad, hasta 10)
+    speed: { walk: 0.12, run: 0.7 },
+    // De día un adulto explora hasta 1,5 islas lejos de los suyos; huyendo se aleja hasta 1 isla del peligro
+    range: { roam: 1.5, flee: 1 },
+    // Después de correr jadea 20 minutos y en 2 horas no pega ojo
+    afterRun: { pant: 20, awake: 120 },
+    gatherHours: 2,
     youngDays: 20, adultDays: 60, lifespanDays: [180, 300],
     breeding: {
       rutSeason: Season.AUTUMN, birthSeason: Season.SPRING,

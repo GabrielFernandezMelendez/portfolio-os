@@ -227,7 +227,7 @@ describe('Fauna: ciervos', () => {
     expect(herd.some(a => a.diary.some(d => d.key === 'poison.confused'))).toBe(true);
   });
 
-  it('órdenes: comer y dormir; correr cansa, y lejos de la manada se pierde', () => {
+  it('órdenes: comer y dormir; correr lleva lejos (una isla), cansa y deja jadeando, pero no dormido', () => {
     const { island, fauna } = setup(24);
     const t0 = at(Season.SUMMER);
     const herd = fauna.spawnHerd('deer', 48, 48, t0);
@@ -239,18 +239,17 @@ describe('Fauna: ciervos', () => {
     // Cansado no puede correr
     a.rest = 0.2;
     expect(fauna.order(a.id, 'run', t0)).toBe(false);
-    a.rest = 1;
+    // Algo cansado sí: acaba la carrera agotado, pero con la adrenalina no se duerme
+    a.rest = 0.4;
     expect(fauna.order(a.id, 'run', t0)).toBe(true);
     const x0 = a.x, y0 = a.y;
-    run(fauna, island, t0, 60);
+    run(fauna, island, t0, 50);
     expect(a.action).not.toBe('run');
-    expect(a.rest).toBeLessThan(0.3);
-    expect(Math.hypot(a.x - x0, a.y - y0)).toBeGreaterThan(8);
-    expect(b.satiety).toBeGreaterThan(0.8);
+    expect(Math.hypot(a.x - x0, a.y - y0)).toBeGreaterThan(14);
     expect(a.diary.some(d => d.key === 'ran')).toBe(true);
-    // Si se alejó más de LOST_DISTANCE: decide volver, unirse a otra o quedarse solo (y avisa: futura decisión)
-    const lost = fauna.news.filter(n => n.type === 'lost');
-    if (lost.length) expect(['back', 'joined', 'rejected', 'alone']).toContain((lost[0] as { outcome: string }).outcome);
+    run(fauna, island, t0 + 50, 60);
+    expect(a.action).not.toBe('sleep');
+    expect(b.satiety).toBeGreaterThan(0.8);
   });
 
   it('huyen del fuego', () => {
@@ -353,21 +352,73 @@ describe('Fauna: ciervos', () => {
     expect(night).toBeLessThan(day);
   });
 
-  it('un susto: huyen corriendo hasta relajarse (no hasta caer rendidos) y la alarma se contagia', () => {
-    const { island, fauna } = setup(24);
+  it('un susto: huyen lejos (hasta ponerse a salvo), se paran a mirar atrás y la alarma se contagia', () => {
+    const { island, fauna } = setup(32);
     const t0 = at(Season.SPRING, 3);
-    const herd = fauna.spawnHerd('deer', 40, 40, t0);
+    const herd = fauna.spawnHerd('deer', 64, 64, t0);
     run(fauna, island, t0, 30);
     const first = herd[0];
+    const sx = first.x + 1, sy = first.y;
     // Arena que cae justo al lado de uno solo (alcance corto): los demás se asustan por contagio
-    fauna.sense({ type: 'sandFall', gx: first.x + 1, gy: first.y, strength: 1 }, t0 + 30);
+    fauna.sense({ type: 'sandFall', gx: sx, gy: sy, strength: 1 }, t0 + 30);
+    expect(first.signal?.kind).toBe('alarm');
     run(fauna, island, t0 + 30, 10);
     expect(herd.filter(a => a.action === 'run').length).toBeGreaterThanOrEqual(3);
     expect(fauna.news.some(n => n.type === 'stampede')).toBe(true);
     run(fauna, island, t0 + 40, 120);
     expect(herd.every(a => a.action !== 'run')).toBe(true);
+    // Han puesto al menos media isla de por medio (no dos pasos) y no han caído rendidos
+    const far = herd.filter(a => a.mother === null).map(a => Math.hypot(a.x - sx, a.y - sy));
+    expect(Math.max(...far)).toBeGreaterThan(deer.range.flee * 32 * 0.5);
     expect(herd.every(a => a.rest > RUN_STOP + 0.05)).toBe(true);
+    expect(herd.every(a => a.action !== 'sleep')).toBe(true);
     expect(herd.some(a => a.diary.some(d => d.key === 'scare.sandFall'))).toBe(true);
+  });
+
+  it('de día exploran por su cuenta (lejos de la manada) y por la noche vuelven a dormir juntos', () => {
+    const { island, fauna } = setup(40);
+    const t0 = at(Season.SUMMER, 2) - 9 * 60 + 6 * 60;      // 6:00
+    const herd = fauna.spawnHerd('deer', 80, 80, t0);
+    for (const a of herd) a.rest = 1;
+    let farthest = 0, explored = false;
+    let m = t0;
+    // De 6:00 a 18:00: alguien se aleja bastante más de lo que se abre la manada pastando
+    for (; m < t0 + 12 * 60; m += 30) {
+      run(fauna, island, m, 30);
+      const leader = leaderOf(herd, deer, m);
+      for (const a of herd) if (leader && a !== leader) farthest = Math.max(farthest, Math.hypot(a.x - leader.x, a.y - leader.y));
+      explored ||= herd.some(a => a.roam !== null);
+    }
+    expect(explored).toBe(true);
+    expect(farthest).toBeGreaterThan(deer.herd.cohesion * deer.spacing.graze * 2);
+    expect(farthest).toBeLessThan(deer.range.roam * 32 * 1.3);
+    // A las 3:00, todos juntos en su sitio
+    run(fauna, island, m, 9 * 60);
+    const cx = herd.reduce((s, a) => s + a.x, 0) / herd.length, cy = herd.reduce((s, a) => s + a.y, 0) / herd.length;
+    for (const a of herd) expect(Math.hypot(a.x - cx, a.y - cy)).toBeLessThan(deer.herd.cohesion * 2);
+    expect(herd.some(a => a.diary.some(d => d.key === 'explore'))).toBe(true);
+  });
+
+  it('rodean un lago para volver (buscan camino) y quien no puede volver de noche se pierde', () => {
+    const { island, fauna } = setup(24);
+    const t0 = at(Season.SUMMER, 2) - 9 * 60 + 19 * 60;     // 19:00
+    const herd = fauna.spawnHerd('deer', 20, 48, t0);
+    const walker = herd.find(a => a.mother === null && leaderOf(herd, deer, t0) !== a)!;
+    // Un lago alargado entre él y los suyos, con paso por abajo
+    for (let y = 30; y < 80; y++) for (let x = 34; x < 38; x++) island.water.add(`${x},${y}`);
+    walker.x = 50;
+    walker.y = 48;
+    run(fauna, island, t0, 6 * 60);
+    expect(walker.x).toBeLessThan(34);
+    // Ahora el lago cierra el paso del todo: el que se queda al otro lado pasa la noche perdido
+    for (let y = 0; y < 96; y++) for (let x = 34; x < 38; x++) island.water.add(`${x},${y}`);
+    const t1 = at(Season.SUMMER, 4) - 9 * 60 + 19 * 60;
+    const lost = walker;
+    lost.x = 60;
+    lost.y = 48;
+    run(fauna, island, t1, 8 * 60);
+    expect(lost.x).toBeGreaterThan(38);
+    expect(fauna.news.some(n => n.type === 'lost' && n.id === lost.id)).toBe(true);
   });
 
   it('se acostumbran a lo que se repite sin daño; lo que hace daño les vuelve a asustar del todo', () => {

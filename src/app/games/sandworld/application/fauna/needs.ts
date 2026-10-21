@@ -88,9 +88,10 @@ export function updateHappiness(a: Animal, mood: Mood, minutes: number): void {
   add('thirsty', -0.15, a.hydration < 0.25);
   add('tired', -0.1, a.rest < 0.2);
   add('hurt', -0.1, a.health < 0.5);
+  // El miedo resta felicidad; en la ficha sale como estado ("Asustado"), sin barra
+  add('fear', -0.2, mood.fear);
   const base = 0.25 * a.satiety + 0.2 * a.hydration + 0.15 * a.rest + 0.25 * a.health;
-  // El miedo resta felicidad pero no se enseña (solo se ve en cómo se comporta)
-  const target = Math.max(0, Math.min(1, base + factors.reduce((s, f) => s + f.value, 0) - (mood.fear ? 0.2 : 0)));
+  const target = Math.max(0, Math.min(1, base + factors.reduce((s, f) => s + f.value, 0)));
   const step = Math.min(1, (HAPPY_RATE * minutes) / DAY);
   a.happiness += (target - a.happiness) * step;
   a.factors = factors.sort((x, y) => Math.abs(y.value) - Math.abs(x.value)).slice(0, 4);

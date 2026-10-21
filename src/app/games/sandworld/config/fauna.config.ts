@@ -19,17 +19,39 @@ export const FOOD_HERE = 0.03;
 
 /** Desnivel máximo (niveles) que sube o baja de un paso: las terrazas altas hay que rodearlas */
 export const MAX_STEP = 1.3;
+/**
+ * Rutas: si el camino recto se atasca y el destino está a más de PATH_FROM celdas, busca un camino (como mucho
+ * PATH_NODES celdas mirando, para no gastar). Si no lo hay, no vuelve a intentarlo hasta STUCK_MINUTES después.
+ */
+export const PATH_FROM = 3;
+export const PATH_NODES = 6000;
+export const STUCK_MINUTES = 120;
 /** Va a beber por debajo de esta hidratación (antes que a comer, salvo que el hambre apriete más); bebe a DRINK_RANGE celdas del agua */
 export const THIRST_BELOW = 0.45;
 export const DRINK_RANGE = 1.6;
 
 // ── Correr ──
-/** Sueño que gasta por minuto corriendo; para al bajar de RUN_STOP. Hace falta RUN_MIN para echar a correr. */
-export const RUN_TIRE_PER_MINUTE = 0.02;
+/**
+ * Sueño que gasta por minuto corriendo; para al bajar de RUN_STOP. Hace falta RUN_MIN para echar a correr.
+ * Una carrera de una isla (~45 minutos) gasta ~0,3: cansa, pero no deja dormido.
+ */
+export const RUN_TIRE_PER_MINUTE = 0.006;
 export const RUN_STOP = 0.15;
 export const RUN_MIN = 0.3;
-/** Al parar: lejos de su manada (celdas) se ha perdido. Puede volver, unirse a otra (si hay una a JOIN_RANGE) o quedarse solo. */
-export const LOST_DISTANCE = 10;
+/** Con adrenalina solo se duerme si está así de agotado */
+export const COLLAPSE = 0.05;
+
+// ── Explorar y volver a dormir con los suyos ──
+/** Probabilidad, cada vez que piensa estando tranquilo, de irse de excursión por su cuenta, y horas que dura */
+export const ROAM_CHANCE = 0.05;
+export const ROAM_HOURS: readonly [min: number, max: number] = [2, 5];
+/** Minutos de margen para llegar a tiempo al sitio de dormir */
+export const GATHER_MARGIN = 30;
+/**
+ * Pasada la medianoche (2 horas después de acostarse), quien siga lejos del sitio de dormir (× cohesión) se ha
+ * perdido: puede volver por la mañana, unirse a otra manada (si hay una a JOIN_RANGE) o quedarse solo.
+ */
+export const LOST_NIGHT = 3;
 export const JOIN_RANGE = 16;
 export const RETURN_CHANCE = 0.5;
 /** Otra manada lo acoge con esta probabilidad; si no, lo echa (pierde vida) */

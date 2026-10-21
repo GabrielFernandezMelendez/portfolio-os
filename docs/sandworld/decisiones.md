@@ -20,6 +20,12 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
 - El **miedo no tiene barra**: se muestra como un **estado** abajo en la ficha ("Asustado"), igual que
   "Sediento" o "Hambriento". Sobre todo se ve en el comportamiento (se quedan quietos, huyen hasta relajarse,
   estampidas, evitan zonas, no duermen con tormenta).
+- Sobre la cabeza sale un **"!"** al asustarse y un **"?"** cuando algo le da curiosidad, unos segundos, para que el
+  jugador abra la ficha y descubra qué pasa.
+- Las **distancias de cada especie se dan en islas** (no se hacen islas más grandes): de día un adulto explora por
+  su cuenta hasta 1,5 islas de su manada (el ciervo) y por la noche vuelven a dormir juntos; huyendo se alejan hasta
+  1 isla del peligro. Cruzan de una isla a otra. Quien no vuelve a dormir con los suyos se ha perdido.
+- Correr cansa pero no deja dormido: después de correr jadean un rato y la adrenalina no les deja dormirse.
 - Los comportamientos naturales son comunes a todas las especies (espacio personal, reacciones, tiempo) y cada
   especie los ajusta con su registro y su temperamento.
 - Correr (orden) puede hacer que el animal pierda su manada; ese momento será una decisión del jugador (fase 5).

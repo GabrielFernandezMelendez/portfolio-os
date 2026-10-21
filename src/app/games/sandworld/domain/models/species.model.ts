@@ -26,6 +26,15 @@ export interface SpeciesDef {
   readonly siestaHours: readonly [from: number, to: number];
   /** Velocidad andando y corriendo (celdas por minuto de juego) */
   readonly speed: { readonly walk: number; readonly run: number };
+  /**
+   * Distancias en islas (× WORLD.CELLS, así siguen valiendo si cambia el tamaño de una isla): cuánto se aleja un
+   * adulto de su manada explorando por su cuenta de día y cuánto pone de por medio al huir de un peligro.
+   */
+  readonly range: { readonly roam: number; readonly flee: number };
+  /** Tras correr: minutos que se queda jadeando (quieto) y minutos sin poder dormirse (la adrenalina) */
+  readonly afterRun: { readonly pant: number; readonly awake: number };
+  /** Horas antes de dormir en que la manada empieza a juntarse en su sitio de descanso (los lejanos salen antes) */
+  readonly gatherHours: number;
 
   /** Días de cría (sigue a su madre y come menos) y días hasta ser adulta (ya puede criar) */
   readonly youngDays: number;

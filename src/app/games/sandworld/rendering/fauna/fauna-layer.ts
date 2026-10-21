@@ -1,7 +1,8 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { Animal } from '../../domain/models/animal.model';
 import { SPECIES_DEFS } from '../../config/species.config';
-import { DEER_CANVAS, DEER_SCALE, DEER_SHADOW, FAUNA_ANIM, FAUNA_SMOOTH_MS, SELECT_COLOR, SELECT_HALF_W } from '../../config/fauna-art.config';
+import { DEER_CANVAS, DEER_SCALE, DEER_SHADOW, FAUNA_ANIM, FAUNA_SMOOTH_MS, SELECT_COLOR, SELECT_HALF_W, SIGNAL_ANIM } from '../../config/fauna-art.config';
+import { signalTexture } from './signal-art';
 import { DeerKind, DeerPose } from './deer-art';
 import { deerTexture } from './fauna-sprites';
 import { shadowTexture } from '../vegetation/plant-sprites';
@@ -35,6 +36,10 @@ interface Shown {
   frame: number;
   frameMs: number;
   kind: DeerKind;
+  /** Signo sobre la cabeza ('!' o '?'): se crea al primer susto; `signalAt` = cuál está enseñando, `signalMs` = desde cuándo */
+  signal: Sprite | null;
+  signalAt: number;
+  signalMs: number;
 }
 
 /**
@@ -98,11 +103,13 @@ export class FaunaLayer {
         s.y += (p.y - s.y) * k;
       }
       this.animate(s, a, view.now, paused ? 0 : dtMs);
+      this.showSignal(s, a, view, paused ? 0 : dtMs);
     }
     for (const [id, s] of this.shown) {
       if (seen.has(id)) continue;
       s.sprite.destroy();
       s.shadow.destroy();
+      s.signal?.destroy();
       this.shown.delete(id);
     }
     this.placeMarker(view.selected);
@@ -128,6 +135,7 @@ export class FaunaLayer {
     for (const s of this.shown.values()) {
       s.sprite.destroy();
       s.shadow.destroy();
+      s.signal?.destroy();
     }
     this.shown.clear();
     this.marker.destroy({ children: true });
@@ -138,7 +146,7 @@ export class FaunaLayer {
     sprite.anchor.set(DEER_CANVAS.footX / DEER_CANVAS.w, DEER_CANVAS.ground / DEER_CANVAS.h);
     const shadow = new Sprite();
     shadow.anchor.set(0.5, 0.5);
-    return { sprite, shadow, parent: null, x: 0, y: 0, placed: false, pose: 'idle', frame: 0, frameMs: 0, kind: 'female' };
+    return { sprite, shadow, parent: null, x: 0, y: 0, placed: false, pose: 'idle', frame: 0, frameMs: 0, kind: 'female', signal: null, signalAt: -1, signalMs: 0 };
   }
 
   /** Textura del fotograma que toca, espejo según hacia dónde mira, profundidad y sombra */
@@ -174,6 +182,39 @@ export class FaunaLayer {
     s.shadow.position.set(Math.round(s.x) + 1, Math.round(s.y));
     s.shadow.zIndex = s.y - 0.6;
     s.shadow.alpha = s.sprite.alpha;
+  }
+
+  /**
+   * '!' o '?' sobre la cabeza unos segundos (tiempo real; se congela en pausa): sale con un saltito, se balancea un
+   * píxel y se desvanece. Solo se crea el sprite cuando hace falta y solo se ve en los animales en pantalla.
+   */
+  private showSignal(s: Shown, a: Animal, view: FaunaView, dtMs: number): void {
+    const sig = a.diedAt === null ? a.signal : null;
+    if (sig && sig.at !== s.signalAt) {
+      s.signalAt = sig.at;
+      // Si el signo es de hace rato (el animal acaba de entrar en pantalla), no se enseña
+      s.signalMs = view.now - sig.at > 2 ? SIGNAL_ANIM.ms : 0;
+      if (!s.signal) {
+        s.signal = new Sprite();
+        s.signal.anchor.set(0.5, 1);
+      }
+      s.signal.texture = signalTexture(sig.kind);
+    }
+    if (!s.signal) return;
+    s.signalMs += dtMs;
+    const t = s.signalMs;
+    if (!sig || t >= SIGNAL_ANIM.ms) {
+      s.signal.visible = false;
+      return;
+    }
+    if (s.signal.parent !== s.parent) s.parent?.addChild(s.signal);
+    const popFrame = Math.floor(t / SIGNAL_ANIM.popMs);
+    const dy = popFrame < SIGNAL_ANIM.pop.length ? SIGNAL_ANIM.pop[popFrame] : -(Math.floor(t / SIGNAL_ANIM.bobMs) % 2);
+    const lift = view.selected === a.id ? SIGNAL_ANIM.selectedLift : 0;
+    s.signal.visible = s.sprite.visible;
+    s.signal.alpha = Math.min(1, (SIGNAL_ANIM.ms - t) / SIGNAL_ANIM.fadeMs) * (popFrame === 0 ? 0.6 : 1);
+    s.signal.position.set(Math.round(s.x), Math.round(s.y) - SIGNAL_ANIM.head[s.kind] - lift + dy);
+    s.signal.zIndex = s.y + 0.06;
   }
 
   /** Rombo y flecha sobre el seleccionado (en el contenedor de su chunk, encima de todo lo de ese chunk) */

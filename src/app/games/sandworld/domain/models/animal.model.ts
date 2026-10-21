@@ -42,7 +42,12 @@ export interface Herd {
   readonly habit: Map<string, { level: number; at: number }>;
   /** Zonas que la manada evita (donde cayó un rayo, hubo fuego, quema el suelo...) hasta el minuto `until` */
   zones: { x: number; y: number; r: number; until: number }[];
+  /** Sitio donde la manada se junta a dormir esta noche (lo elige la guía al caer la tarde; de día, null) */
+  bed: { x: number; y: number } | null;
 }
+
+/** Signo sobre la cabeza: '!' se asusta, '?' algo le da curiosidad (el dibujo lo enseña unos segundos) */
+export type AnimalSignal = 'alarm' | 'curious';
 
 export interface Animal {
   readonly id: number;
@@ -82,24 +87,40 @@ export interface Animal {
   factors: Factor[];
 
   /**
-   * Miedo (0..1). Interno: no se enseña al jugador, se ve en lo que hace (alerta, huida, estampida).
+   * Miedo (0..1). Sin barra: la ficha lo enseña como estado ("Asustado"), sobre la cabeza sale un '!' al
+   * asustarse y, sobre todo, se ve en lo que hace (alerta, huida, estampida).
    * fearX, fearY: de dónde viene lo que le asusta (huye hacia el otro lado).
    */
   fear: number;
   fearX: number;
   fearY: number;
   /** Algo que le da curiosidad (irá a mirar cuando se le pase el susto), hasta el minuto `until` */
-  curious: { x: number; y: number; until: number; key: string } | null;
-  /** Huye (corre hasta relajarse) en vez de correr por orden del jugador */
+  curious: { x: number; y: number; until: number; key: string; seen: boolean } | null;
+  /** Huye (corre hasta ponerse a salvo) en vez de correr por orden del jugador */
   fleeing: boolean;
+  /** Último signo sobre su cabeza y minuto en que salió */
+  signal: { kind: AnimalSignal; at: number } | null;
+  /** Hasta qué minuto se queda jadeando tras correr y hasta cuál no consigue dormirse (adrenalina) */
+  pantUntil: number;
+  awakeUntil: number;
+  /** Excursión por su cuenta (de día, lejos de la manada): adónde va y hasta qué minuto; luego vuelve con los suyos */
+  roam: { x: number; y: number; until: number } | null;
+  /**
+   * Ruta a pie (pares x, y de celdas) cuando el camino recto se atasca. [] = ya se buscó y no hay; hasta
+   * `stuckUntil` no vuelve a buscar (así un sitio imposible no se recalcula cada minuto).
+   */
+  path: number[] | null;
+  stuckUntil: number;
 
   action: AnimalAction;
   /** Minuto en que empezó la acción (para animarla) */
   actionSince: number;
   order: AnimalOrder | null;
-  /** Hacia dónde corre (dirección unitaria) */
+  /** Hacia dónde corre (dirección unitaria) y desde dónde echó a correr */
   runDx: number;
   runDy: number;
+  runX: number;
+  runY: number;
 
   // ── Cría ──
   /** Minuto en que dará a luz (null = no está preñada) y crías que espera */

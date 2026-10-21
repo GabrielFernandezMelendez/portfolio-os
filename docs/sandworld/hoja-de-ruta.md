@@ -15,10 +15,11 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 | 4B | Fuego y Tierra Quemada: sequedad, rayos, frente de fuego, ceniza, remisión, muro de Escarcha y zanja de Marea |
 | 4C | Fauna, primera especie: el ciervo (necesidades, manada, celo y crías, dieta con frutos, ficha Estado/Diario, órdenes, sprites) |
 | 4D | Comportamiento común de la fauna: espacio personal, estímulos (arenas, fuego, rayos, cadáveres), miedo interno, estampidas, costumbre, tiempo |
+| 4D2 | Correr deja jadeando (no dormido), huidas de hasta 1 isla, exploración en solitario (hasta 1,5 islas) y reagrupación nocturna, rutas que rodean lagos, signos "!" y "?", estado "Asustado" |
 
 ## Ahora
 
-- Correcciones de comportamiento del ciervo (pendientes de que Gabriel las detalle).
+- Moneda por manada al alejar la cámara (mockup pendiente de aprobar), común a todas las especies.
 
 ## Después (fase 4)
 
