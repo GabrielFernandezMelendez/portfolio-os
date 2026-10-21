@@ -147,7 +147,16 @@ export class MobileLayoutComponent {
 
   private previousView: MobileView = 'home';
 
+  /**
+   * ¿Hay un juego abierto en pantalla? Mientras se juega, los gestos son del juego (arrastrar la cámara en
+   * diagonal hacia abajo, deslizar desde arriba...): no se abre la pantalla de notificaciones.
+   */
+  private inGame(): boolean {
+    return this.mobileView() === 'app' && this.GAME_IDS.includes(this.activeApp() ?? '');
+  }
+
   openNotifications() {
+    if (this.inGame()) return;
     this.previousView = this.mobileView();
     this.mobileView.set('notifications');
   }
