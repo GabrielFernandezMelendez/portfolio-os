@@ -90,7 +90,7 @@ export class SandworldService implements OnDestroy {
   /** Tiempo atmosférico: lluvia (o nieve), repartida al azar en cada estación según el registro de fenómenos */
   readonly weatherSystem = new WeatherSystem(this.physics, new SeededRandom(this.world.seed * 7907 + 3));
   /** El mundo visto por la fauna (adaptador del puerto FaunaWorld) */
-  readonly faunaWorld = new FaunaWorldAdapter(this.world, this.vegetation);
+  readonly faunaWorld = new FaunaWorldAdapter(this.world, this.vegetation, (gx, gy) => this.physics.temperatureAt(gx, gy));
   /** Fauna: animales, manadas, celo y partos (bloque C: ciervos) */
   readonly fauna = new FaunaSystem(this.faunaWorld, new SeededRandom(this.world.seed * 2903 + 19));
   /** Criaturas que nacen con la Tierra Quemada (goblins): sus nidos y la vida de cada zona */
@@ -143,6 +143,7 @@ export class SandworldService implements OnDestroy {
       this.translator.setLang(stored.lang);
       this.hasStoredLang = true;
     }
+    if (stored.blood !== undefined) this.blood.set(stored.blood);
 
     // Generar el chunk inicial antes de registrar indicadores que lo leen
     this.world.chunk(0, 0);
@@ -171,8 +172,9 @@ export class SandworldService implements OnDestroy {
       if (changed.length) this.events.emit('terrainChanged', changed);
       this.settlePours(t.minute);
       this.reportWorldEvents();
-      if (t.minute % BIOME_CHECK_MINUTES === 0) this.updateBiomes();
-      if (t.minute % VEGETATION_CHECK_MINUTES === 0) this.updateVegetation(t.season);
+      // Vegetación y biomas: cada chunk se revisa una vez por periodo, cada uno en su minuto (sin pico en el minuto en punto)
+      this.updateBiomes(t.minute);
+      this.updateVegetation(t.season, t.minute);
       this.fauna.conditions = {
         rain: w.look === 'rain' ? w.intensity : 0, storm: w.key === 'storm' || w.key === 'dryStorm', snow: w.look === 'snow',
         cold: t.season === Season.WINTER, hot: t.season === Season.SUMMER && w.key === null,
@@ -235,6 +237,14 @@ export class SandworldService implements OnDestroy {
     this.translator.setLang(lang);
     this.hasStoredLang = true;
     this.storage.save({ ...this.storage.load(), lang });
+  }
+
+  /** Sangre en los combates (Ajustes): solo cambia el dibujo, nunca la simulación */
+  readonly blood = signal(true);
+
+  setBlood(on: boolean): void {
+    this.blood.set(on);
+    this.storage.save({ ...this.storage.load(), blood: on });
   }
 
   // ── Velocidad y pausa ──
@@ -487,9 +497,13 @@ export class SandworldService implements OnDestroy {
     else this.animalView.set(view);
   }
 
-  /** Revisa la vegetación: recoloca las plantas de los chunks que cambian y actualiza la barra de Vegetación */
-  private updateVegetation(season: number): void {
-    const changes = this.vegetation.update(VEGETATION_CHECK_MINUTES / 1440, season as 0 | 1 | 2 | 3);
+  /**
+   * Revisa la vegetación de los chunks a los que les toca en este minuto (sin minuto: todos): recoloca las plantas de
+   * los que cambian y actualiza la barra de Vegetación
+   */
+  private updateVegetation(season: number, minute?: number): void {
+    const slot = minute === undefined ? undefined : { minute, every: VEGETATION_CHECK_MINUTES };
+    const changes = this.vegetation.update(VEGETATION_CHECK_MINUTES / 1440, season as 0 | 1 | 2 | 3, slot);
     const soil = this.vegetation.takeSoilChanges();
     if (soil.length) this.events.emit('terrainChanged', soil);
     if (changes.length === 0) return;
@@ -497,9 +511,12 @@ export class SandworldService implements OnDestroy {
     this.refreshIndicators();
   }
 
-  /** Revisa los biomas: redibuja los chunks que cambian y lo cuenta en la crónica (un aviso por bioma nuevo) */
-  private updateBiomes(): void {
-    const changes = this.biomes.update(BIOME_CHECK_MINUTES / 1440);
+  /**
+   * Revisa los biomas de los chunks a los que les toca en este minuto (sin minuto: todos, p. ej. un botón de prueba):
+   * redibuja los que cambian y lo cuenta en la crónica (un aviso por bioma nuevo)
+   */
+  private updateBiomes(minute?: number): void {
+    const changes = this.biomes.update(BIOME_CHECK_MINUTES / 1440, minute === undefined ? undefined : { minute, every: BIOME_CHECK_MINUTES });
     if (changes.length === 0) return;
     const chunks = new Map<string, ChunkCoord>();
     const born = new Set<string>();

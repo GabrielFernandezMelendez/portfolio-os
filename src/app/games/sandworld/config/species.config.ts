@@ -23,6 +23,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     // Crepuscular: come sobre todo al amanecer y al atardecer; con calor sestea a mediodía
     activeHours: [[5, 9], [18, 22]], siestaHours: [12, 16],
     // Corriendo va unas 6 veces más rápido que andando (un ciervo de verdad, hasta 10)
+    // A gusto de unos -20 °C a 40 °C (pelaje de invierno; a la sombra, más)
+    comfort: [-0.2, 1.0],
     speed: { walk: 0.12, run: 0.7 },
     // De día un adulto explora hasta 1,5 islas lejos de los suyos; huyendo se aleja hasta 1 isla del peligro
     range: { roam: 1.5, flee: 1 },
@@ -67,6 +69,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     activeHours: [[18, 22], [4, 7]], siestaHours: [12, 16],
     sleepHours: [7, 18],
     // Saltitos andando; carreras cortas y muy rápidas
+    // De -15 °C a 39 °C (en la madriguera se está mejor)
+    comfort: [-0.1, 0.98],
     speed: { walk: 0.15, run: 1 },
     // Los machos se alejan hasta media isla de la madriguera, las hembras menos; huyendo, como mucho 0,3 islas
     range: { roam: 0.5, roamFemale: 0.3, flee: 0.3 },
@@ -121,6 +125,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     // Activo al anochecer y de noche; descansa de día
     activeHours: [[17, 23], [3, 7]], siestaHours: [12, 16],
     sleepHours: [9, 16],
+    // Aguanta mucho frío (-30 °C), menos el calor (37 °C)
+    comfort: [-0.4, 0.95],
     speed: { walk: 0.14, run: 0.75 },
     // Recorre hasta 2 islas; huyendo (del fuego), una
     range: { roam: 2, flee: 1 },
@@ -129,14 +135,19 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     senses: { smell: 2, vigilance: 0.05 },
     predator: {
       // Al humano lo evita: solo se atreve con un niño (y no siempre)
-      prey: { deer: 1, rabbit: 0.6, human: 0.15, crow: 0.1 },
-      huntBelow: 0.5, huntChance: 0.4, carrion: 0.8,
+      prey: { deer: 1, rabbit: 0.6, human: 0.15, crow: 0.1, goblin: 0.3 },
+      // Comen menos: cazan solo con hambre de verdad, pero rematan su presa en cuanto les entra algo de hambre
+      huntBelow: 0.35, carrionBelow: 0.7, huntChance: 0.4, carrion: 0.8, revisit: 0.3,
+      // La manada comparte la presa y los adultos regurgitan comida a los jóvenes (el 81 % de las veces, a los lobeznos)
+      shareKill: true, feedYoung: 0.5,
       catch: {
         deer: { adult: 0.15, young: 0.5, weak: 0.4 },
         rabbit: { adult: 0.35, young: 0.6, weak: 0.5 },
         human: { adult: 0, young: 0.3, weak: 0 },
         // Un pollo de cuervo caído del nido o un cuervo herido
         crow: { adult: 0, young: 0.4, weak: 0.15 },
+        // Un goblin despierto es escurridizo; dormido bajo un árbol de día, presa fácil (SLEEP_CATCH_BONUS)
+        goblin: { adult: 0.1, young: 0.3, weak: 0.3 },
       },
       packBonus: 0.05, packMax: 4, joinHunt: 0.7, snowBonus: 0.15,
       giveUpAfter: 20, giveUp: 0.7,
@@ -157,7 +168,7 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       nurseDays: 10, orphanDeath: 0.4,
     },
     // Atracón y ayuno: llena el estómago con 0,15 de carne y pierde poca saciedad al día (aguanta días)
-    stomach: 0.15, bitePerMinute: 0.004, hungerPerDay: 0.3,
+    stomach: 0.15, bitePerMinute: 0.004, hungerPerDay: 0.2,
     thirstPerDay: 0.8, drinkPerMinute: 0.03,
     tirePerDay: 0.9, restPerHour: 0.15,
     waterRange: 14, thirstSearch: 40, corpseDays: 3,
@@ -191,6 +202,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     sleepHours: [20, 5],
     // Vuela en línea recta por encima de todo (y deprisa); de cerca anda a saltitos
     locomotion: 'fly',
+    // De -20 °C a 42 °C
+    comfort: [-0.2, 1.05],
     speed: { walk: 0.08, run: 0.9, fly: 1.1 },
     range: { roam: 2.5, flee: 1 },
     flight: { mode: 'away', freeze: 0, alarm: 0.95, zigzag: 0 },
@@ -207,6 +220,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       howl: 0,
       // Come fruta casi siempre; en una presa ajena roba trozos y se aparta con ellos; vuelve a donde mata el lobo
       plantsBelow: 0.9, hoard: 0.08, revisit: 0.3,
+      // Pica los huesos: sigue comiendo de un cadáver cuando a los demás ya no les compensa
+      bones: true,
     },
     afterRun: { pant: 5, awake: 30 },
     gatherHours: 1,
@@ -235,6 +250,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     // Llega una pareja con de 1 a 3 jóvenes; de 1 a 2 grupos en un 2×2
     migration: {
       arrive: 0.25, groupsPerChunk: [0.25, 0.5], crowdLeave: 0.3,
+      // La carroña les atrae (el doble de llegadas si la hay), pero también llegan sin ella; en un 2×2 cabe 1 grupo (o 2)
+      carrionBonus: 2,
       founders: [FA, MA], extraYoung: [1, 3],
     },
     founders: [FA, MA, FY, MY],
@@ -247,17 +264,21 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     spacing: { personal: 1.5, graze: 2, huddle: 0.5 },
     activeHours: [[7, 11], [16, 20]], siestaHours: [13, 15],
     sleepHours: [22, 6],
+    // Sin abrigo, a gusto de -5 °C a 41 °C: la choza y apiñarse les salvan del invierno
+    comfort: [0.1, 1.02],
     speed: { walk: 0.1, run: 0.55 },
     range: { roam: 1.5, roamFemale: 1, flee: 1 },
     // Ante un peligro, a la choza
     flight: { mode: 'refuge', freeze: 0.1, alarm: 0.7, zigzag: 0 },
     senses: { smell: 0.6, vigilance: 0.2 },
     predator: {
-      prey: { deer: 1, rabbit: 0.7 },
+      // También goblins: dormidos de día bajo un árbol son vulnerables (SLEEP_CATCH_BONUS)
+      prey: { deer: 1, rabbit: 0.7, goblin: 0.5 },
       huntBelow: 0.55, huntChance: 0.3, carrion: 0.3,
       catch: {
         deer: { adult: 0.2, young: 0.45, weak: 0.4 },
         rabbit: { adult: 0.3, young: 0.5, weak: 0.45 },
+        goblin: { adult: 0.1, young: 0.3, weak: 0.3 },
       },
       packBonus: 0.07, packMax: 4, joinHunt: 0.6, snowBonus: 0.1,
       giveUpAfter: 30, giveUp: 0.6,
@@ -309,23 +330,28 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     // De noche: salen al anochecer y vuelven antes del alba; de día duermen en su nido (el sol les quema)
     activeHours: [[20, 23], [1, 4]], siestaHours: [12, 14],
     sleepHours: [6, 19],
-    speed: { walk: 0.1, run: 0.6 },
-    range: { roam: 1, flee: 0.5 },
+    // De lo más rápido de la isla: corriendo, más que el conejo y el lobo (solo el cuervo en vuelo les gana)
+    // El calor no les afecta (viven en la Tierra Quemada); el frío sí: por debajo de ~5 °C sufren
+    comfort: [0.3, 9],
+    speed: { walk: 0.16, run: 1.05 },
+    // De noche recorren toda la isla (hasta 4 islas: un 4×4 de punta a punta)
+    range: { roam: 4, flee: 0.5 },
     flight: { mode: 'refuge', freeze: 0, alarm: 0.5, zigzag: 0.1 },
     senses: { smell: 1.5, vigilance: 0.05 },
     predator: {
-      // Lo que pillen: mejor si duerme, está solo o es una cría; también humanos
-      prey: { rabbit: 1, deer: 0.6, human: 0.7, crow: 0.2 },
-      huntBelow: 0.6, huntChance: 0.5, carrion: 0.9,
+      // Lo que pillen, de cualquier especie: mejor si duerme, está solo o es una cría
+      prey: { rabbit: 1, deer: 0.6, human: 0.7, crow: 0.2, wolf: 0.2 },
+      huntBelow: 0.45, huntChance: 0.5, carrion: 0.9,
       catch: {
         rabbit: { adult: 0.3, young: 0.6, weak: 0.5 },
         deer: { adult: 0.05, young: 0.35, weak: 0.3 },
         human: { adult: 0.08, young: 0.4, weak: 0.3 },
         crow: { adult: 0.02, young: 0.5, weak: 0.2 },
+        wolf: { adult: 0.15, young: 0.4, weak: 0.35 },
       },
       packBonus: 0.08, packMax: 3, joinHunt: 0.8, snowBonus: 0.05,
       giveUpAfter: 15, giveUp: 0.7,
-      trip: { chance: 0, days: [1, 1], islands: 1 },
+      trip: { chance: 0, days: [1, 1], islands: 4 },
       carry: { tire: 1.5, relay: 0.6 },
       // Grito de guerra al salir
       howl: 0.7,
@@ -338,12 +364,12 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     youngDays: 20, adultDays: 40, lifespanDays: [120, 360],
     breeding: {
       mode: 'season', seasons: [Season.SPRING, Season.SUMMER, Season.AUTUMN, Season.WINTER],
-      conceivePerDay: 0.03, minSatiety: 0.6, gestationDays: 15,
+      conceivePerDay: 0.03, minSatiety: 0.7, gestationDays: 15,
       litter: { sizes: [1, 2, 3], weights: [50, 35, 15] }, crowdShift: 1, hungryShift: 1,
       nurseDays: 8, orphanDeath: 0.3,
     },
     // Sacan casi toda el agua de la carne (en la Tierra Quemada no hay agua)
-    stomach: 0.05, bitePerMinute: 0.002, hungerPerDay: 0.35,
+    stomach: 0.05, bitePerMinute: 0.002, hungerPerDay: 0.25,
     thirstPerDay: 0.3, drinkPerMinute: 0.05, waterFromFood: 1,
     tirePerDay: 0.9, restPerHour: 0.15,
     waterRange: 20, thirstSearch: 40, corpseDays: 1,
@@ -356,9 +382,13 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     },
     dispersal: { male: 0.4, female: 0.3 },
     // El sol les quema, el fuego no; la Escarcha en su nido les apaga la brasa
+    // En invierno hibernan en su nido: duermen y apenas gastan (se les puede dejar... o ir a por ellos)
+    hibernate: { seasons: [Season.WINTER], needs: 0.1 },
     sunHurt: 0.08, frostHurt: 0.05, fireproof: true,
-    // Nacen de 5 a 7 días después de formarse la Tierra Quemada: un nido por cada 9 tiles, de 1 a 3 en cada uno
-    burntBorn: { delayDays: [5, 7], tilesPerNest: 9, perNest: [1, 3], feedsBurnt: 2 },
+    // Nacen de 5 a 7 días después de formarse la Tierra Quemada: un nido (dos si la zona tiene 18 tiles o más) y
+    // como mucho 2 en toda la isla; de 1 a 3 en cada uno, más 1 por cada 20 tiles de zona, hasta 5. Un nido no pasa
+    // de 6 (herd.max) y solo crían bien comidos
+    burntBorn: { delayDays: [5, 7], tilesPerNest: 18, maxNests: 2, perNest: [1, 3], extraPerTiles: 20, perNestMax: 5, feedsBurnt: 2 },
     founders: [MA, FA],
   },
 ];

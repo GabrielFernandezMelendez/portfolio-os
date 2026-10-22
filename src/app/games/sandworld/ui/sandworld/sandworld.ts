@@ -54,6 +54,7 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
       selected: this.game.selectedAnimal(), now: this.game.engine.time.totalMinutes,
       herds: () => herdMarks(this.game.fauna.animals, SPECIES_DEFS, this.game.engine.time.totalMinutes),
       burrows: this.game.fauna.burrows.list,
+      blood: this.game.blood(),
     }),
     animalTap: id => this.zone.run(() => this.game.selectAnimal(id)),
     farView: far => (this.game.herdView = far),

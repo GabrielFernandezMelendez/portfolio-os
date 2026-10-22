@@ -51,6 +51,8 @@ export class Burrows {
       if (!tree) return null;
       return this.place(herd, s, kind, tree.x, tree.y, now, ready);
     }
+    // Los que viven en la Tierra Quemada (goblins) cavan justo donde están, en el corazón de la zona (allí no hay agua)
+    if (s.burntBorn && ok(Math.floor(x), Math.floor(y))) return this.place(herd, s, kind, Math.floor(x) + 0.5, Math.floor(y) + 0.5, now, ready);
     // A ser posible, cerca del agua (a su alcance de agua): como los animales de verdad, que no cavan lejos de beber
     const wet = (gx: number, gy: number) => !!this.world.nearestWater(gx, gy, s.waterRange);
     const here = ok(Math.floor(x), Math.floor(y)) ? { x: Math.floor(x), y: Math.floor(y) } : null;

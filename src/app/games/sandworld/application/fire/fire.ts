@@ -398,6 +398,8 @@ export class FireSystem implements BurntLand {
       }
     }
     c.feed[r.t] = Math.max(0, c.feed[r.t] - dt / BURNT_FEED_DAYS);
+    // Su calor deshace la Escarcha por dentro: helar solo sirve en el borde (contener), no en el corazón de la zona
+    if (c.life[r.t] > 0 && c.frozen[r.t] > 0 && this.inner(r)) c.frozen[r.t] = 0;
     if (c.life[r.t] > 0) {
       this.spreadBurntLand(r, dt);
       return;
@@ -428,6 +430,15 @@ export class FireSystem implements BurntLand {
         this.ignite(n, 'spread', d + 1 + CREEP);
       }
     }
+  }
+
+  /** ¿Tile del interior de su Tierra Quemada? (los cuatro vecinos también lo son) */
+  private inner(r: TileRef): boolean {
+    for (const [di, dj] of SIDES) {
+      const n = this.tile(r.chunk.cx * N + r.i + di, r.chunk.cy * N + r.j + dj);
+      if (!n || !isBurnt(n.chunk, n.i, n.j)) return false;
+    }
+    return true;
   }
 
   /** Anillo del tile dentro de su Tierra Quemada: 0 = en el borde */

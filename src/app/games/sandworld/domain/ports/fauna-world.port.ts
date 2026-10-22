@@ -55,6 +55,11 @@ export interface FaunaWorld {
   shore(random: RandomSource): { readonly x: number; readonly y: number } | null;
   /** ¿Está helado el tile? (la Escarcha) */
   frozenAt(gx: number, gy: number): boolean;
+  /**
+   * Temperatura que siente un animal en una celda (escala 0..1 del mundo: ~0,2 es helar, ~0,5 templado, ~0,8 calor):
+   * la del clima y, encima o al lado de la Tierra Quemada viva, su calor.
+   */
+  temperature(gx: number, gy: number): number;
   /** Lo que comen los goblins alimenta el suelo quemado donde viven (crece más deprisa) */
   feedBurnt(gx: number, gy: number, amount: number): void;
 }

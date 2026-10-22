@@ -69,7 +69,8 @@ export function arrivalChance(s: SpeciesDef, c: ArrivalContext): number {
   if (m.carrionLure && !c.carrion) return 0;
   const room = (c.capacity - c.population) / c.groupSize;
   if (room <= 0) return 0;
-  return Math.min(1, (m.arrive * Math.min(1, room) * (m.carrionLure ?? 1) * returning) / (1 + c.groups));
+  const lure = (m.carrionLure ?? 1) * (c.carrion ? m.carrionBonus ?? 1 : 1);
+  return Math.min(1, (m.arrive * Math.min(1, room) * lure * returning) / (1 + c.groups));
 }
 
 /**

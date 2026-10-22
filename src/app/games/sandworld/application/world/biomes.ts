@@ -1,3 +1,4 @@
+import { ChunkSlot, inSlot } from './chunk-slot';
 import { BiomeId } from '../../domain/models/biome.model';
 import { ChunkData, tileIndex } from '../../domain/models/chunk.model';
 import { WORLD } from '../../domain/models/world.model';
@@ -35,9 +36,11 @@ export class BiomeSystem {
   ) {}
 
   /** Revisa todos los tiles descubiertos; `elapsedDays` es el tiempo desde la última revisión */
-  update(elapsedDays: number): BiomeChange[] {
+  update(elapsedDays: number, slot?: ChunkSlot): BiomeChange[] {
     const changes: BiomeChange[] = [];
-    for (const { cx, cy } of this.world.exploration.list()) {
+    const list = this.world.exploration.list();
+    for (const [index, { cx, cy }] of list.entries()) {
+      if (slot && !inSlot(index, list.length, slot)) continue;
       const chunk = this.world.chunk(cx, cy);
       for (let j = 0; j < N; j++) {
         for (let i = 0; i < N; i++) {

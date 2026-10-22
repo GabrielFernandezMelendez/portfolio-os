@@ -59,6 +59,19 @@ export class TerrainPhysics {
     }
   }
 
+  /**
+   * Temperatura del momento en una celda (escala 0..1 del mundo, puede salirse un poco): la del tile (bioma más los
+   * desvíos de la Escarcha y la Brasa) más el día y la noche y la estación, que en invierno pesa según la altura.
+   */
+  temperatureAt(gx: number, gy: number): number | null {
+    const C = WORLD.CELLS, G = WORLD.CELLS_PER_TILE;
+    const cx = Math.floor(gx / C), cy = Math.floor(gy / C);
+    if (!this.world.exploration.isRevealed(cx, cy)) return null;
+    const c = this.world.chunk(cx, cy);
+    const t = tileIndex(Math.floor((gx - cx * C) / G), Math.floor((gy - cy * C) / G));
+    return temperatureAt(c, t) + this.winter.offsetAt(c, t, this.climate);
+  }
+
   /** Un chunk recién descubierto entra en la física */
   chunkRevealed(cx: number, cy: number): void {
     this.water.addChunk(this.world.chunk(cx, cy));

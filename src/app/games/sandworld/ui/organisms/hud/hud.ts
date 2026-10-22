@@ -73,6 +73,8 @@ import { AnimalSheetComponent } from '../animal-sheet/animal-sheet';
         <sw-settings-menu
           [lang]="game.lang()"
           (langChange)="game.setLang($event)"
+          [blood]="game.blood()"
+          (bloodChange)="game.setBlood($event)"
           (close)="game.closeMenu()"
           (exit)="exit.emit()"
           (devAction)="game.closeMenu(); game.runDevAction($event)"

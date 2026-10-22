@@ -4,7 +4,7 @@
 export type Sex = 'male' | 'female';
 
 /** Lo que está haciendo ahora (decide su animación) */
-export type AnimalAction = 'idle' | 'walk' | 'eat' | 'drink' | 'sleep' | 'run' | 'dead' | 'howl';
+export type AnimalAction = 'idle' | 'walk' | 'eat' | 'drink' | 'sleep' | 'run' | 'dead' | 'howl' | 'fight';
 
 /** Órdenes del jugador desde la ficha */
 export type AnimalOrder = 'eat' | 'sleep' | 'run';
@@ -12,7 +12,7 @@ export type AnimalOrder = 'eat' | 'sleep' | 'run';
 /** Por qué murió */
 export type DeathCause =
   | 'starvation' | 'dehydration' | 'oldAge' | 'poison' | 'exhaustion' | 'fire' | 'lightning' | 'buried' | 'disease' | 'drowned' | 'orphaned'
-  | 'predation' | 'injury' | 'sun' | 'frost';
+  | 'predation' | 'injury' | 'sun' | 'frost' | 'heat';
 
 /** Algo que le afecta ahora a su felicidad (la ficha lo enseña como "Le afecta") */
 export interface Factor {
@@ -53,6 +53,8 @@ export interface Herd {
   /** Sitios donde bebió y comió bien (los últimos MEMORY_SPOTS): a ellos va primero cuando tiene sed o hambre */
   water: { x: number; y: number }[];
   food: { x: number; y: number }[];
+  /** Presa recién cazada a la que acude toda la manada a comer (id del cadáver), o null */
+  feast: number | null;
   /** Carroñeros: dónde ha encontrado cadáveres (vuelve a mirar allí: donde caza el lobo) */
   kills: { x: number; y: number }[];
   /** Se va de la isla: hacia qué orilla y hasta qué minuto (pasado ese minuto se va igual), o null */
@@ -83,8 +85,22 @@ export interface Burrow {
   abandonedAt: number | null;
 }
 
-/** Signo sobre la cabeza: '!' se asusta, '?' algo le da curiosidad (el dibujo lo enseña unos segundos) */
-export type AnimalSignal = 'alarm' | 'curious';
+/**
+ * Signo sobre la cabeza: '!' se asusta, '?' algo le da curiosidad, espada (lucha cuerpo a cuerpo) y polvareda (huye
+ * de un combate). El dibujo lo enseña unos segundos.
+ */
+export type AnimalSignal = 'alarm' | 'curious' | 'fight' | 'flee';
+
+/**
+ * Cuerpo a cuerpo: con quién lucha, hasta qué minuto dura, si es quien atacó (resuelve la tirada al acabar) y si le
+ * saltó encima por sorpresa. Mientras dura, los dos se quedan encarados (el dibujo anima los golpes).
+ */
+export interface Fight {
+  readonly with: number;
+  readonly until: number;
+  readonly attacker: boolean;
+  readonly ambush: boolean;
+}
 
 export type RefugeKindId = 'burrow' | 'den' | 'cave' | 'nest' | 'hut' | 'lair';
 
@@ -164,12 +180,19 @@ export interface Animal {
   leftHerd: number | null;
   /** Depredador: la presa que está cazando (acecho o persecución) y desde cuándo, o null */
   hunt: { target: number; phase: 'stalk' | 'chase'; since: number } | null;
+  /** Frío y calor acumulados (0 = a gusto; desde 1, hipotermia o golpe de calor: pierde vida) */
+  cold: number;
+  heat: number;
+  /** Luchando cuerpo a cuerpo (ver Fight), o null */
+  fight: Fight | null;
   /** Carne que lleva a la guarida para las crías (0 = nada) */
   carrying: number;
   /** Cadáver (id) del que está comiendo, o null */
   feeding: number | null;
   /** Cadáver: carne que le queda (se la comen los carnívoros) */
   meat: number;
+  /** Carne que tenía el cadáver al morir (para saber cuánto se han comido: ver eatenOf) */
+  meatFull: number;
   /** Minutos que se ha entretenido hoy antes de volver a dormir con los suyos, y para qué noche (minuto de inicio) */
   lateBy: number;
   lateFor: number;

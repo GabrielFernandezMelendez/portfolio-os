@@ -85,6 +85,29 @@ export const CONTACT = 1.2;
 export const MEAT_BY_SIZE = { small: 0.06, medium: 0.25, large: 0.6 } as const;
 /** Carne que come por minuto un carnívoro y trozo que lleva a la guarida */
 export const MEAT_BITE = 0.004;
+/**
+ * Restos pegados a los huesos [PROPUESTA]: cuando a un cadáver le queda menos de esta parte de la carne que tenía,
+ * solo quien pica los huesos (el cuervo) sigue comiendo; a lobos, humanos y goblins ya no les compensa.
+ */
+export const BONES_LEFT = 0.15;
+/**
+ * Lo que saca de cada presa de otros quien pica los huesos (cuervo), para saber cuántos caben en la isla: los restos
+ * de los huesos y lo que hay alrededor (vísceras, insectos, huevos) [PROPUESTA]
+ */
+export const SCAVENGE_SHARE = 0.25;
+/**
+ * Manadas que cazan en grupo (`shareKill`): hasta qué distancia (islas) acuden a comer de la presa de uno de los
+ * suyos, desde qué saciedad un adulto lleva comida a los jóvenes (`feedYoung`) y cuánta les da (la mitad la pone él) [PROPUESTA]
+ */
+export const SHARE_RANGE = 2;
+export const FEED_YOUNG_ABOVE = 0.8;
+export const REGURGITATE = 0.3;
+/** Lo que dura un cuerpo a cuerpo (minutos de juego, por tirada) antes de saber si la presa cae, escapa o planta cara [PROPUESTA] */
+export const FIGHT_MINUTES: readonly [number, number] = [3, 6];
+/** Vida que pierde la presa que se suelta de un cuerpo a cuerpo (escapa herida, dejando un rastro de sangre) [PROPUESTA] */
+export const FIGHT_WOUND = 0.1;
+/** Presa dormida a la intemperie [PROPUESTA]: lo que sube la tirada de cazarla (un goblin bajo un árbol de día) */
+export const SLEEP_CATCH_BONUS = 0.4;
 export const CARRY_PIECE = 0.05;
 /** Huele a sus presas cada vez que piensa con esta probabilidad como mucho (luego, menos cuanto más lejos) */
 export const SMELL_SHARPNESS = 0.9;
@@ -182,3 +205,22 @@ export const SEARCH_MAX_ISLANDS = 4;
 // ── Diario ──
 export const DIARY_PER_DAY = 3;
 export const DIARY_KEEP = 30;
+
+// ── Temperatura [PROPUESTA] ──
+// Escala del mundo 0..1 (~0,2 hiela, ~0,5 templado, ~0,7 una tarde de verano, ~1 el desierto en verano; cada 0,1
+// son unos 5 °C). Cada especie tiene su
+// franja de comodidad (SpeciesDef.comfort); fuera de ella acumula frío o calor y, pasado un punto, hipotermia o golpe
+// de calor (pierde vida). Como en RimWorld: lo que protege es el refugio, apiñarse con los suyos y la sombra.
+/** Calor de la Tierra Quemada viva: encima (solo la pisan los goblins) y en los tiles de al lado */
+export const BURNT_HEAT = 0.6;
+export const BURNT_AURA = 0.2;
+/** Abrigo del refugio y de dormir apiñado con los suyos (al menos 2 cerca); fresco de la sombra de un árbol */
+export const REFUGE_WARMTH = 0.3;
+export const HUDDLE_WARMTH = 0.1;
+export const SHADE_COOL = 0.1;
+/** Frío o calor que acumula por hora y por cada punto (0,1) que se sale de su franja; lo que se recupera a gusto */
+export const EXPOSURE_RATE = 1.5;
+export const EXPOSURE_RECOVER = 0.25;
+/** A partir de esta exposición busca abrigo o sombra; desde 1, pierde vida cada hora */
+export const EXPOSURE_SEEK = 0.4;
+export const EXPOSURE_DAMAGE = 0.05;

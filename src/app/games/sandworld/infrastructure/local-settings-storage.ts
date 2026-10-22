@@ -11,7 +11,10 @@ export class LocalSettingsStorage implements SettingsStorage {
       if (!raw) return {};
       const data = JSON.parse(raw) as StoredSettings;
       // Solo se aceptan valores válidos: un dato corrupto no rompe el juego
-      return SANDWORLD_LANGS.includes(data.lang as never) ? { lang: data.lang } : {};
+      const out: StoredSettings = {};
+      if (SANDWORLD_LANGS.includes(data.lang as never)) out.lang = data.lang;
+      if (typeof data.blood === 'boolean') out.blood = data.blood;
+      return out;
     } catch {
       return {};
     }

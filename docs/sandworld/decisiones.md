@@ -98,10 +98,45 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   crían todo el año. Plantan cara al depredador y, en grupo, pueden matarlo. Los lobos cazan sobre todo a sus
   niños. La expansión (colonia, refugios que mejoran) llega más adelante.
 - **Goblins** (criaturas de la Tierra Quemada): **nacen solos de 5 a 7 días después** de formarse una zona de
-  Tierra Quemada (un nido por cada 9 tiles, de 1 a 3 goblins en cada uno). Viven de noche: el sol les quema si les
+  Tierra Quemada (nidos y tamaño, ver más abajo). Viven de noche: el sol les quema si les
   pilla fuera; la escarcha que sella su nido les congela. El fuego no les hace nada, pero **la Brasa no les da
   vida**. Cazan conejos, ciervos, cuervos y **también humanos**; comer alimenta su Tierra Quemada. No llegan ni se
   van por la orilla.
+- **Equilibrio con 6 especies** (tras la prueba de un año en un 3×3): el lobo come menos (hambre 0,2 al día), solo
+  caza por debajo de 0,35 de saciedad y vuelve a rematar su presa desde 0,7. Los restos pegados a los huesos (la
+  cuarta parte de la carne) solo los come el cuervo; la carroña atrae a los cuervos (el doble de llegadas) pero
+  llegan sin ella y caben en un 2×2. Una presa dormida a la intemperie es mucho más fácil de cazar (+0,4).
+- **Goblins**: de lo más rápidos de la isla (corriendo 1,05; solo el cuervo en vuelo les gana), de noche recorren
+  hasta 4 islas y cazan a cualquier especie (también lobos); comen menos (hambre 0,25). Dos horas antes del alba
+  vuelven corriendo al nido; si no llegan, se quedan bajo un árbol, donde de día los cazan humanos y lobos.
+  **Como mucho 2 nidos por isla** (uno, o dos si la zona tiene 18 tiles o más), en el corazón de la zona (lo más
+  lejos de su borde); de 1 a 3 goblins por nido más 1 por cada 20 tiles, hasta 5; un nido no pasa de 6 y solo
+  crían bien comidos. Con el tope de nidos, ni se dividen ni se van a fundar otro.
+- **Combate** (común a todas las especies): al alcanzar a la presa luchan cuerpo a cuerpo de 3 a 6 minutos de juego,
+  encarados, con la espada sobre los dos; después, la tirada de siempre: cae, escapa herida (pierde algo de vida y
+  sale con el icono de huida) o planta cara (y huyen los cazadores, también con el icono de huida). Golpes por
+  turnos: se echa atrás, embiste, el golpeado parpadea en blanco, retrocede y tiembla; polvo al embestir.
+  **Sangre activable en Ajustes** (por defecto sí): gotas que saltan y manchan el suelo un día, charco bajo los
+  muertos en combate o cazados, rastro del que huye herido; sin sangre, una chispa blanca en cada golpe. Se puede
+  retocar cuando Gabriel lo vea en el móvil.
+- **Cadáveres**: se mide cuánto se han comido (carne que queda frente a la que tenía). Estados: fresco, comido,
+  huesos (queda el 15 %: solo comen los cuervos) y limpio. El dibujo de cada estado, pendiente del mockup.
+- El cuervo cuenta como comida los restos de las presas de otros (conejos incluidos) además de la fruta y la carroña.
+- **Restos para el cuervo**: cuando a un cadáver le queda el **15 %** de su carne, lobos, humanos y goblins lo dejan.
+- **Lobos en manada**: cuando uno caza, los suyos (a menos de 2 islas) acuden a comer de la presa; un adulto bien
+  comido lleva comida (regurgita) al joven más hambriento que aún no caza; desde la mitad de su edad de cría los
+  jóvenes pueden acompañar una cacería. Los goblins cazan menos lobos (preferencia 0,2).
+- **Temperatura** (escala del mundo 0..1, ~0,2 hiela, ~0,5 templado; 0,1 ≈ 5 °C): la Tierra Quemada viva
+  da calor (+0,6 encima, +0,2 en los tiles de al lado); su calor deshace la Escarcha por dentro, así que la Escarcha
+  solo contiene el borde, y un nido vivo nunca se congela. Cada especie tiene su franja de comodidad (ciervo -0,2..1,
+  conejo -0,1..0,98, lobo -0,4..0,95, cuervo -0,2..1,05, humano 0,1..1,02, goblin 0,3..sin tope de calor; una tarde
+  de verano típica está en ~0,7 y el desierto en verano llega a ~1). Fuera de
+  ella acumula frío o calor; desde la mitad busca abrigo (su refugio o los suyos) o sombra; desde 1, hipotermia o
+  golpe de calor (pierde vida cada hora). Protegen el refugio (+0,3), dormir apiñado (+0,1) y la sombra (-0,1 de
+  calor). Los demás animales evitan el calor de la Tierra Quemada.
+- **Los goblins hibernan en invierno** en su nido: duermen, no salen aunque tengan hambre y apenas gastan (10 %).
+  Ir a matarlos mientras hibernan (mandar humanos) será una decisión del jugador (fase 5).
+- Nidos de goblin en el corazón de su zona de Tierra Quemada (la zona puede estar en cualquier parte de la isla).
 - Grupos de tamaño aleatorio en todas las especies (pareja más 1 a 3 crías en lobos y cuervos, por ejemplo).
 - Los olfatos, el miedo, la alarma y las señales "!" "?" son comunes a todas las especies.
 - Las madrigueras abandonadas las ocupa otra colonia o se hunden solas en 30 días.
@@ -134,6 +169,12 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   píxeles se ven desiguales. Se decide tras la primera prueba si se quitan esos zooms o se deja así.
 - **Mandar correr a un animal muchas veces en una semana hace que acabe yéndose de la isla** (así el jugador puede
   intentar formar grupos equilibrados, con un coste).
+- **Rendimiento**: los chunks se redibujan como mucho uno por frame y solo los que se ven (los de fuera esperan a
+  verse); la simulación no cambia. Siguiente paso, con el mismo resultado en pantalla: hornear solo los tiles que
+  cambian o hornear en un Web Worker.
+- La vegetación y los biomas se revisan cada hora **chunk a chunk, cada uno en su minuto** (antes, todos en el minuto
+  en punto): cada chunk sigue revisándose una vez por hora, como mucho 59 minutos de juego antes o después (unos 15 s
+  reales a ×1). La hora de la fauna (hambre, partos, sol) sigue en el minuto en punto.
 - **Rendimiento con islas grandes y mucha población**: ver el informe de rendimiento de la fase 4 (mover la física
   a un Web Worker, repartir la física y la fauna por chunks cercanos a la cámara, etc. en la fase 9).
 - **Los lobos se van demasiado pronto de un 2×2** (en las pruebas pasaban entre 11 y 28 días de 120 en la isla) y

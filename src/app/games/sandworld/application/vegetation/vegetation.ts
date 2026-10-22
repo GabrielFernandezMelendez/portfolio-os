@@ -1,3 +1,4 @@
+import { ChunkSlot, inSlot } from '../world/chunk-slot';
 import { ChunkData, PLANT_SLOTS, cellIndex, groundAt, tileIndex } from '../../domain/models/chunk.model';
 import { PlantDef, VegetationChange } from '../../domain/models/plant.model';
 import { BiomeId, TileContext } from '../../domain/models/biome.model';
@@ -186,9 +187,11 @@ export class VegetationSystem {
   }
 
   /** Revisa toda la vegetación descubierta. Devuelve los chunks cuyo aspecto ha cambiado. */
-  update(elapsedDays: number, season: SeasonId): VegetationChange[] {
+  update(elapsedDays: number, season: SeasonId, slot?: ChunkSlot): VegetationChange[] {
     const changed: VegetationChange[] = [];
-    for (const { cx, cy } of this.world.exploration.list()) {
+    const list = this.world.exploration.list();
+    for (const [index, { cx, cy }] of list.entries()) {
+      if (slot && !inSlot(index, list.length, slot)) continue;
       const chunk = this.world.chunk(cx, cy);
       let visible = false;
       for (let j = 0; j < N; j++) {

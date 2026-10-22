@@ -55,7 +55,10 @@
       "crowPair": "Test: raven pair (with chicks)",
       "humanBand": "Test: human band",
       "goblinNest": "Test: Burnt Land with goblins"
-    }
+    },
+    "blood": "Blood in fights",
+    "yes": "Yes",
+    "no": "No"
   },
   "lang": {
     "es": "Español",
@@ -156,7 +159,10 @@
           "lightning": "{name} was struck by lightning.",
           "buried": "{name} was buried under the sand.",
           "predation": "{name} was caught by the wolves.",
-          "injury": "{name} has died of its wounds."
+          "injury": "{name} has died of its wounds.",
+          "frost": "{name} froze to death.",
+          "heat": "{name} died of heatstroke.",
+          "sun": "{name} died of sunstroke."
         },
         "herdSplit": "A deer herd has split up: there were too many of them.",
         "hunger": "The deer are starving: there isn't enough food for everyone.",
@@ -192,7 +198,10 @@
           "drowned": "{name} has drowned in its burrow.",
           "orphaned": "{name} didn't make it without its mother.",
           "predation": "{name} was caught by the wolves.",
-          "injury": "{name} has died of its wounds."
+          "injury": "{name} has died of its wounds.",
+          "frost": "{name} froze to death.",
+          "heat": "{name} died of heatstroke.",
+          "sun": "{name} died of sunstroke."
         },
         "herdSplit": "A rabbit colony has split up: the burrow wasn't big enough.",
         "hunger": "The rabbits are going hungry: there isn't enough grass for so many.",
@@ -236,7 +245,10 @@
           "drowned": "{name} has drowned in its den.",
           "orphaned": "{name} didn't make it without its mother.",
           "predation": "{name} was hunted down.",
-          "injury": "{name} has died of its wounds."
+          "injury": "{name} has died of its wounds.",
+          "frost": "{name} froze to death.",
+          "heat": "{name} died of heatstroke.",
+          "sun": "{name} died of sunstroke."
         },
         "herdSplit": "A wolf pack has split up: too many for one den.",
         "hunger": "The wolves are going hungry: there isn't enough prey.",
@@ -286,7 +298,8 @@
           "predation": "{name} was hunted down.",
           "injury": "{name} has died of its wounds.",
           "sun": "{name} was scorched by the sun.",
-          "frost": "{name} froze in its nest."
+          "frost": "{name} froze in its nest.",
+          "heat": "{name} died of heatstroke."
         },
         "herdSplit": "A flock of ravens has split up: too many beaks for one nest.",
         "hunger": "The ravens are going hungry: no carrion, nothing to steal.",
@@ -337,7 +350,8 @@
           "predation": "{name} was hunted down.",
           "injury": "{name} has died of their wounds.",
           "sun": "{name} has died of heatstroke.",
-          "frost": "{name} froze in their hut."
+          "frost": "{name} froze in their hut.",
+          "heat": "{name} died of heatstroke."
         },
         "herdSplit": "A band of humans has split up: they didn't fit in the hut (or in the conversation).",
         "hunger": "The humans are going hungry: hunting and berries aren't enough for everyone.",
@@ -388,7 +402,8 @@
           "predation": "{name} was hunted down.",
           "injury": "{name} has died of its wounds.",
           "sun": "{name} stayed out in the sun and withered away.",
-          "frost": "The frost sealed the nest: {name} froze to death."
+          "frost": "The frost sealed the nest: {name} froze to death.",
+          "heat": "{name} died of heat (which should be impossible)."
         },
         "herdSplit": "A goblin band has split up. Loudly, of course.",
         "hunger": "The goblins are going hungry. Bad news for everyone else.",
@@ -544,7 +559,8 @@
       "dead": "dead",
       "drink": "drinking",
       "inside": "in the burrow",
-      "howl": "howling"
+      "howl": "howling",
+      "fight": "fighting"
     },
     "factor": {
       "goodFood": "Good food",
@@ -652,7 +668,12 @@
       "revisit": "Back where there was meat last time. Memory is a wonderful thing.",
       "sunburnt": "The sun! It burns my skin! Who turned that on?",
       "frozenIn": "The frost has sealed my nest. It's deadly cold in here. Literally.",
-      "killedAttacker": "It came for us and it didn't go home."
+      "killedAttacker": "It came for us and it didn't go home.",
+      "escaped": "It caught me, but I broke free. I'm bleeding a bit, but I'm still here.",
+      "feedYoung": "I brought {name} some food. Pre-chewed, but food.",
+      "freezing": "I'm so cold I can't feel my legs anymore.",
+      "overheated": "I'm roasting. I need some shade or I'll melt.",
+      "hibernating": "Zzz… (Hibernating. Nobody wake me until spring.)"
     },
     "tab": {
       "status": "Status",

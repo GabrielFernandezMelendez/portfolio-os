@@ -55,7 +55,10 @@
       "crowPair": "Probar: pareja de cuervos (con crías)",
       "humanBand": "Probar: banda de humanos",
       "goblinNest": "Probar: Tierra Quemada con goblins"
-    }
+    },
+    "blood": "Sangre en los combates",
+    "yes": "Sí",
+    "no": "No"
   },
   "lang": {
     "es": "Español",
@@ -156,7 +159,10 @@
           "lightning": "A {name} le ha caído un rayo.",
           "buried": "{name} ha quedado sepultado bajo la arena.",
           "predation": "A {name} lo han cazado los lobos.",
-          "injury": "{name} ha muerto de sus heridas."
+          "injury": "{name} ha muerto de sus heridas.",
+          "frost": "{name} ha muerto de frío.",
+          "heat": "{name} ha muerto de un golpe de calor.",
+          "sun": "{name} ha muerto de una insolación."
         },
         "herdSplit": "Una manada de ciervos se ha dividido: ya no cabían.",
         "hunger": "Los ciervos pasan hambre: ya no hay comida para todos.",
@@ -192,7 +198,10 @@
           "drowned": "{name} se ha ahogado en su madriguera.",
           "orphaned": "{name} no ha salido adelante sin su madre.",
           "predation": "A {name} lo han cazado los lobos.",
-          "injury": "{name} ha muerto de sus heridas."
+          "injury": "{name} ha muerto de sus heridas.",
+          "frost": "{name} ha muerto de frío.",
+          "heat": "{name} ha muerto de un golpe de calor.",
+          "sun": "{name} ha muerto de una insolación."
         },
         "herdSplit": "Una colonia de conejos se ha dividido: ya no cabían en la madriguera.",
         "hunger": "Los conejos pasan hambre: ya no hay hierba para tantos.",
@@ -236,7 +245,10 @@
           "drowned": "{name} se ha ahogado en su guarida.",
           "orphaned": "{name} no ha salido adelante sin su madre.",
           "predation": "A {name} lo han cazado.",
-          "injury": "{name} ha muerto de sus heridas."
+          "injury": "{name} ha muerto de sus heridas.",
+          "frost": "{name} ha muerto de frío.",
+          "heat": "{name} ha muerto de un golpe de calor.",
+          "sun": "{name} ha muerto de una insolación."
         },
         "herdSplit": "Una manada de lobos se ha dividido: demasiados para una guarida.",
         "hunger": "Los lobos pasan hambre: no hay presas para todos.",
@@ -286,7 +298,8 @@
           "predation": "A {name} lo han cazado.",
           "injury": "{name} ha muerto de sus heridas.",
           "sun": "{name} ha muerto abrasado por el sol.",
-          "frost": "{name} se ha congelado en su nido."
+          "frost": "{name} se ha congelado en su nido.",
+          "heat": "{name} ha muerto de un golpe de calor."
         },
         "herdSplit": "Una bandada de cuervos se ha dividido: demasiados picos para un nido.",
         "hunger": "Los cuervos pasan hambre: ni carroña ni nada que robar.",
@@ -337,7 +350,8 @@
           "predation": "A {name} lo han cazado.",
           "injury": "{name} ha muerto de sus heridas.",
           "sun": "{name} ha muerto de una insolación.",
-          "frost": "{name} se ha congelado en su choza."
+          "frost": "{name} se ha congelado en su choza.",
+          "heat": "{name} ha muerto de un golpe de calor."
         },
         "herdSplit": "Una banda de humanos se ha dividido: no cabían todos en la choza (ni en la conversación).",
         "hunger": "Los humanos pasan hambre: la caza y las bayas no dan para todos.",
@@ -388,7 +402,8 @@
           "predation": "A {name} lo han cazado.",
           "injury": "{name} ha muerto de sus heridas.",
           "sun": "{name} se ha quedado al sol y se ha consumido.",
-          "frost": "La escarcha ha sellado el nido: {name} ha muerto congelado."
+          "frost": "La escarcha ha sellado el nido: {name} ha muerto congelado.",
+          "heat": "{name} ha muerto de calor (algo que no debería ser posible)."
         },
         "herdSplit": "Una banda de goblins se ha dividido. A gritos, claro.",
         "hunger": "Los goblins pasan hambre. Mala noticia para todos los demás.",
@@ -544,7 +559,8 @@
       "dead": "muerto",
       "drink": "bebiendo",
       "inside": "en la madriguera",
-      "howl": "aullando"
+      "howl": "aullando",
+      "fight": "peleando"
     },
     "factor": {
       "goodFood": "Buena comida",
@@ -652,7 +668,12 @@
       "revisit": "Vuelvo a donde hubo carne la otra vez. La memoria es lo que tiene.",
       "sunburnt": "¡El sol! ¡Me quema la piel! ¿Quién ha encendido eso?",
       "frozenIn": "La escarcha ha sellado mi nido. Aquí dentro hace un frío de muerte. Literal.",
-      "killedAttacker": "Ha venido a por nosotros y no ha vuelto a casa."
+      "killedAttacker": "Ha venido a por nosotros y no ha vuelto a casa.",
+      "escaped": "Me han alcanzado, pero me he soltado. Sangro un poco, pero sigo aquí.",
+      "feedYoung": "Le he llevado comida a {name}. Masticada, pero comida.",
+      "freezing": "Tengo tanto frío que ya no siento las patas.",
+      "overheated": "Me aso. Necesito una sombra o me derrito.",
+      "hibernating": "Zzz… (Hibernando. Que nadie me despierte hasta la primavera.)"
     },
     "tab": {
       "status": "Estado",

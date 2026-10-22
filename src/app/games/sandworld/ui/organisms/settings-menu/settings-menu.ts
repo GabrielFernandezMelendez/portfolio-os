@@ -5,7 +5,7 @@ import { WoodButtonComponent } from '../../atoms/wood-button/wood-button';
 import { TPipe } from '../../../i18n/t.pipe';
 import { DEV_ACTIONS, DEV_TOOLS, DevAction } from '../../../config/dev.config';
 
-/** Ajustes: idioma y salir. El juego queda en pausa mientras está abierto. */
+/** Ajustes: idioma, sangre en los combates y salir. El juego queda en pausa mientras está abierto. */
 @Component({
   selector: 'sw-settings-menu',
   standalone: true,
@@ -18,6 +18,14 @@ import { DEV_ACTIONS, DEV_TOOLS, DevAction } from '../../../config/dev.config';
         @for (l of langs; track l) {
           <button swWood role="radio" [active]="lang() === l" [attr.aria-checked]="lang() === l" (click)="langChange.emit(l)">
             {{ 'lang.' + l | t }}
+          </button>
+        }
+      </div>
+      <h3>{{ 'settings.blood' | t }}</h3>
+      <div class="langs" role="radiogroup" [attr.aria-label]="'settings.blood' | t">
+        @for (on of yesNo; track on) {
+          <button swWood role="radio" [active]="blood() === on" [attr.aria-checked]="blood() === on" (click)="bloodChange.emit(on)">
+            {{ (on ? 'settings.yes' : 'settings.no') | t }}
           </button>
         }
       </div>
@@ -47,6 +55,10 @@ import { DEV_ACTIONS, DEV_TOOLS, DevAction } from '../../../config/dev.config';
 export class SettingsMenuComponent {
   readonly lang = input.required<SandworldLang>();
   readonly langChange = output<SandworldLang>();
+  /** Sangre en los combates */
+  readonly blood = input(true);
+  readonly bloodChange = output<boolean>();
+  protected readonly yesNo = [true, false] as const;
   readonly close = output<void>();
   readonly exit = output<void>();
   readonly devAction = output<DevAction>();

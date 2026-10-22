@@ -3,7 +3,7 @@ import { AnimalSignal } from '../../domain/models/animal.model';
 import { SIGNAL_COLORS, SIGNAL_GLYPHS } from '../../config/fauna-art.config';
 
 /*
-  Signos sobre la cabeza de los animales: '!' (susto) y '?' (curiosidad), en pixel art con el mismo contorno que
+  Signos sobre la cabeza de los animales: '!' (susto), '?' (curiosidad), espada (combate) y polvareda (huida), en pixel art con el mismo contorno que
   la flecha de selección. Comunes a todas las especies: una textura de cada, creada una sola vez.
 */
 
@@ -20,9 +20,8 @@ export function signalTexture(kind: AnimalSignal): Texture {
 }
 
 function signalCanvas(kind: AnimalSignal): HTMLCanvasElement {
-  const rows = SIGNAL_GLYPHS[kind];
-  const [main, dark] = SIGNAL_COLORS[kind];
-  const colour: Record<string, number> = { o: SIGNAL_COLORS.outline, W: SIGNAL_COLORS.shine, A: main, a: dark };
+  const rows: readonly string[] = SIGNAL_GLYPHS[kind];
+  const colour: Record<string, number> = { o: SIGNAL_COLORS.outline, W: SIGNAL_COLORS.shine, ...SIGNAL_COLORS[kind] };
   const w = rows[0].length, h = rows.length;
   const canvas = document.createElement('canvas');
   canvas.width = w;

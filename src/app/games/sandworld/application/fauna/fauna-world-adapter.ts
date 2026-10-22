@@ -7,6 +7,7 @@ import { ChunkCoord } from '../../domain/events/game-events';
 import { FaunaWorld, Meal } from '../../domain/ports/fauna-world.port';
 import { RandomSource } from '../../domain/ports/random-source.port';
 import { PLANT_DEFS, PLANT_MIN } from '../../config/plants.config';
+import { BURNT_AURA, BURNT_HEAT } from '../../config/fauna.config';
 import { World } from '../world/world';
 import { VegetationSystem } from '../vegetation/vegetation';
 import { fruitLevel, invalidateLayout, layoutOf, plantsOf } from '../vegetation/plant-layout';
@@ -41,7 +42,12 @@ const eats = (p: PlantDef, diets: readonly Diet[]): boolean => !!p.food && p.foo
 export class FaunaWorldAdapter implements FaunaWorld {
   private readonly changed = new Map<string, ChunkCoord>();
 
-  constructor(private readonly world: World, private readonly vegetation: VegetationSystem) {}
+  constructor(
+    private readonly world: World,
+    private readonly vegetation: VegetationSystem,
+    /** Temperatura del clima en una celda (la física); sin ella, templado */
+    private readonly climateAt: (gx: number, gy: number) => number | null = () => 0.5,
+  ) {}
 
   /** Chunks cuya vegetación ha cambiado por la fauna desde la última llamada (se vacía al leerla) */
   takeChanges(): ChunkCoord[] {
@@ -60,9 +66,27 @@ export class FaunaWorldAdapter implements FaunaWorld {
     return c.chunk.water[c.k] < DEEP && (burnt || c.chunk.material[c.k] !== Material.CHARRED);
   }
 
+  /** ¿Helado? La Tierra Quemada viva no se hiela (su calor deshace la Escarcha): un nido vivo nunca se congela */
   frozenAt(gx: number, gy: number): boolean {
     const t = this.tile(Math.floor(gx / G), Math.floor(gy / G));
-    return !!t && t.chunk.frozen[tileIndex(t.i, t.j)] > 0;
+    if (!t) return false;
+    const k = tileIndex(t.i, t.j);
+    return t.chunk.frozen[k] > 0 && !(t.chunk.burnt[k] > 0 && t.chunk.life[k] > 0);
+  }
+
+  temperature(gx: number, gy: number): number {
+    const base = this.climateAt(gx, gy) ?? 0.5;
+    const ti = Math.floor(gx / G), tj = Math.floor(gy / G);
+    if (this.burntAlive(ti, tj)) return base + BURNT_HEAT;
+    for (const [di, dj] of SIDES) if (this.burntAlive(ti + di, tj + dj)) return base + BURNT_AURA;
+    return base;
+  }
+
+  private burntAlive(ti: number, tj: number): boolean {
+    const t = this.tile(ti, tj);
+    if (!t) return false;
+    const k = tileIndex(t.i, t.j);
+    return t.chunk.burnt[k] > 0 && t.chunk.life[k] > 0;
   }
 
   feedBurnt(gx: number, gy: number, amount: number): void {
@@ -291,3 +315,4 @@ export class FaunaWorldAdapter implements FaunaWorld {
 }
 
 const EMPTY: ReadonlySet<number> = new Set();
+const SIDES = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;

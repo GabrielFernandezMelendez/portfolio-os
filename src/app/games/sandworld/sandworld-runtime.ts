@@ -19,7 +19,7 @@ import { World } from './application/world/world';
 import { WORLD } from './domain/models/world.model';
 import { BRUSH_CELLS } from './config/brush.config';
 import { CLOUD_CAMERA_MARGIN, REVEAL_ON_START } from './config/clouds.config';
-import { REBAKE_INTERVAL_MS } from './config/physics.config';
+import { REBAKE_INTERVAL_MS, REBAKE_VISIBLE_MARGIN, REBAKES_PER_FRAME } from './config/physics.config';
 import { POUR_EDGE_BAND, POUR_TAP_SECONDS } from './config/pour.config';
 import { ChunkCoord } from './domain/events/game-events';
 import { FaunaLayer, FaunaView, Ground } from './rendering/fauna/fauna-layer';
@@ -353,15 +353,24 @@ export class SandworldRuntime {
     return { container: layer.plantsView, point: (x, y) => layer.floatPoint(x - cx * C, y - cy * C) };
   };
 
-  /** Re-hornea los chunks cambiados, cada uno como mucho cada REBAKE_INTERVAL_MS */
+  /**
+   * Re-hornea los chunks cambiados, cada uno como mucho cada REBAKE_INTERVAL_MS y como mucho REBAKES_PER_FRAME por
+   * frame (el que lleva más tiempo esperando, primero). Los que no se ven esperan a entrar en pantalla: así el coste
+   * de dibujar no depende del tamaño de la isla. La simulación no se entera: solo cambia cuándo se redibuja.
+   */
   private rebakeDirty(): void {
-    for (const key of this.dirty) {
+    let budget = REBAKES_PER_FRAME;
+    const waiting = [...this.dirty].sort((a, b) => (this.lastBake.get(a) ?? -Infinity) - (this.lastBake.get(b) ?? -Infinity));
+    for (const key of waiting) {
+      if (budget <= 0) break;
       const layer = this.terrains.get(key);
       if (!layer) {
         this.dirty.delete(key);
         continue;
       }
       if (this.now - (this.lastBake.get(key) ?? -Infinity) < REBAKE_INTERVAL_MS) continue;
+      if (!this.camera.sees(layer.bounds, REBAKE_VISIBLE_MARGIN)) continue;
+      budget--;
       const [cx, cy] = key.split(',').map(Number);
       layer.render(this.world.chunk(cx, cy));
       layer.layoutPlants(this.engine.time, this.revealed, true);

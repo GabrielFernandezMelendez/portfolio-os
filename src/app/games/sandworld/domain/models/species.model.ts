@@ -37,17 +37,30 @@ export interface SpeciesDef {
   readonly sunHurt?: number;
   /** Vida que le quita por hora estar en un refugio helado (la Escarcha apaga la brasa de los goblins) */
   readonly frostHurt?: number;
+  /**
+   * Franja de temperatura en la que está a gusto (escala del mundo 0..1, ver fauna.config). Fuera de ella acumula
+   * frío o calor. Un valor muy alto en `max` = no le afecta el calor.
+   */
+  readonly comfort: readonly [min: number, max: number];
+  /** Hiberna en esas estaciones: se queda en su refugio, durmiendo, y apenas gasta (`needs`: lo que come y bebe) */
+  readonly hibernate?: { readonly seasons: readonly SeasonId[]; readonly needs: number };
   /** No le hace nada el fuego ni le asusta (vive en la Tierra Quemada) y puede pisar el suelo calcinado */
   readonly fireproof?: boolean;
   /**
-   * Nace con la Tierra Quemada (goblins): pasados `delayDays` días desde que se forma, aparecen nidos (uno por cada
-   * `tilesPerNest` tiles) con `perNest` de ellos cada uno, por tirada. Mientras quede uno vivo, la Tierra Quemada
+   * Nace con la Tierra Quemada (goblins): pasados `delayDays` días desde que se forma, aparecen sus nidos (uno o dos
+   * según el tamaño de la zona, con tope en la isla) con `perNest` de ellos cada uno, por tirada. Mientras quede uno vivo, la Tierra Quemada
    * vive; cuando no queda ninguno, remite. Lo que comen alimenta el suelo quemado (crece más deprisa).
    */
   readonly burntBorn?: {
     readonly delayDays: readonly [number, number];
+    /** Una zona más pequeña que esto (tiles) da un nido; desde este tamaño, dos */
     readonly tilesPerNest: number;
+    /** Nidos que caben en toda la isla, da igual lo grandes que sean las zonas (y sin sitio no se divide ni se va nadie a fundar otro) */
+    readonly maxNests: number;
+    /** Criaturas de cada nido al nacer (tirada), más una por cada `extraPerTiles` tiles de la zona, hasta `perNestMax` */
     readonly perNest: readonly [number, number];
+    readonly extraPerTiles: number;
+    readonly perNestMax: number;
     readonly feedsBurnt: number;
   };
   /**
@@ -118,6 +131,7 @@ export interface SpeciesDef {
    *   se pase).
    * - `hungryLeave`: cada día, una manada con hambre de verdad puede irse de la isla (más cuanto más hambre).
    * - `onlyIfAbsent`: solo llegan de fuera si no queda ni uno de su especie en la isla (los demás nacen aquí).
+   * - `carrionBonus`: la carroña les atrae (más llegadas si la hay), pero no la necesitan para llegar.
    * - `carrionLure`: llegan atraídos por el olor de los cadáveres: sin carroña en la isla no llegan, y con ella la
    *   tirada se multiplica por este valor.
    * - `founders` y `extraYoung`: quiénes llegan de fuera, si no son los fundadores de la especie (p. ej. el lobo:
@@ -131,6 +145,8 @@ export interface SpeciesDef {
     readonly hungryLeave?: number;
     readonly onlyIfAbsent?: boolean;
     readonly carrionLure?: number;
+    /** Con carroña en la isla llegan más (la tirada se multiplica), pero también llegan sin ella (cuervo) */
+    readonly carrionBonus?: number;
     readonly founders?: readonly { readonly sex: 'male' | 'female'; readonly age: 'adult' | 'young' }[];
     readonly extraYoung?: readonly [number, number];
     readonly extraAdults?: readonly [number, number];
@@ -256,6 +272,14 @@ export interface SeasonBreeding {
  * cada 5 minutos abandona con `giveUp`. Con poca presa cerca de su guarida, se va de viaje de caza (`trip`).
  */
 export interface PredatorDef {
+  /** Pica los huesos (cuervo): sigue comiendo de un cadáver cuando a los demás ya no les compensa (BONES_LEFT) */
+  readonly bones?: boolean;
+  /** Comparte la presa: cuando uno caza, la manada acude a comer (SHARE_RANGE) */
+  readonly shareKill?: boolean;
+  /** Tirada (por pensamiento) de llevar comida a los jóvenes que aún no cazan, si está bien comido */
+  readonly feedYoung?: number;
+  /** Por debajo de esta saciedad ya va a por carroña, aunque aún no cace (por defecto, huntBelow) */
+  readonly carrionBelow?: number;
   readonly prey: Readonly<Record<string, number>>;
   readonly huntBelow: number;
   readonly huntChance: number;

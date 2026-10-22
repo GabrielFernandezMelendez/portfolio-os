@@ -7,12 +7,13 @@ import { WORLD } from '../../domain/models/world.model';
 import { PLANT_DEFS } from '../../config/plants.config';
 import { SPECIES_BY_KEY, SPECIES_DEFS } from '../../config/species.config';
 import {
-  BURROW_ENTER, CARRY_PIECE, CONTACT, MEAT_BITE, MEAT_BY_SIZE, VIGIL_RANGE, CAPACITY_DAYS, COLLAPSE, CORPSE_FERTILITY, FREEZE_MINUTES, INSIDE_HUNGRY, CROWDED, DRINK_RANGE, EAT_BELOW, FIRE_HEALTH_PER_MINUTE,
+  BURROW_ENTER, BONES_LEFT, CARRY_PIECE, CONTACT, MEAT_BITE, MEAT_BY_SIZE, VIGIL_RANGE, CAPACITY_DAYS, COLLAPSE, CORPSE_FERTILITY, FREEZE_MINUTES, INSIDE_HUNGRY, CROWDED, DRINK_RANGE, EAT_BELOW, FIRE_HEALTH_PER_MINUTE,
   FOOD_HERE, FORAGE_RADIUS, FORAGE_SAMPLES, FULL, GATHER_MARGIN, JOIN_RANGE, LOST_NIGHT, MAX_STEP, PATH_FROM, PATH_NODES,
   REJECT_HEALTH, RETURN_CHANCE, ROAM_CHANCE, ROAM_HOURS, RUN_MIN, RUN_STOP, RUN_TIRE_PER_MINUTE, SEED_GUT_HOURS,
   SLEEP_BELOW, SOIL_DAMAGE, SOIL_DAMAGE_FROM, STUCK_MINUTES, THINK_MINUTES, THIRST_BELOW, TOXIC_HEALTH, TRAMPLE,
-  WELCOME_CHANCE, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
+  WELCOME_CHANCE, SCAVENGE_SHARE, REFUGE_WARMTH, HUDDLE_WARMTH, SHADE_COOL, EXPOSURE_RATE, EXPOSURE_RECOVER, EXPOSURE_SEEK, EXPOSURE_DAMAGE, FEED_YOUNG_ABOVE, REGURGITATE, SHARE_RANGE, FIGHT_MINUTES, FIGHT_WOUND, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
 } from '../../config/fauna.config';
+import { bonesLeft, CLEAN_BONES } from './carcass';
 import { NeedMods, ageDays, appetite, lifeStage, passTime, updateHappiness } from './needs';
 import { Stimulus } from '../../domain/models/stimulus.model';
 import {
@@ -31,6 +32,8 @@ import { arrivalChance, crowdLeaveChance, crowding, groupsCap, leaveChance, spec
 const DAY = CALENDAR.MINUTES_PER_DAY;
 /** ¿Hora de sol? (de día, fuera del nido, el sol quema a los que viven de noche) */
 const isSunHour = (hour: number): boolean => (hour % 24) >= SUN_HOURS[0] && (hour % 24) < SUN_HOURS[1];
+/** Más lejos que esto (celdas) de su nido, vuelve corriendo antes del alba */
+const COVER_RUN_FROM = 12;
 const NO_DANGER = { level: 0, fromX: 0, fromY: 0 } as const;
 
 /** Valor medio de una tirada entre dos enteros (0 si no hay) */
@@ -392,7 +395,7 @@ export class FaunaSystem {
 
   private think(a: Animal, s: SpeciesDef, t: GameTime): void {
     const now = t.totalMinutes;
-    if (a.action === 'run') return;   // corre hasta cansarse (o, si huye, hasta relajarse)
+    if (a.action === 'fight' || a.action === 'run') return;   // lucha o corre: lo lleva act minuto a minuto   // corre hasta cansarse (o, si huye, hasta relajarse)
     // Dentro de la madriguera: duerme, cría y se esconde (sale cuando toca, por las tiradas de cada hora)
     if (a.inside !== null) return this.thinkInside(a, s, now);
     // Fuego al lado: miedo, del lado del fuego (no a los que viven en la Tierra Quemada)
@@ -461,8 +464,10 @@ export class FaunaSystem {
     // Mucha sed: beber va antes que cazar, volver a casa o dormir (si está bebiendo, sigue hasta llenarse)
     if (a.action === 'drink' && a.hydration < FULL) return;
     if (a.hydration < THIRST_URGENT) return this.goDrink(a, s, now);
-    // Se acerca el día y el sol le quema: a cubierto
+    // Se acerca el día y el sol le quema, o es su estación de hibernar: a cubierto (a su refugio)
     if (this.takeCover(a, s, herd, t.hour, now)) return;
+    // Pasa frío o calor: busca abrigo (su refugio o los suyos) o sombra
+    if (this.seekComfort(a, s, herd, members, now)) return;
     // Depredador: cazar, comer carroña, llevar carne a las crías
     if (s.predator && this.thinkPredator(a, s, t, members, herd)) return;
     const night = sleepTime(s, t.hour);
@@ -921,6 +926,8 @@ export class FaunaSystem {
         break;
       }
       case 'run': this.runStep(a, s, now); break;
+      // Luchando: quieto (los golpes son cosa del dibujo); minuto a minuto mira si se acaba y se resuelve la tirada
+      case 'fight': this.thinkFight(a, now); break;
     }
     // El miedo se pasa con el tiempo (corriendo, más deprisa: se desahoga)
     a.fear = Math.max(0, a.fear - FEAR_DECAY * (a.fleeing ? 3 : 1));
@@ -1148,7 +1155,21 @@ export class FaunaSystem {
    */
   private thinkPredator(a: Animal, s: SpeciesDef, t: GameTime, members: Animal[], herd: Herd | undefined): boolean {
     const now = t.totalMinutes, pred = s.predator!;
-    if (ageDays(a, now) < s.youngDays) return false;      // los cachorros no cazan
+    const age = ageDays(a, now);
+    // Banquete de la manada: si han cazado y le queda hambre, va a comer (también los jóvenes)
+    if (herd?.feast != null && a.feeding === null && a.satiety < FULL - 0.05 && !this.nursling(a, s, now)) {
+      const c = this.corpses.find(x => x.id === herd.feast);
+      if (!c || c.meat <= this.leftovers(c, s)) herd.feast = null;
+      else if (Math.hypot(c.x - a.x, c.y - a.y) <= SHARE_RANGE * ISLAND) {
+        if (Math.hypot(c.x - a.x, c.y - a.y) <= CONTACT) {
+          a.feeding = c.id;
+          this.setAction(a, 'eat', now);
+        } else this.walkTo(a, c.x, c.y, now);
+        return true;
+      }
+    }
+    // Los jóvenes aún no cazan solos; desde la mitad de su edad de cría pueden acompañar a una cacería (aprenden)
+    if (age < s.youngDays && !(a.hunt && age >= s.youngDays / 2)) return false;
     // Cazando: acecha andando hacia la presa (la persecución va minuto a minuto, corriendo)
     if (a.hunt) {
       const prey = this.animals.find(p => p.id === a.hunt!.target);
@@ -1156,10 +1177,15 @@ export class FaunaSystem {
         a.hunt = null;
         return false;
       }
+      // Una persecución que ya no corre (se paró, se quedó atrás) se da por perdida: puede volver a cazar
+      if (a.hunt.phase === 'chase' && a.action !== 'run' && a.action !== 'fight') {
+        a.hunt = null;
+        return false;
+      }
       if (a.hunt.phase === 'stalk') {
         if (dist(a, prey) <= CONTACT) {
-          // Llega sin que le vea: le salta encima por sorpresa
-          this.strike(a, s, prey, now, true);
+          // Llega sin que le vea: le salta encima por sorpresa (cuerpo a cuerpo y, al acabar, la tirada)
+          this.startFight(a, prey, now, true);
           return true;
         }
         this.walkTo(a, prey.x, prey.y, now);
@@ -1171,14 +1197,34 @@ export class FaunaSystem {
     if (a.feeding !== null && a.action === 'eat') return true;
     // Con carne para las crías: a la guarida
     if (a.carrying > 0) return this.carryHome(a, s, members, herd, now);
+    // Bien comido: lleva comida (la regurgita) al joven más hambriento de su manada que aún no caza por su cuenta
+    if (pred.feedYoung && a.satiety >= FEED_YOUNG_ABOVE && this.random.next() < pred.feedYoung) {
+      let best: Animal | null = null;
+      for (const m of members) {
+        if (m === a || m.inside !== null || this.nursling(m, s, now) || ageDays(m, now) >= s.youngDays || m.satiety >= 0.5) continue;
+        if (Math.hypot(m.x - a.x, m.y - a.y) > SHARE_RANGE * ISLAND) continue;
+        if (!best || m.satiety < best.satiety) best = m;
+      }
+      if (best) {
+        if (dist(a, best) <= 2) {
+          best.satiety = Math.min(1, best.satiety + REGURGITATE);
+          a.satiety -= REGURGITATE / 2;
+          write(a, 'feedYoung', now, { name: best.name });
+          this.setAction(a, 'idle', now);
+        } else this.walkTo(a, best.x, best.y, now);
+        return true;
+      }
+    }
     const nursing = herd ? members.some(m => this.nursling(m, s, now) && m.inside !== null) : false;
     const hungry = a.satiety < pred.huntBelow;
-    // Carroña: si huele un cadáver con carne (y tiene hambre o hay crías esperando), va a por él
-    if (hungry || (nursing && a.satiety >= 0.8)) {
+    // Carroña: si huele un cadáver con carne (y tiene algo de hambre o hay crías esperando), va a por él. Antes de
+    // tener hambre de cazar ya vuelve a rematar lo que hay (`carrionBelow`): así no caza otra presa con la anterior a medias
+    const peckish = a.satiety < (pred.carrionBelow ?? pred.huntBelow);
+    if (hungry || peckish || (nursing && a.satiety >= 0.8)) {
       const carrion = this.smellCarrion(a, s);
       if (carrion && this.random.next() < pred.carrion) {
         if (Math.hypot(a.x - carrion.x, a.y - carrion.y) <= CONTACT) {
-          if (!hungry && nursing) {
+          if (!hungry && !peckish && nursing) {
             // Ya ha comido: coge un trozo para las crías
             const piece = Math.min(CARRY_PIECE, carrion.meat);
             carrion.meat -= piece;
@@ -1211,7 +1257,7 @@ export class FaunaSystem {
       a.roam = null;
       write(a, 'hunting', now, { prey: `@species.${SPECIES_DEFS[prey.species].key}` });
       for (const m of members) {
-        if (m === a || m.hunt || ageDays(m, now) < s.youngDays || m.satiety > 0.8 || dist(m, a) > 12 || m.rest <= RUN_MIN) continue;
+        if (m === a || m.hunt || ageDays(m, now) < s.youngDays / 2 || m.satiety > 0.8 || dist(m, a) > 12 || m.rest <= RUN_MIN) continue;
         if (this.random.next() < pred.joinHunt) m.hunt = { target: prey.id, phase: 'stalk', since: now };
       }
       this.walkTo(a, prey.x, prey.y, now);
@@ -1224,7 +1270,7 @@ export class FaunaSystem {
   private smellCarrion(a: Animal, s: SpeciesDef): Animal | null {
     let best: Animal | null = null, bestD = Infinity;
     for (const c of this.corpses) {
-      if (c.meat <= 0.005) continue;
+      if (c.meat <= this.leftovers(c, s)) continue;
       const d = Math.hypot(c.x - a.x, c.y - a.y);
       if (d < bestD && (d <= CONTACT || this.random.next() < smellChance(s, d))) {
         best = c;
@@ -1232,6 +1278,14 @@ export class FaunaSystem {
       }
     }
     return best;
+  }
+
+  /**
+   * Carne que un comedor deja en el cadáver: casi nada para quien pica los huesos (cuervo); para los demás, los
+   * restos pegados a los huesos (BONES_LEFT de la carne que tenía al morir), que ya no les compensa.
+   */
+  private leftovers(c: Animal, s: SpeciesDef): number {
+    return s.predator?.bones ? CLEAN_BONES : bonesLeft(c);
   }
 
   /** ¿Va sola? (lejos de su manada, despistada o de una manada de uno): presa fácil */
@@ -1290,7 +1344,7 @@ export class FaunaSystem {
       return true;
     }
     if (dist(a, prey) <= CONTACT) {
-      this.strike(a, s, prey, now, false);
+      this.startFight(a, prey, now, false);
       return true;
     }
     a.runTo = { x: prey.x, y: prey.y };
@@ -1298,6 +1352,70 @@ export class FaunaSystem {
     a.runDx = dx / d;
     a.runDy = dy / d;
     return false;
+  }
+
+  /**
+   * Cuerpo a cuerpo: el cazador alcanza a su presa (o le salta encima) y luchan unos minutos encarados (FIGHT_MINUTES,
+   * por tirada), con la espada sobre los dos. Si la presa ya está luchando con otro de la manada, este se une (cuenta
+   * como ayuda en la tirada). Al acabar, quien atacó primero resuelve la tirada de siempre (strike).
+   */
+  private startFight(a: Animal, prey: Animal, now: number, ambush: boolean): void {
+    if (prey.fight) {
+      // Ya luchan: se suma a la pelea como ayuda (sin pelea propia: espera a que se resuelva)
+      a.fight = { with: prey.id, until: prey.fight.until, attacker: false, ambush };
+    } else {
+      const [lo, hi] = FIGHT_MINUTES;
+      const until = now + lo + Math.floor(this.random.next() * (hi - lo + 1));
+      a.fight = { with: prey.id, until, attacker: true, ambush };
+      prey.fight = { with: a.id, until, attacker: false, ambush };
+      this.signal(prey, 'fight', now);
+      this.setAction(prey, 'fight', now);
+      prey.path = null;
+      prey.runTo = null;
+      this.face(prey, a.x - prey.x, a.y - prey.y);
+    }
+    this.signal(a, 'fight', now);
+    this.setAction(a, 'fight', now);
+    a.path = null;
+    a.runTo = null;
+    this.face(a, prey.x - a.x, prey.y - a.y);
+  }
+
+  /** Luchando: quietos y encarados hasta que se acaba el tiempo; entonces quien atacó resuelve la tirada */
+  private thinkFight(a: Animal, now: number): void {
+    const f = a.fight;
+    const other = f ? this.animals.find(o => o.id === f.with) : undefined;
+    // Sin pelea o sin rival (ha muerto o se ha ido): se acaba
+    if (!f || !other || (!f.attacker && now > f.until + 1)) return this.endFight(a, now);
+    this.face(a, other.x - a.x, other.y - a.y);
+    if (!f.attacker || now < f.until) return;
+    const s = SPECIES_DEFS[a.species];
+    const fighters = this.animals.filter(h => h.fight?.with === other.id || h === other);
+    this.strike(a, s, other, now, f.ambush);
+    for (const h of fighters) if (h.fight) this.endFight(h, now);
+    // Se le ha escapado: los cazadores que siguen tras ella vuelven a perseguirla corriendo
+    if (other.diedAt === null && this.animals.includes(other)) {
+      for (const h of this.animals) {
+        if (h.hunt?.target !== other.id || h.action === 'run') continue;
+        h.hunt.phase = 'chase';
+        this.startRun(h, other.x - h.x, other.y - h.y, now);
+        h.runTo = { x: other.x, y: other.y };
+      }
+    }
+    // Sigue viva y no ha hecho huir a los cazadores: se suelta y escapa herida (con la polvareda de la huida)
+    if (other.diedAt === null && this.animals.includes(other) && this.animals.some(h => h.hunt?.target === other.id)) {
+      other.health -= FIGHT_WOUND;
+      write(other, 'escaped', now, undefined, true);
+      if (other.health <= 0) return this.die(other, 'injury', now);
+      this.signal(other, 'flee', now);
+      other.fleeing = true;
+      this.startRun(other, other.x - a.x, other.y - a.y, now);
+    }
+  }
+
+  private endFight(a: Animal, now: number): void {
+    a.fight = null;
+    if (a.action === 'fight') this.setAction(a, 'idle', now);
   }
 
   /**
@@ -1329,6 +1447,10 @@ export class FaunaSystem {
         for (const h of hunters) {
           h.hunt = null;
           if (h.action === 'run') this.endRun(h, SPECIES_DEFS[h.species], now);
+          // Se van corriendo de la presa que les ha plantado cara
+          if (h.fight) this.endFight(h, now);
+          this.signal(h, 'flee', now);
+          this.startRun(h, h.x - prey.x, h.y - prey.y, now);
         }
         this.news.push({ type: 'repelled', species: a.species, prey: prey.species, name: prey.name });
         return;
@@ -1358,12 +1480,15 @@ export class FaunaSystem {
       h.feeding = prey.id;
       this.setAction(h, 'eat', now);
     }
+    // Llamada a la presa: la manada que caza en grupo (y comparte) acude a comer
+    const herd = this.herds.get(a.herd);
+    if (herd && s.predator?.shareKill) herd.feast = prey.id;
   }
 
   /** Come del cadáver: bocados de carne hasta llenarse o acabarlo */
   private feedOn(a: Animal, s: SpeciesDef, now: number): void {
     const c = this.corpses.find(x => x.id === a.feeding);
-    if (!c || c.meat <= 0.005 || Math.hypot(c.x - a.x, c.y - a.y) > CONTACT * 2 || a.satiety >= FULL) {
+    if (!c || c.meat <= this.leftovers(c, s) || Math.hypot(c.x - a.x, c.y - a.y) > CONTACT * 2 || a.satiety >= FULL) {
       a.feeding = null;
       this.setAction(a, 'idle', now);
       if (c && a.satiety >= FULL) write(a, 'gorged', now);
@@ -1500,8 +1625,13 @@ export class FaunaSystem {
     const b = this.burrows.get(a.inside);
     if (!b) return this.exit(a, now);
     // A quien el sol quema no le saca el hambre de día: espera a que anochezca
-    const sunOut = !!s.sunHurt && isSunHour(Math.floor((now % DAY) / 60));
+    const sunOut = (!!s.sunHurt && isSunHour(Math.floor((now % DAY) / 60))) || this.hibernating(s);
     if (!this.nursling(a, s, now) && !b.blocked && !sunOut && a.fear < RELAXED && (a.satiety < INSIDE_HUNGRY || a.hydration < INSIDE_HUNGRY)) return this.exit(a, now);
+    if (this.hibernating(s)) {
+      // Hibernando: duerme sin parar (y de vez en cuando lo cuenta en su diario)
+      if (this.random.next() < 0.01) write(a, 'hibernating', now);
+      return this.setAction(a, 'sleep', now);
+    }
     this.setAction(a, a.rest < 0.95 ? 'sleep' : 'idle', now);
   }
 
@@ -1510,11 +1640,18 @@ export class FaunaSystem {
    * a su nido si lo tienen; si no, a la sombra de los árboles. Devuelve si ya se ha ocupado del animal.
    */
   private takeCover(a: Animal, s: SpeciesDef, herd: Herd | undefined, hour: number, now: number): boolean {
-    if (!s.sunHurt || !(isSunHour(hour + 1) || isSunHour(hour + 2))) return false;
+    const winter = this.hibernating(s);
+    if (!winter && (!s.sunHurt || !(isSunHour(hour + 1) || isSunHour(hour + 2)))) return false;
     const lair = s.refuge && !a.strayed ? this.burrows.usable(herd, now) : undefined;
-    if (lair) {
-      if (Math.hypot(a.x - lair.x, a.y - lair.y) <= BURROW_ENTER) this.enter(a, lair, now);
-      else this.walkTo(a, lair.x, lair.y, now);
+    const far = lair ? Math.hypot(a.x - lair.x, a.y - lair.y) : Infinity;
+    // ¿Llega antes de que salga el sol? (corriendo, con lo que queda hasta el amanecer)
+    const left = Math.max(0, (SUN_HOURS[0] - (hour % 24)) * 60);
+    if (lair && (winter || isSunHour(hour) || far <= s.speed.run * left)) {
+      if (far <= BURROW_ENTER) this.enter(a, lair, now);
+      else if (far > COVER_RUN_FROM && a.rest > RUN_MIN && a.action !== 'run') {
+        this.startRun(a, lair.x - a.x, lair.y - a.y, now);
+        a.runTo = { x: lair.x, y: lair.y };
+      } else if (a.action !== 'run') this.walkTo(a, lair.x, lair.y, now);
       return true;
     }
     const shade = this.world.shelterNear(Math.floor(a.x), Math.floor(a.y), 14);
@@ -1650,6 +1787,8 @@ export class FaunaSystem {
           continue;
         }
       }
+      // Frío y calor: fuera de su franja acumula exposición; pasado 1, hipotermia o golpe de calor
+      if (this.exposure(a, s, now)) continue;
       // Semillas de la fruta que comió
       for (let n = a.seeds.length - 1; n >= 0; n--) {
         if (now - a.seeds[n].at < SEED_GUT_HOURS * 60) continue;
@@ -1710,7 +1849,7 @@ export class FaunaSystem {
         this.herds.delete(h.id);
         continue;
       }
-      if (members.length <= s.herd.max) continue;
+      if (members.length <= s.herd.max || this.nestsFull(s)) continue;
       const leaving = splitOff(members, s, now);
       if (!leaving.length) continue;
       const angle = this.random.next() * Math.PI * 2;
@@ -1815,6 +1954,8 @@ export class FaunaSystem {
       }
       if (b.mode === 'season' && b.seasons.includes(t.season)) {
         for (const f of all) {
+          // Con tope de nidos (goblins), un nido lleno no cría: no caben más
+          if (s.burntBorn && this.members(f.herd).length >= s.herd.max) continue;
           const male = tryConceiveSeason(f, this.members(f.herd), s, now, density > CROWDED, this.random);
           if (male) write(f, 'mated', now, { name: male.name });
         }
@@ -1834,7 +1975,7 @@ export class FaunaSystem {
       if (s.dispersal) {
         for (const a of all) {
           const age = ageDays(a, now);
-          if (age < s.adultDays || age >= s.adultDays + 1 || this.members(a.herd).length < 2) continue;
+          if (age < s.adultDays || age >= s.adultDays + 1 || this.members(a.herd).length < 2 || this.nestsFull(s)) continue;
           if (this.random.next() >= s.dispersal[a.sex]) continue;
           this.disperse(a, s, now);
         }
@@ -2036,6 +2177,77 @@ export class FaunaSystem {
    * ¿Está la isla llena para un grupo nuevo de esta especie? Llena de grupos en general o de los suyos (los dos
    * topes se tiran cada vez: unas veces cabe uno más y otras no).
    */
+  /**
+   * Una hora de frío o calor: la temperatura de su celda, con el abrigo del refugio, de dormir apiñado con los suyos o
+   * el fresco de la sombra. Fuera de su franja acumula exposición (más cuanto más se sale); dentro, se recupera.
+   * Desde 1 pierde vida cada hora (hipotermia, golpe de calor). Devuelve si ha muerto.
+   */
+  private exposure(a: Animal, s: SpeciesDef, now: number): boolean {
+    const gx = Math.floor(a.x), gy = Math.floor(a.y);
+    const t = this.world.temperature(gx, gy);
+    const [lo, hi] = s.comfort;
+    // El abrigo y la sombra solo se miran cuando hacen falta (es caro mirar los árboles y la manada de cada animal)
+    let warm = 0, shade = 0;
+    if (a.inside !== null) warm += REFUGE_WARMTH;
+    else if (t < lo && a.action === 'sleep' && this.members(a.herd).filter(m => m !== a && dist(m, a) < s.herd.cohesion).length >= 2) warm += HUDDLE_WARMTH;
+    if (t > hi && a.inside === null && this.world.shelterNear(gx, gy, 1.5)) shade = SHADE_COOL;
+    const below = lo - (t + warm), above = (t - shade) - hi;
+    // Por cada 0,1 que se sale, EXPOSURE_RATE / 10 por hora
+    a.cold = below > 0 ? a.cold + below * EXPOSURE_RATE : Math.max(0, a.cold - EXPOSURE_RECOVER);
+    a.heat = above > 0 ? a.heat + above * EXPOSURE_RATE : Math.max(0, a.heat - EXPOSURE_RECOVER);
+    if (a.cold >= 1 || a.heat >= 1) {
+      const cold = a.cold >= a.heat;
+      a.health -= EXPOSURE_DAMAGE;
+      write(a, cold ? 'freezing' : 'overheated', now);
+      if (a.health <= 0) {
+        this.die(a, cold ? 'frost' : 'heat', now);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Frío: a su refugio si lo tiene; si no, junto a los suyos (de noche se apiñan). Calor: a la sombra de los árboles.
+   * Devuelve si se ha ocupado del animal.
+   */
+  private seekComfort(a: Animal, s: SpeciesDef, herd: Herd | undefined, members: Animal[], now: number): boolean {
+    if (a.cold >= EXPOSURE_SEEK && a.cold >= a.heat) {
+      const home = s.refuge && !a.strayed ? this.burrows.usable(herd, now) : undefined;
+      if (home && (s.refuge!.adultsInside || ageDays(a, now) < s.youngDays)) {
+        if (Math.hypot(a.x - home.x, a.y - home.y) <= BURROW_ENTER) this.enter(a, home, now);
+        else this.walkTo(a, home.x, home.y, now);
+        return true;
+      }
+      const leader = leaderOf(members, s, now);
+      if (leader && leader !== a && dist(a, leader) > s.herd.cohesion) {
+        this.walkTo(a, leader.x, leader.y, now);
+        return true;
+      }
+      return false;
+    }
+    if (a.heat >= EXPOSURE_SEEK) {
+      if (this.toShelter(a, s, now, 14)) return true;
+      if (a.action !== 'idle' && a.action !== 'sleep') this.setAction(a, 'idle', now);
+      return a.heat >= 1;
+    }
+    return false;
+  }
+
+  /** ¿Hiberna ahora? (su estación de hibernar: el invierno, para los goblins) */
+  private hibernating(s: SpeciesDef): boolean {
+    return !!s.hibernate && this.conditions.cold;
+  }
+
+  /** ¿Tiene ya la isla todos los nidos que caben de esta especie? (goblins: `burntBorn.maxNests`) */
+  nestsFull(s: SpeciesDef): boolean {
+    const max = s.burntBorn?.maxNests;
+    if (!max) return false;
+    let n = 0;
+    for (const h of this.herds.values()) if (h.species === s.id && this.members(h.id).length > 0) n++;
+    return n >= max;
+  }
+
   private islandFull(s: SpeciesDef): boolean {
     const chunks = this.world.islandChunks();
     if (chunks <= 0) return false;
@@ -2077,7 +2289,7 @@ export class FaunaSystem {
       health: 1, rest: 0.8, satiety: 0.8, hydration: 0.8, happiness: 0.6, factors: [], action: 'idle', actionSince: now, order: null,
       fear: 0, fearX: x, fearY: y, curious: null, fleeing: false, signal: null, pantUntil: 0, awakeUntil: 0, roam: null, path: null, stuckUntil: 0, strayed: 0,
       inside: null, outUntil: 0, frozenUntil: 0, runTo: null, sickUntil: null, immune: false, leftHerd: null, lateBy: 0, lateFor: -1, nursedAt: now, search: null, waterGoal: null, badWater: [],
-      hunt: null, carrying: 0, feeding: null, meat: 0,
+      hunt: null, fight: null, cold: 0, heat: 0, carrying: 0, feeding: null, meat: 0, meatFull: 0,
       runDx: 0, runDy: 0, runX: x, runY: y, dueAt: null, litter: 0, lastRutYear: -1, seeds: [], diary: [], diaryDay: -1,
       diaryToday: 0, diedAt: null, cause: null,
     };
@@ -2099,7 +2311,8 @@ export class FaunaSystem {
     a.hunt = null;
     a.feeding = null;
     // Su cuerpo es comida para los carnívoros (carroña)
-    a.meat = MEAT_BY_SIZE[SPECIES_DEFS[a.species].size] * (ageDays(a, now) < SPECIES_DEFS[a.species].youngDays ? 0.4 : 1);
+    a.meat = a.meatFull = MEAT_BY_SIZE[SPECIES_DEFS[a.species].size] * (ageDays(a, now) < SPECIES_DEFS[a.species].youngDays ? 0.4 : 1);
+    a.fight = null;
     this.corpses.push(a);
     this.news.push({ type: 'died', species: a.species, name: a.name, cause });
     if (!this.members(a.herd).length) this.herds.delete(a.herd);
@@ -2108,7 +2321,7 @@ export class FaunaSystem {
   }
 
   private newHerd(species: number, x: number, y: number): Herd {
-    const h: Herd = { id: this.nextHerd++, species, tx: x, ty: y, avoid: new Set(), habit: new Map(), zones: [], bed: null, burrow: null, trip: null, water: [], food: [], kills: [], leaving: null };
+    const h: Herd = { id: this.nextHerd++, species, tx: x, ty: y, avoid: new Set(), habit: new Map(), zones: [], bed: null, burrow: null, trip: null, water: [], food: [], kills: [], feast: null, leaving: null };
     this.herds.set(h.id, h);
     return h;
   }
@@ -2132,6 +2345,8 @@ export class FaunaSystem {
       if (a.inside === null && this.world.snowAt(Math.floor(a.x), Math.floor(a.y))) rest *= 0.6;
       if (a.inside === null && c.rain > 0.3 && !this.world.shelterNear(Math.floor(a.x), Math.floor(a.y), 1.5)) rest *= 0.75;
     }
+    // Hibernando en su refugio apenas gasta
+    if (a.inside !== null && this.hibernating(s)) return { hunger: s.hibernate!.needs, thirst: s.hibernate!.needs, rest };
     return { hunger: c.cold ? s.winterAppetite ?? 1 : 1, thirst: (c.hot ? 1.3 : 1) * (c.drought ? 1.2 : 1), rest };
   }
 
@@ -2148,17 +2363,29 @@ export class FaunaSystem {
   }
 
   /** Capacidad de cada especie: cuántos puede alimentar la comida en pie de la isla durante CAPACITY_DAYS */
+  /** Especies que son presa de algún depredador (para los que viven de sus restos) */
+  private readonly preyOfSomeone = new Set(SPECIES_DEFS.flatMap(d => Object.keys(d.predator?.prey ?? {})));
+
   private refreshCapacity(now: number, season: SeasonId): void {
     for (const s of SPECIES_DEFS) {
       const daily = s.stomach * s.hungerPerDay;
       if (s.predator) {
         // Un depredador vive de sus presas: la carne que hay en pie (repartida en el tiempo que tardan en reponerse)
         let meat = 0;
+        const bones = !!s.predator.bones;
         for (const p of this.animals) {
           const ps = SPECIES_DEFS[p.species];
           if (s.predator.prey[ps.key]) meat += MEAT_BY_SIZE[ps.size] * PREY_TURNOVER;
+          // Quien pica los huesos (cuervo) vive también de lo que cazan otros: los restos de cada animal que es presa
+          // de alguien (conejos incluidos: también les queda carne en los huesos). Los restos no se reponen como las
+          // presas: cada animal que caza otro acaba dejando sus huesos, así que cuentan enteros
+          else if (bones && this.preyOfSomeone.has(ps.key)) meat += MEAT_BY_SIZE[ps.size] * SCAVENGE_SHARE;
         }
-        this.capacity.set(s.id, meat / (daily * CAPACITY_DAYS));
+        // La carroña que hay ahora (para quien no pica los huesos, sin los restos)
+        if (s.predator.carrion > 0.5) for (const c of this.corpses) meat += Math.max(0, c.meat - this.leftovers(c, s));
+        // Y si come fruta casi siempre (cuervo), lo que da la vegetación
+        const plants = (s.predator.plantsBelow ?? 0) >= 0.5 ? this.world.totalFood(s.diets, now, season) : 0;
+        this.capacity.set(s.id, (meat + plants) / (daily * CAPACITY_DAYS));
         continue;
       }
       this.capacity.set(s.id, this.world.totalFood(s.diets, now, season) / (daily * CAPACITY_DAYS));

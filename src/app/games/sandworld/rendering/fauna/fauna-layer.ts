@@ -2,9 +2,10 @@ import { Container, Graphics, Sprite } from 'pixi.js';
 import { Animal, Burrow } from '../../domain/models/animal.model';
 import { SPECIES_DEFS } from '../../config/species.config';
 import {
-  COIN, FAUNA_ANIM, FAUNA_LOD, FAUNA_SMOOTH_MS, SELECT_COLOR, SELECT_HALF_W, SIGNAL_ANIM, SPECIES_ART,
+  COIN, COMBAT_FX, FAUNA_ANIM, FAUNA_COMBAT, FAUNA_LOD, FAUNA_SMOOTH_MS, SELECT_COLOR, SELECT_HALF_W, SIGNAL_ANIM, SPECIES_ART,
 } from '../../config/fauna-art.config';
 import { signalTexture } from './signal-art';
+import { CombatFx } from './combat-fx';
 import { badgeTexture, coinTexture } from './coin-art';
 import { HerdMark } from '../../application/fauna/herds';
 import { FaunaPose, animalTexture, artKind, artVariant, refugeTexture } from './fauna-sprites';
@@ -23,6 +24,8 @@ export interface FaunaView {
   herds(): readonly HerdMark[];
   /** Madrigueras (entradas en el suelo) */
   readonly burrows: readonly Burrow[];
+  /** ¿Sangre en los combates? (Ajustes) */
+  readonly blood: boolean;
 }
 
 /** Entrada de madriguera dibujada */
@@ -72,6 +75,12 @@ interface Shown {
   /** Signo sobre la cabeza ('!' o '?'): se crea al primer susto; `signalAt` = cuál está enseñando, `signalMs` = desde cuándo */
   signal: Sprite | null;
   signalAt: number;
+  /** Cuerpo a cuerpo: ms reales luchando (marca el ritmo de los golpes), último ciclo en que embistió y en que recibió */
+  fightMs: number;
+  lastLunge: number;
+  lastHit: number;
+  /** Huyendo herido: ms desde la última gota del rastro */
+  dripMs: number;
   signalMs: number;
 }
 
@@ -96,6 +105,8 @@ export class FaunaLayer {
   private readonly ring = new Graphics();
   private readonly arrow = new Graphics();
   private clock = 0;
+  private readonly fx = new CombatFx();
+  private blood = true;
 
   constructor() {
     this.overlay.zIndex = 1e5;
@@ -183,7 +194,98 @@ export class FaunaLayer {
       s.signal?.destroy();
       this.shown.delete(id);
     }
+    this.combat(view, paused ? 0 : dtMs);
     this.placeMarker(view.selected);
+  }
+
+  /**
+   * Combate (solo dibujo): los que luchan se turnan los golpes en ciclos de FAUNA_COMBAT.cycleMs (el reloj es el del
+   * cazador, para que los dos vayan a la par): quien golpea se echa atrás y embiste; quien lo recibe parpadea en blanco,
+   * retrocede y tiembla, y salta sangre (o una chispa si está desactivada). Además: charco bajo los que mueren
+   * luchando o cazados, y rastro de gotas del que huye herido.
+   */
+  private combat(view: FaunaView, dtMs: number): void {
+    const F = FAUNA_COMBAT;
+    if (view.blood !== this.blood) {
+      this.blood = view.blood;
+      if (!view.blood) this.fx.clearBlood();
+    }
+    let byId: Map<number, Animal> | null = null;
+    for (const a of view.animals) {
+      const s = this.shown.get(a.id);
+      if (!s || s.hidden || !s.parent) continue;
+      // Huye herido: deja un rastro de gotas
+      if (view.blood && a.action === 'run' && a.health < 0.95 && a.signal?.kind === 'flee') {
+        s.dripMs += dtMs;
+        if (s.dripMs >= COMBAT_FX.dripMs) {
+          s.dripMs = 0;
+          this.fx.drip(s.parent, s.x, s.y, view.now);
+        }
+      }
+      if (a.action !== 'fight' || !a.fight) {
+        s.fightMs = 0;
+        s.lastLunge = s.lastHit = -1;
+        continue;
+      }
+      byId ??= new Map(view.animals.map(x => [x.id, x]));
+      const foe = byId.get(a.fight.with), o = this.shown.get(a.fight.with);
+      if (!foe || !o) continue;
+      s.fightMs += dtMs;
+      const hunter = a.hunt?.target === foe.id;
+      const prey = hunter ? foe : a;
+      const ps = SPECIES_DEFS[prey.species];
+      const fightsBack = !!ps.defend || !!ps.predator;
+      // Reloj del par: el del cazador
+      const ms = hunter ? s.fightMs : o.fightMs || s.fightMs;
+      const n = Math.floor(ms / F.cycleMs), t = ms % F.cycleMs;
+      const hunterTurn = n % 2 === 0 || !fightsBack;
+      const striking = hunter === hunterTurn;
+      // Se dibujan de lado, encarados a una distancia mínima (en la simulación están casi en el mismo sitio): cada uno a
+      // un lado del otro (si están a la par, el orden de sus ids decide quién va a cada lado, y los dos lo ven igual)
+      const gap = o.x - s.x;
+      const side = Math.abs(gap) > 0.5 ? Math.sign(gap) : a.id < foe.id ? 1 : -1;
+      const dx = side, dy = 0;
+      const apart = Math.max(0, (F.standoffPx - Math.abs(gap)) / 2);
+      let ox = -side * apart, oy = 0, pose: FaunaPose = 'idle', flash = false;
+      if (striking) {
+        const k = t < F.windup[1] ? -F.backPx : t < F.lunge[1] ? F.lungePx : t < F.impact[1] ? F.lungePx * 0.6 : 0;
+        ox += dx * k;
+        oy += dy * k;
+        if (t >= F.lunge[0] && t < F.impact[1]) pose = 'fight';
+        if (t >= F.lunge[0] && s.lastLunge !== n) {
+          s.lastLunge = n;
+          this.fx.dust(s.parent, s.x + ox, s.y + oy, Math.sign(dx));
+        }
+      } else if (t >= F.impact[0] && t < F.impact[1]) {
+        const shake = Math.floor((t - F.impact[0]) / F.shakeMs) % 2 ? F.shakePx : -F.shakePx;
+        ox += -dx * F.knockPx + shake;
+        oy += -dy * F.knockPx;
+        flash = t - F.impact[0] < F.flashMs;
+        if (s.lastHit !== n) {
+          s.lastHit = n;
+          this.fx.hit(s.parent, s.x + ox, s.y + oy, -Math.sign(dx) || 1, view.blood, false);
+        }
+      }
+      const key = s.species;
+      // De frente y mirando al otro (el dibujo mira a la izquierda: a la derecha, en espejo)
+      s.sprite.texture = animalTexture(key, s.kind, pose, 0, false, artVariant(key, a.id), flash);
+      const dens = 1 / (SPECIES_ART[key].density ?? 1);
+      s.sprite.scale.set(side > 0 ? -dens : dens, dens);
+      s.sprite.position.set(Math.round(s.x + ox), Math.round(s.y + oy - s.lift));
+    }
+    // Charco bajo los que han muerto luchando o cazados (con su cadáver; se va con él)
+    const keep = new Set<number>();
+    if (view.blood) {
+      for (const c of view.corpses) {
+        if (c.cause !== 'predation' && c.cause !== 'injury') continue;
+        const s = this.shown.get(c.id);
+        if (!s || !s.parent || !s.sprite.visible) continue;
+        keep.add(c.id);
+        this.fx.pool(c.id, s.parent, s.x, s.y, COMBAT_FX.pool[SPECIES_DEFS[c.species].size], s.sprite.alpha);
+      }
+    }
+    this.fx.keepPools(keep);
+    this.fx.update(dtMs, view.now);
   }
 
   /** Animal dibujado bajo un punto del mundo (el de delante), o null. De lejos, la guía de la moneda tocada. */
@@ -220,6 +322,7 @@ export class FaunaLayer {
     for (const h of this.holes.values()) h.sprite.destroy();
     this.holes.clear();
     this.overlay.destroy({ children: true });
+    this.fx.destroy();
     for (const s of this.shown.values()) {
       s.sprite.destroy();
       s.shadow.destroy();
@@ -330,7 +433,7 @@ export class FaunaLayer {
     shadow.anchor.set(0.5, 0.5);
     return {
       sprite, shadow, parent: null, x: 0, y: 0, placed: false, pose: 'idle', lift: 0, frame: 0, frameMs: 0, species: '', kind: 'female', hidden: false,
-      signal: null, signalAt: -1, signalMs: 0,
+      signal: null, signalAt: -1, signalMs: 0, fightMs: 0, lastLunge: -1, lastHit: -1, dripMs: 0,
     };
   }
 
@@ -392,6 +495,8 @@ export class FaunaLayer {
       if (a.action === 'walk' && Math.hypot(a.tx - a.x, a.ty - a.y) > FLY_FROM) return 'fly';
     }
     if (a.hunt?.phase === 'chase' && a.action === 'run') return 'hunt';
+    // Cuerpo a cuerpo: quietos y encarados; las embestidas las pone combat()
+    if (a.action === 'fight') return 'idle';
     return a.action;
   }
 
@@ -413,6 +518,8 @@ export class FaunaLayer {
     }
     if (!s.signal) return;
     s.signalMs += dtMs;
+    // La espada se queda mientras dura el cuerpo a cuerpo (sin desvanecerse: balanceándose)
+    if (sig?.kind === 'fight' && a.action === 'fight') s.signalMs = Math.min(s.signalMs, SIGNAL_ANIM.ms - SIGNAL_ANIM.fadeMs - 1);
     const t = s.signalMs;
     if (!sig || t >= SIGNAL_ANIM.ms) {
       s.signal.visible = false;

@@ -91,6 +91,12 @@ export class Camera {
     return this.vh;
   }
 
+  /** ¿Se ve algo de este rectángulo de mundo en pantalla? (con un margen en px de pantalla) */
+  sees(r: { x: number; y: number; w: number; h: number }, margin = 0): boolean {
+    const x0 = r.x * this.scale + this.offsetX, y0 = r.y * this.scale + this.offsetY;
+    return x0 + r.w * this.scale > -margin && y0 + r.h * this.scale > -margin && x0 < this.vw + margin && y0 < this.vh + margin;
+  }
+
   /** Desliza la cámara con suavidad hasta centrar (x, y). El jugador la interrumpe al arrastrar. */
   glideTo(x: number, y: number): void {
     this.glide = { x, y };

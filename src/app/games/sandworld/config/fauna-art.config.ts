@@ -34,6 +34,41 @@ export const FAUNA_ANIM = {
   fly: { frames: 4, ms: [110] },
   /** Persiguiendo a una presa con el arma en alto (humanos y goblins); los demás la dibujan corriendo */
   hunt: { frames: 4, ms: [95] },
+  /** Cuerpo a cuerpo: los golpes los anima la capa con FAUNA_COMBAT (un solo dibujo: la embestida) */
+  fight: { frames: 1, ms: [1000] },
+} as const;
+
+/**
+ * Golpes del cuerpo a cuerpo [PROPUESTA], en tiempo real (ms) dentro de cada ciclo: se echa atrás (`windup`), embiste
+ * (`lunge`) y el golpe llega (`impact`): el que lo recibe parpadea en blanco (`flashMs`), retrocede y tiembla. Los dos
+ * se turnan si el atacado sabe defenderse (o caza); si no, solo golpea el atacante. Distancias en px de mundo.
+ */
+export const FAUNA_COMBAT = {
+  cycleMs: 620,
+  windup: [0, 140], lunge: [140, 230], impact: [230, 340],
+  backPx: 1, lungePx: 3, knockPx: 2, shakePx: 1, shakeMs: 45, flashMs: 90,
+  /** Separación mínima entre los dos al dibujarlos (px de mundo): encarados, sin montarse uno encima del otro */
+  standoffPx: 12,
+} as const;
+
+/**
+ * Efectos del combate: sangre (oscura, media, clara), cuántas gotas saltan por golpe (normal, al caer), a qué altura del
+ * cuerpo (px), gravedad de las gotas (px por fotograma), minutos de juego que tarda en borrarse una mancha, tope de
+ * manchas a la vez, el polvo y la chispa de cuando la sangre está desactivada (puntos alrededor del golpe).
+ */
+export const COMBAT_FX = {
+  blood: [0x6e0c0c, 0x9a1414, 0xc4241c],
+  drops: [3, 5],
+  hitHeight: 6,
+  gravity: 0.25,
+  stainMinutes: 1440,
+  maxStains: 300,
+  dust: 0xe8dcbe, dustPuffs: 3, dustMs: 320,
+  spark: [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1], [-2, -2], [2, 2], [2, -2], [-2, 2]],
+  sparkMs: 140,
+  /** Rastro del que huye herido: una gota cada tantos ms reales; charco bajo el cadáver (medio ancho en px por tamaño) */
+  dripMs: 260,
+  pool: { small: 3, medium: 5, large: 7 },
 } as const;
 
 /** Lo deprisa que el sprite alcanza su posición (ms): suaviza el paso de minuto en minuto */
@@ -45,16 +80,48 @@ export const SELECT_COLOR = 0xf2b33d;
 export const SELECT_HALF_W = 11;
 
 /**
- * Signos sobre la cabeza ('!' susto, '?' curiosidad): colores, dibujo (px de arte: o contorno, W brillo,
- * A color, a sombra) y animación: salto al salir (px por fotograma de POP_MS), balanceo y desvanecido.
+ * Signos sobre la cabeza ('!' susto, '?' curiosidad, espada en un combate, polvareda al huir de él): colores, dibujo
+ * (px de arte: o contorno, W brillo y las letras de cada signo) y animación: salto al salir (px por fotograma de
+ * POP_MS), balanceo y desvanecido.
  */
 export const SIGNAL_COLORS = {
   outline: 0x2e1a0d,
   shine: 0xfff1d0,
-  alarm: [0xe84a2a, 0xa82a18],
-  curious: [0xf6d04c, 0xc89228],
+  /** Letras de cada signo (además de o contorno y W brillo) */
+  alarm: { A: 0xe84a2a, a: 0xa82a18 },
+  curious: { A: 0xf6d04c, a: 0xc89228 },
+  /** Espada: hoja de acero (S luz, s sombra), guarda dorada (G, g) y empuñadura de cuero (H, h) */
+  fight: { S: 0xdfe6ee, s: 0x8e9aa8, G: 0xf2b33d, g: 0xb07818, H: 0x7a4a24, h: 0x4e2e14 },
+  /** Huida: polvareda (D luz, d sombra) y rayas de velocidad (A) */
+  flee: { D: 0xf0e6cc, d: 0xbfae88, A: 0x8fd8f2 },
 } as const;
 export const SIGNAL_GLYPHS = {
+  fight: [
+    '..........o.',
+    '.........oWo',
+    '........oWWo',
+    '.......oSso.',
+    '......oSso..',
+    '.o...oSso...',
+    'oGo.oSso....',
+    '.oGoSso.....',
+    '..oGoo......',
+    '..oHgo......',
+    '.ohoogo.....',
+    'oGo..o......',
+    '.o..........',
+  ],
+  flee: [
+    '.....oo..oooo..',
+    '..oooDDooAAAWo.',
+    '.oDDDDDDooooo..',
+    '.oDDDDDdo.oooo.',
+    'oDDDDDDdooAAAWo',
+    '.oDDdDDDo.oooo.',
+    '.oDddDDdoooo...',
+    '..oooDdooAAWo..',
+    '.....oo..ooo...',
+  ],
   alarm: ['.ooo.', 'oWAAo', 'oAAAo', 'oAAao', '.oAo.', '.oao.', '..o..', '.ooo.', '.oAo.', '.ooo.'],
   curious: ['.ooooo.', 'oWAAAAo', 'oAooaAo', '.o.oAAo', '..oAAo.', '..oAo..', '..ooo..', '..oAo..', '..ooo..'],
 } as const;

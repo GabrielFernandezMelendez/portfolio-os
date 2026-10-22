@@ -2,7 +2,7 @@ import { Animal } from '../../domain/models/animal.model';
 import { SpeciesDef } from '../../domain/models/species.model';
 import { RandomSource } from '../../domain/ports/random-source.port';
 import { WORLD } from '../../domain/models/world.model';
-import { SMELL_SHARPNESS } from '../../config/fauna.config';
+import { SMELL_SHARPNESS, SLEEP_CATCH_BONUS } from '../../config/fauna.config';
 import { ageDays, lifeStage } from './needs';
 
 /*
@@ -74,5 +74,7 @@ export function catchChance(s: SpeciesDef, prey: Animal, preyS: SpeciesDef, help
   const pred = s.predator!;
   const base = pred.catch[preyS.key]?.[preyClass(prey, preyS, now)] ?? 0;
   const pack = Math.min(helpers, pred.packMax - 1) * pred.packBonus;
-  return Math.min(0.95, base + pack + (snow ? pred.snowBonus : 0));
+  // Dormida fuera de su refugio: mucho más fácil (común a todas; así un goblin de día bajo un árbol es vulnerable)
+  const asleep = prey.action === 'sleep' && prey.inside === null ? SLEEP_CATCH_BONUS : 0;
+  return Math.min(0.95, base + pack + asleep + (snow ? pred.snowBonus : 0));
 }
