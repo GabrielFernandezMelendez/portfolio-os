@@ -946,7 +946,8 @@ describe('Fauna: crías, agua y llegadas (comunes a todas las especies)', () => 
       if (fauna.news.some(n => n.type === 'left')) left++;
       if (pack.some(w => w.cause === 'starvation')) starved++;
     }
-    expect(left).toBeGreaterThanOrEqual(12);
+    // La mitad o más (además, sin presas los jóvenes se van antes por su cuenta: la manada que queda es más pequeña)
+    expect(left).toBeGreaterThanOrEqual(10);
     expect(starved).toBeGreaterThan(0);
   });
 
@@ -1356,5 +1357,42 @@ describe('Fauna: temperatura', () => {
     }
     expect(g.every(x => x.inside !== null)).toBe(true);
     expect(g.every(x => x.satiety > 0.2)).toBe(true);
+  });
+});
+
+describe('Fauna: manada según las presas y ciervas que llegan preñadas', () => {
+  it('con pocas presas, una manada grande de lobos pierde jóvenes que se van (no se queda toda a cazar)', () => {
+    let shrank = 0;
+    for (let seed = 1; seed <= 4; seed++) {
+      const { island, fauna } = setup(16, 0.8, seed);
+      island.chunks = 4;
+      island.coast = { x: 40.5, y: 40.5 };
+      const t0 = at(Season.SUMMER, 2);
+      fauna.spawnHerd('deer', 20, 20, t0, false, [{ sex: 'female', age: 'adult' }]);
+      const pack = fauna.spawnHerd('wolf', 40, 40, t0, true, [
+        { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' },
+      ]);
+      for (const w of pack) w.satiety = 1;
+      run(fauna, island, t0, 4 * DAY);
+      if (fauna.members(pack[0].herd).length < 5) shrank++;
+    }
+    expect(shrank).toBeGreaterThanOrEqual(3);
+  });
+
+  it('las ciervas que llegan en primavera suelen venir preñadas y paren ese mismo año', () => {
+    let pregnant = 0, total = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const { fauna } = setup(16, 0.8, seed);
+      const herd = fauna.spawnHerd('deer', 30, 30, at(Season.SPRING, 2), false, [
+        { sex: 'female', age: 'adult' }, { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' },
+      ], true);
+      for (const d of herd) if (d.sex === 'female') { total++; if (d.dueAt !== null) pregnant++; }
+    }
+    expect(pregnant / total).toBeGreaterThan(0.3);
+    expect(pregnant / total).toBeLessThan(0.9);
+    // En verano (ya pasaron los partos) no
+    const { fauna } = setup(16);
+    const summer = fauna.spawnHerd('deer', 30, 30, at(Season.SUMMER, 2), false, undefined, true);
+    expect(summer.every(d => d.dueAt === null)).toBe(true);
   });
 });

@@ -55,7 +55,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     waterRange: 12, thirstSearch: 30, corpseDays: 3,
     // Llega una manada si hay hierba para más ciervos (de 1 a 5 manadas en un 2×2); en invierno come un 30 % menos
     // Llega una manada distinta cada vez: dos hembras y un macho, y por tirada de 0 a 2 adultos y de 0 a 2 crías más
-    migration: { arrive: 0.3, groupsPerChunk: [0.25, 1.25], crowdLeave: 0.3, founders: [{ sex: 'female', age: 'adult' }, { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }], extraAdults: [0, 2], extraYoung: [0, 2] },
+    // Las ciervas que llegan entre el otoño y la primavera suelen venir preñadas (60 %): crías el primer año
+    migration: { arrive: 0.3, groupsPerChunk: [0.25, 1.25], crowdLeave: 0.3, founders: [{ sex: 'female', age: 'adult' }, { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }], extraAdults: [0, 2], extraYoung: [0, 2], pregnant: 0.6 },
     winterAppetite: 0.7,
   },
   {

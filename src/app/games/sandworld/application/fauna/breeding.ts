@@ -1,6 +1,6 @@
 import { Animal } from '../../domain/models/animal.model';
 import { RutBreeding, SeasonBreeding, SpeciesDef } from '../../domain/models/species.model';
-import { CALENDAR, DAYS_PER_YEAR, SeasonId } from '../../domain/models/time.model';
+import { CALENDAR, DAYS_PER_YEAR, SeasonId, toGameTime } from '../../domain/models/time.model';
 import { RandomSource } from '../../domain/ports/random-source.port';
 import { BIRTH_SPREAD_DAYS, BREED_HAPPINESS } from '../../config/fauna.config';
 import { ageDays } from './needs';
@@ -76,4 +76,27 @@ export function litterSize(
   while (i < weights.length - 1 && r >= weights[i]) r -= weights[i++];
   const shift = (crowded ? b.crowdShift : 0) + (satiety < 0.5 ? b.hungryShift : 0);
   return sizes[Math.max(0, i - shift)];
+}
+
+/**
+ * Una hembra adulta que llega a la isla ya preñada (especies de celo): si llega entre el celo y la época de partos,
+ * tirada de `chance`; pare como si hubiera quedado preñada en el celo (en su época de partos, repartidos unos días).
+ * Así un grupo que llega en primavera (o en invierno) trae crías ese mismo año. Devuelve si viene preñada.
+ */
+export function arrivePregnant(female: Animal, s: SpeciesDef, now: number, year: number, chance: number, random: RandomSource): boolean {
+  const b = s.breeding;
+  if (b.mode !== 'rut' || female.sex !== 'female' || female.dueAt !== null || ageDays(female, now) < s.adultDays) return false;
+  // Solo entre el celo (ya pasado) y los partos: la estación de partos o las anteriores hasta el celo
+  const season = toGameTime(now).season;
+  const seasonsSinceRut = (season - b.rutSeason + 4) % 4;
+  const seasonsToBirth = (b.birthSeason - b.rutSeason + 4) % 4;
+  if (seasonsSinceRut === 0 || seasonsSinceRut > seasonsToBirth) return false;
+  if (random.next() >= chance) return false;
+  female.lastRutYear = year;
+  female.litter = b.litter
+    ? litterSize({ litter: b.litter, crowdShift: 0, hungryShift: 1 }, female.satiety, false, random)
+    : female.satiety > b.twinsSatiety && random.next() < b.twinsChance ? 2 : 1;
+  const start = season === b.birthSeason ? now : nextSeasonStart(now, b.birthSeason);
+  female.dueAt = start + Math.floor(random.next() * BIRTH_SPREAD_DAYS * DAY);
+  return true;
 }

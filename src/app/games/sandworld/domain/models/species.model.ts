@@ -145,6 +145,8 @@ export interface SpeciesDef {
     readonly hungryLeave?: number;
     readonly onlyIfAbsent?: boolean;
     readonly carrionLure?: number;
+    /** Especies de celo: probabilidad de que cada hembra adulta que llega entre el celo y los partos venga preñada */
+    readonly pregnant?: number;
     /** Con carroña en la isla llegan más (la tirada se multiplica), pero también llegan sin ella (cuervo) */
     readonly carrionBonus?: number;
     readonly founders?: readonly { readonly sex: 'male' | 'female'; readonly age: 'adult' | 'young' }[];

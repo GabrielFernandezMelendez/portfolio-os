@@ -126,6 +126,11 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
 - **Lobos en manada**: cuando uno caza, los suyos (a menos de 2 islas) acuden a comer de la presa; un adulto bien
   comido lleva comida (regurgita) al joven más hambriento que aún no caza; desde la mitad de su edad de cría los
   jóvenes pueden acompañar una cacería. Los goblins cazan menos lobos (preferencia 0,2).
+- **Manada según las presas** (lobo): lo que la isla puede alimentar de lobos, repartido entre sus manadas (como
+  mínimo la pareja). Si una manada se pasa, cada día se va el más joven de los destetados; si no hay presas para uno
+  más en la isla, se va de la isla.
+- **Ciervas que llegan preñadas**: las que llegan entre el celo y los partos (invierno y primavera) vienen preñadas con
+  un 60 % y paren en su época: hay crías el primer año.
 - **Temperatura** (escala del mundo 0..1, ~0,2 hiela, ~0,5 templado; 0,1 ≈ 5 °C): la Tierra Quemada viva
   da calor (+0,6 encima, +0,2 en los tiles de al lado); su calor deshace la Escarcha por dentro, así que la Escarcha
   solo contiene el borde, y un nido vivo nunca se congela. Cada especie tiene su franja de comodidad (ciervo -0,2..1,
@@ -151,6 +156,9 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   un lobo "Conejito" por la comida favorita de su padre).
 
 ## Para la fase de pulido (no hacer antes)
+- **Cambio de presa** (si hace falta): que los depredadores elijan presa según lo abundante que sea y no cacen una
+  especie de la que quedan menos de 4 en la isla salvo con hambre extrema. Se reconsidera si el tamaño de manada
+  según las presas no basta.
 - **Carácter de cada individuo** (al estilo de Dwarf Fortress): rasgos que cambian sus probabilidades (miedoso,
   curioso, solitario...), gustos y recuerdos que se vean en el diario.
 - Selfies pixel art graciosos de cada animal con complementos (parche, cigarro, monóculo, tupé…).

@@ -684,7 +684,7 @@ export class SandworldService implements OnDestroy {
         return !!s.predator || this.faunaWorld.foodAt(gx, gy, s.diets, new Set(), now, season) > 0.05;
       }, 4);
       if (!at) continue;
-      this.fauna.spawnHerd(s.key, at.gx + 0.5, at.gy + 0.5, now, !!s.refuge);
+      this.fauna.spawnHerd(s.key, at.gx + 0.5, at.gy + 0.5, now, !!s.refuge, undefined, true);
       last = at;
     }
     this.reportFauna();

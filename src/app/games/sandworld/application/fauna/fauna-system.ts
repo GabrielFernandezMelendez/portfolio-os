@@ -1,6 +1,6 @@
 import { Animal, AnimalOrder, AnimalSignal, Burrow, DeathCause, Herd, Sex } from '../../domain/models/animal.model';
 import { SpeciesDef } from '../../domain/models/species.model';
-import { GameTime, SeasonId, CALENDAR } from '../../domain/models/time.model';
+import { GameTime, SeasonId, CALENDAR, toGameTime } from '../../domain/models/time.model';
 import { FaunaWorld } from '../../domain/ports/fauna-world.port';
 import { RandomSource } from '../../domain/ports/random-source.port';
 import { WORLD } from '../../domain/models/world.model';
@@ -21,7 +21,7 @@ import {
 } from '../../config/temperament.config';
 import { addZone, fearOf, habitLevel, habituate, inZone } from './reactions';
 import { centre, leaderOf, splitOff } from './herds';
-import { litterSize, tryConceive, tryConceiveSeason } from './breeding';
+import { litterSize, tryConceive, tryConceiveSeason, arrivePregnant } from './breeding';
 import { Burrows, BurrowHit } from './burrows';
 import { infect, outbreak, recover, spread } from './disease';
 import { catchChance, choosePrey, preyClass, smellChance } from './predation';
@@ -241,6 +241,8 @@ export class FaunaSystem {
   spawnHerd(
     speciesKey: string, gx: number, gy: number, now: number, withBurrow = false,
     founders?: readonly { sex: Sex; age: 'adult' | 'young' }[],
+    /** Llega de fuera (por la orilla, o un botón de prueba que la simula): alguna hembra puede venir preñada */
+    arriving = false,
   ): Animal[] {
     const s = SPECIES_BY_KEY[speciesKey];
     if (!s) return [];
@@ -257,6 +259,10 @@ export class FaunaSystem {
       a.diary.length = 0;
       write(a, 'arrived', now, undefined, true);
       out.push(a);
+    }
+    if (arriving && s.migration?.pregnant) {
+      const year = toGameTime(now).year;
+      for (const a of out) arrivePregnant(a, s, now, year, s.migration.pregnant, this.random);
     }
     this.news.push({ type: 'arrived', species: s.id, count: out.length });
     this.refreshCapacity(now, this.seasonOf(now));
@@ -1971,6 +1977,8 @@ export class FaunaSystem {
       }
       // Depredadores: con poca presa cerca de la guarida (y sin crías que cuidar), se van de viaje de caza
       if (s.predator) this.planTrips(s, now);
+      // Manada de depredadores más grande de lo que dan las presas: los jóvenes se van antes a buscar territorio
+      if (s.predator?.shareKill) this.packToPrey(s, capacity, now);
       // Jóvenes que se hacen adultos: algunos se van a fundar su propia manada
       if (s.dispersal) {
         for (const a of all) {
@@ -2048,7 +2056,7 @@ export class FaunaSystem {
       if (!at) return;
       // Quiénes llegan: los de su llegada natural (o sus fundadores) y, por tirada, más jóvenes y más adultos:
       // cada grupo que llega es distinto
-      this.spawnHerd(s.key, at.x, at.y, now, false, this.arrivers(s));
+      this.spawnHerd(s.key, at.x, at.y, now, false, this.arrivers(s), true);
       return;
     }
   }
@@ -2237,6 +2245,30 @@ export class FaunaSystem {
   /** ¿Hiberna ahora? (su estación de hibernar: el invierno, para los goblins) */
   private hibernating(s: SpeciesDef): boolean {
     return !!s.hibernate && this.conditions.cold;
+  }
+
+  /**
+   * Tamaño de manada según las presas (lobo): lo que la isla puede alimentar de su especie, repartido entre sus
+   * manadas (al menos la pareja, como mucho herd.max). Si una manada se pasa, cada día se va uno de sus jóvenes ya
+   * destetados (el más joven de los que ya no son crías), a fundar la suya o, sin sitio ni presas, fuera de la isla.
+   */
+  private packToPrey(s: SpeciesDef, capacity: number, now: number): void {
+    const herds = this.groupsOf(s.id);
+    if (!herds.length) return;
+    const limit = Math.max(2, Math.min(s.herd.max, Math.floor(capacity / herds.length)));
+    for (const h of herds) {
+      const members = this.members(h.id);
+      if (members.length <= limit) continue;
+      const leader = leaderOf(members, s, now);
+      const young = members
+        .filter(m => m !== leader && m.dueAt === null && ageDays(m, now) >= s.youngDays && m.inside === null)
+        .sort((a, b) => b.bornAt - a.bornAt)[0];
+      if (!young) continue;
+      this.disperse(young, s, now);
+      // Sin presas para uno más en toda la isla: no se queda a cazar solo, se va de la isla
+      const herd = this.herds.get(young.herd);
+      if (herd && !herd.leaving && this.animals.filter(a => a.species === s.id).length > capacity) this.startLeaving(herd, s, now);
+    }
   }
 
   /** ¿Tiene ya la isla todos los nidos que caben de esta especie? (goblins: `burntBorn.maxNests`) */
