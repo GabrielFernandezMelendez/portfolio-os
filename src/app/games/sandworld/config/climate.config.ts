@@ -1,3 +1,4 @@
+import { Biome } from '../domain/models/biome.model';
 // Clima y estaciones (fase 3, bloque C) [PROPUESTA]: valores de partida para afinar jugando.
 
 // ── Temperatura ──
@@ -16,6 +17,20 @@ export const RAIN_RATE = 0.0004;
 export const SNOW_TEMPERATURE = 0.3;
 /** Nieve que deja cada nivel de agua de lluvia (la nieve abulta más) */
 export const SNOW_PER_RAIN = 2;
+
+// ── Frío del invierno por altura y bioma ──
+/**
+ * El frío de la estación (invierno, final del otoño) no llega igual a toda la isla: nada por debajo de este
+ * cuantil de altura de la isla (la mitad más baja) y todo desde WINTER_COLD_FULL (lo más alto). Así en invierno
+ * siempre queda tierra sin nieve y agua líquida en las partes bajas.
+ */
+export const WINTER_COLD_FROM = 0.5;
+export const WINTER_COLD_FULL = 0.9;
+/** Biomas con el frío fijo, sea cual sea su altura: el desierto nunca se hiela; la tundra, siempre */
+export const WINTER_COLD_BY_BIOME: Readonly<Partial<Record<number, number>>> = {
+  [Biome.DESERT]: 0,
+  [Biome.TUNDRA]: 1,
+};
 
 // ── Hielo de invierno ──
 /** Por debajo de esta temperatura efectiva el agua se congela */

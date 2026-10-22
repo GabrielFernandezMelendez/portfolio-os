@@ -12,6 +12,7 @@ import { animalView } from './animal-view';
 import { herdMarks, leaderOf } from './herds';
 import { catchChance, smellChance } from './predation';
 import { MEAT_BY_SIZE } from '../../config/fauna.config';
+import { arrivalChance, crowdLeaveChance, leaveChance, speciesCap } from './migration';
 import { RUN_STOP } from '../../config/fauna.config';
 import { Material } from '../../domain/models/material.model';
 
@@ -877,9 +878,16 @@ describe('Fauna: crías, agua y llegadas (comunes a todas las especies)', () => 
       const { island, fauna } = setup(24, 0.8, seed);
       const t0 = hourOf(Season.SPRING, 0, 20);
       fauna.spawnHerd('rabbit', 48, 48, t0, true);
-      run(fauna, island, t0, 30 * DAY);
+      // Huérfanas con la madre viva (las de una madre muerta son huérfanas de verdad): se miran cada día
+      const counted = new Set<number>();
+      run(fauna, island, t0, 30 * DAY, () => {
+        for (const k of fauna.corpses) {
+          if (k.cause !== 'orphaned' || counted.has(k.id)) continue;
+          counted.add(k.id);
+          if (fauna.animals.some(m => m.id === k.mother)) orphaned++;
+        }
+      });
       born += fauna.news.filter(n => n.type === 'born').reduce((s, n) => s + (n.type === 'born' ? n.count : 0), 0);
-      orphaned += fauna.news.filter(n => n.type === 'died' && n.cause === 'orphaned').length;
     }
     expect(born).toBeGreaterThan(10);
     expect(orphaned / born).toBeLessThan(0.2);
@@ -934,4 +942,61 @@ describe('Fauna: crías, agua y llegadas (comunes a todas las especies)', () => 
     const groups = new Set(fauna.animals.map(a => a.herd)).size;
     expect(groups).toBeLessThanOrEqual(12);   // tope de 8 grupos (más los jóvenes que se van a fundar el suyo)
   });
+});
+
+describe('Fauna: topes y llegadas por especie', () => {
+  const [deerS, rabbitS, wolfS] = SPECIES_DEFS;
+  const ctx = { population: 0, capacity: 50, groups: 0, groupSize: 5, cap: 4, absentDays: Infinity, carrion: false };
+
+  it('en un 2×2 caben de 3 a 4 colonias de conejos, de 1 a 5 manadas de ciervos y de 1 a 2 de lobos', () => {
+    const random = new SeededRandom(5);
+    const roll = (s: typeof deerS) => Array.from({ length: 500 }, () => speciesCap(s, 4, random));
+    for (const [s, lo, hi] of [[rabbitS, 3, 4], [deerS, 1, 5], [wolfS, 1, 2]] as const) {
+      const caps = roll(s);
+      expect(Math.min(...caps)).toBe(lo);
+      expect(Math.max(...caps)).toBe(hi);
+    }
+  });
+
+  it('una especie que desaparece no vuelve hasta pasados 60 días; el lobo solo llega sin lobos y con carroña', () => {
+    expect(arrivalChance(deerS, { ...ctx, absentDays: 30 })).toBe(0);
+    expect(arrivalChance(deerS, { ...ctx, absentDays: 61 })).toBeGreaterThan(0);
+    expect(arrivalChance(deerS, { ...ctx, groups: 4 })).toBe(0);                    // en su tope
+    expect(arrivalChance(wolfS, { ...ctx, capacity: 5 })).toBe(0);                  // sin carroña
+    expect(arrivalChance(wolfS, { ...ctx, capacity: 5, carrion: true })).toBeGreaterThan(0);
+    expect(arrivalChance(wolfS, { ...ctx, capacity: 9, carrion: true, population: 2, groups: 0 })).toBe(0);  // ya hay lobos
+  });
+
+  it('una especie de más (por encima de su tope) puede perder un grupo; más cuanto más se pasa', () => {
+    expect(crowdLeaveChance(rabbitS, 4, 4)).toBe(0);
+    expect(crowdLeaveChance(rabbitS, 5, 4)).toBeGreaterThan(0);
+    expect(crowdLeaveChance(rabbitS, 6, 4)).toBeGreaterThan(crowdLeaveChance(rabbitS, 5, 4));
+    // Solo el depredador se va por hambre
+    expect(leaveChance(deerS, 0, 0.3)).toBe(0);
+    expect(leaveChance(wolfS, 0, 0.3)).toBeGreaterThan(0);
+  });
+});
+
+describe('Fauna: llegada natural del lobo', () => {
+  it('de fuera llega una pareja (a veces con un joven) atraída por la carroña, no una manada entera', () => {
+    const sizes: number[] = [];
+    for (let seed = 1; seed <= 6; seed++) {
+      const { island, fauna } = setup(24, 0.8, seed);
+      island.chunks = 4;
+      island.coast = { x: 40.5, y: 40.5 };
+      const t0 = at(Season.SPRING);
+      for (let h = 0; h < 3; h++) fauna.spawnHerd('deer', 30 + h * 15, 60, t0);
+      const die = (fauna as unknown as { die(a: unknown, c: string, n: number): void }).die.bind(fauna);
+      let arrived = 0;
+      run(fauna, island, t0, 45 * DAY, day => {
+        // Siempre hay algún cadáver con carne que oler
+        const old = fauna.animals.find(a => a.species === 0);
+        if (old && day % 3 === 0) die(old, 'oldAge', t0 + day * DAY);
+        for (const n of fauna.news.splice(0)) if (n.type === 'arrived' && n.species === 2) arrived = n.count;
+      });
+      if (arrived) sizes.push(arrived);
+    }
+    expect(sizes.length).toBeGreaterThan(0);
+    expect(sizes.every(n => n === 2 || n === 3)).toBe(true);
+  }, 60000);
 });

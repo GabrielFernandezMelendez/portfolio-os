@@ -7,6 +7,8 @@ import { SEASON_TEMPERATURE } from '../../config/climate.config';
 import { World } from '../world/world';
 import { TerrainPhysics } from '../physics/terrain-physics';
 import { BiomeSystem } from '../world/biomes';
+import { groundAt } from '../../domain/models/chunk.model';
+import { Biome } from '../../domain/models/biome.model';
 
 const SEASON = CALENDAR.DAYS_PER_SEASON * CALENDAR.MINUTES_PER_DAY;
 
@@ -65,19 +67,24 @@ describe('Clima', () => {
     expect(three.minutes()).toBeLessThanOrEqual(3 * 6 * 60);
   });
 
-  it('la nieve de invierno cubre la isla pero no convierte el bosque en tundra', () => {
+  it('en invierno nieva en lo alto y llueve en lo bajo; la nieve no convierte el bosque en tundra', () => {
     const world = new World(11);
     const chunk = world.chunk(0, 0);
     const physics = new TerrainPhysics(world);
     const biomes = new BiomeSystem(world, new SeededRandom(1));
-    // Clima base templado en toda la isla: en invierno nieva en todas partes, pero el clima medio no es de tundra
+    // Clima base templado en toda la isla: el frío del invierno solo llega a lo alto
     chunk.temperature.fill(0.4);
     for (let d = 0; d < 4; d++) biomes.update(1);
     const before = [...chunk.biome];
     physics.climate.update(toGameTime(3 * SEASON + 10 * 1440 + 3 * 60));   // invierno, de madrugada
     for (let m = 0; m < 600; m++) physics.precipitate(0.0004);
-    expect([...chunk.cover].filter(c => c > 0.05).length).toBeGreaterThan(200);
+    const snowy: number[] = [], bare: number[] = [];
+    for (let k = 0; k < chunk.cover.length; k++) (chunk.cover[k] > 0.05 ? snowy : bare).push(groundAt(chunk, k));
+    expect(snowy.length).toBeGreaterThan(100);
+    expect(bare.length).toBeGreaterThan(300);
+    const mean = (v: number[]) => v.reduce((s, x) => s + x, 0) / v.length;
+    expect(mean(snowy)).toBeGreaterThan(mean(bare));
     for (let d = 0; d < 4; d++) biomes.update(1);
-    expect([...chunk.biome]).toEqual(before);
+    expect([...chunk.biome].filter((b, t) => b === Biome.TUNDRA && before[t] !== Biome.TUNDRA)).toEqual([]);
   });
 });

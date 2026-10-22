@@ -155,6 +155,11 @@ export const LEAVE_HUNGRY_BELOW = 0.05;
 export const LEAVE_HEALTH_SPAN = 0.5;
 /** Horas como mucho que tarda una manada en salir de la isla (si no llega a la orilla, se va igual) */
 export const LEAVE_HOURS = 24;
+/**
+ * Una especie que ha desaparecido de la isla (se fue o se extinguió) no vuelve antes de 60 días; desde ahí su
+ * tirada de llegada sube poco a poco hasta los 80 (y sigue siendo una tirada: puede tardar más).
+ */
+export const RETURN_AFTER_DAYS: readonly [number, number] = [60, 80];
 
 // ── Memoria y búsqueda de agua y comida ──
 /** Sitios de agua y de comida que recuerda una manada (los últimos buenos) */

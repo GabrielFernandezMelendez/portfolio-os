@@ -26,7 +26,7 @@ import { infect, outbreak, recover, spread } from './disease';
 import { catchChance, choosePrey, preyClass, smellChance } from './predation';
 import { nameFor, write } from './diary';
 import { findPath } from './pathfinding';
-import { arrivalChance, groupsCap, leaveChance } from './migration';
+import { arrivalChance, crowdLeaveChance, crowding, groupsCap, leaveChance, speciesCap } from './migration';
 
 const DAY = CALENDAR.MINUTES_PER_DAY;
 
@@ -124,6 +124,8 @@ export class FaunaSystem {
   private nextId = 1;
   private nextHerd = 1;
   private readonly capacity = new Map<number, number>();
+  /** Último minuto en que hubo animales de cada especie en la isla */
+  private readonly lastSeen = new Map<number, number>();
   private readonly ateFavouriteAt = new Map<number, number>();
   private hungerToldDay = -1;
   /** Plantas que cada especie ya ha comido alguna vez ("especie:planta") */
@@ -220,14 +222,17 @@ export class FaunaSystem {
    * Suelta una manada de fundadores (los de la especie o 2 hembras, 1 macho y 1 cría) en la celda global (gx, gy).
    * `withBurrow`: con la madriguera ya cavada (botones de prueba).
    */
-  spawnHerd(speciesKey: string, gx: number, gy: number, now: number, withBurrow = false): Animal[] {
+  spawnHerd(
+    speciesKey: string, gx: number, gy: number, now: number, withBurrow = false,
+    founders?: readonly { sex: Sex; age: 'adult' | 'young' }[],
+  ): Animal[] {
     const s = SPECIES_BY_KEY[speciesKey];
     if (!s) return [];
     const herd = this.newHerd(s.id, gx, gy);
     // Con su refugio ya hecho: el natural de la especie si lo tiene (cueva del lobo) o el que construye
     if (withBurrow) this.burrows.dig(herd, s, gx, gy, now, true, s.refuge?.natural ?? s.refuge?.kind);
     const out: Animal[] = [];
-    for (const f of s.founders ?? FOUNDERS) {
+    for (const f of founders ?? s.founders ?? FOUNDERS) {
       const days = f.age === 'young'
         ? 2 + this.random.next() * (s.youngDays - 4)
         : s.adultDays + this.random.next() * (s.lifespanDays[0] * 0.5 - s.adultDays);
@@ -1594,7 +1599,7 @@ export class FaunaSystem {
       for (const m of leaving) m.herd = nh.id;
       this.news.push({ type: 'herdSplit', species: h.species });
       // Isla llena: los que se separan no encuentran sitio y se van de la isla
-      if (this.islandFull()) this.startLeaving(nh, s, now);
+      if (this.islandFull(s)) this.startLeaving(nh, s, now);
     }
   }
 
@@ -1707,7 +1712,9 @@ export class FaunaSystem {
         }
       }
       // Enfermedad: brota con superpoblación
-      const zero = outbreak(all, s, density, this.random);
+      const largest = Math.max(0, ...this.groupsOf(s.id).map(h => this.members(h.id).length));
+      const crowd = crowding(s, density, largest, this.groupsOf(s.id).length, this.world.islandChunks());
+      const zero = outbreak(all, s, crowd, this.random);
       if (zero) {
         infect(zero, s, now);
         write(zero, 'sick', now, undefined, true);
@@ -1731,9 +1738,12 @@ export class FaunaSystem {
    */
   private migrate(t: GameTime): void {
     const now = t.totalMinutes;
+    // Cuándo se vio por última vez cada especie (para que una que desaparece tarde en volver)
+    for (const a of this.animals) this.lastSeen.set(a.species, now);
+    // Hambre de verdad (cada día): la manada puede irse de la isla (solo las especies que lo hacen: el depredador)
     for (const h of [...this.herds.values()]) {
       const s = SPECIES_DEFS[h.species];
-      if (h.leaving || !s.migration) continue;
+      if (h.leaving || !s.migration?.hungryLeave) continue;
       const adults = this.members(h.id).filter(a => ageDays(a, now) >= s.youngDays);
       if (!adults.length) continue;
       const satiety = adults.reduce((sum, a) => sum + a.satiety, 0) / adults.length;
@@ -1741,17 +1751,38 @@ export class FaunaSystem {
       if (this.random.next() < leaveChance(s, satiety, health)) this.startLeaving(h, s, now);
     }
     if (t.day % MIGRATION_EVERY_DAYS !== 0) return;
-    const groups = [...this.herds.values()].filter(h => !h.leaving && this.members(h.id).length >= 2);
-    if (this.islandFull()) return;
+    const chunks = this.world.islandChunks();
+    // Especies de más (por encima de su tope): uno de sus grupos puede irse (premia al jugador que equilibra)
+    for (const s of SPECIES_DEFS) {
+      const own = this.groupsOf(s.id);
+      if (own.length && this.random.next() < crowdLeaveChance(s, own.length, chunks)) {
+        this.startLeaving(own[Math.floor(this.random.next() * own.length)], s, now);
+      }
+    }
+    // Llegadas: como mucho una cada vez, de una especie con sitio (en orden al azar)
+    if (this.groupCount() >= groupsCap(chunks, this.random)) return;
+    const carrion = this.corpses.some(c => c.meat > 0.005);
     const order = SPECIES_DEFS.filter(s => s.migration).sort(() => this.random.next() - 0.5);
     for (const s of order) {
-      const population = this.animals.filter(a => a.species === s.id).length;
-      const own = groups.filter(h => h.species === s.id).length;
-      const chance = arrivalChance(s, population, this.capacity.get(s.id) ?? 0, own, (s.founders ?? FOUNDERS).length);
+      const seen = this.lastSeen.get(s.id);
+      const chance = arrivalChance(s, {
+        population: this.animals.filter(a => a.species === s.id).length,
+        capacity: this.capacity.get(s.id) ?? 0,
+        groups: this.groupsOf(s.id).length,
+        groupSize: (s.migration?.founders ?? s.founders ?? FOUNDERS).length,
+        cap: speciesCap(s, chunks, this.random),
+        absentDays: seen === undefined ? Infinity : (now - seen) / DAY,
+        carrion,
+      });
       if (this.random.next() >= chance) continue;
       const at = this.world.shore(this.random);
       if (!at) return;
-      this.spawnHerd(s.key, at.x, at.y, now);
+      // Quiénes llegan: los de su llegada natural (si los tiene, y a veces con un joven) o sus fundadores
+      const m = s.migration!;
+      const arrivers = m.founders
+        ? [...m.founders, ...(this.random.next() < (m.youngChance ?? 0) ? [{ sex: (this.random.next() < 0.5 ? 'female' : 'male') as Sex, age: 'young' as const }] : [])]
+        : undefined;
+      this.spawnHerd(s.key, at.x, at.y, now, false, arrivers);
       return;
     }
   }
@@ -1850,7 +1881,7 @@ export class FaunaSystem {
     this.news.push({ type: 'dispersed', species: s.id, name: a.name });
     // Isla llena (no caben más grupos): no encuentra dónde fundar el suyo y se va de la isla, como los jóvenes
     // de verdad cuando todos los territorios están ocupados
-    if (this.islandFull()) this.startLeaving(this.herds.get(a.herd)!, s, now);
+    if (this.islandFull(s)) this.startLeaving(this.herds.get(a.herd)!, s, now);
   }
 
   /** Grupos (de 2 o más) que hay en la isla, sin contar los que se están yendo */
@@ -1860,10 +1891,19 @@ export class FaunaSystem {
     return n;
   }
 
-  /** ¿Está la isla llena de grupos? (el tope se tira cada vez: unas veces cabe uno más y otras no) */
-  private islandFull(): boolean {
+  /** Grupos (de 2 o más) de una especie, sin contar los que se están yendo */
+  private groupsOf(species: number): Herd[] {
+    return [...this.herds.values()].filter(h => h.species === species && !h.leaving && this.members(h.id).length >= 2);
+  }
+
+  /**
+   * ¿Está la isla llena para un grupo nuevo de esta especie? Llena de grupos en general o de los suyos (los dos
+   * topes se tiran cada vez: unas veces cabe uno más y otras no).
+   */
+  private islandFull(s: SpeciesDef): boolean {
     const chunks = this.world.islandChunks();
-    return chunks > 0 && this.groupCount() >= groupsCap(chunks, this.random);
+    if (chunks <= 0) return false;
+    return this.groupCount() >= groupsCap(chunks, this.random) || (!!s.migration && this.groupsOf(s.id).length >= speciesCap(s, chunks, this.random));
   }
 
   /** Lo que se le pasa por la cabeza (diario), con calma: unas pocas frases al día */
@@ -1956,7 +1996,7 @@ export class FaunaSystem {
       if (a.inside === null && this.world.snowAt(Math.floor(a.x), Math.floor(a.y))) rest *= 0.6;
       if (a.inside === null && c.rain > 0.3 && !this.world.shelterNear(Math.floor(a.x), Math.floor(a.y), 1.5)) rest *= 0.75;
     }
-    return { hunger: c.cold ? 1.2 : 1, thirst: (c.hot ? 1.3 : 1) * (c.drought ? 1.2 : 1), rest };
+    return { hunger: c.cold ? s.winterAppetite ?? 1 : 1, thirst: (c.hot ? 1.3 : 1) * (c.drought ? 1.2 : 1), rest };
   }
 
   /** Va al refugio más cercano (bajo los árboles). Devuelve true si ha echado a andar hacia él (false si ya está o no hay). */

@@ -19,6 +19,15 @@ export class ClimateState {
     return this.seasonOffset + this.dailyOffset;
   }
 
+  /** Las dos partes del desvío por separado: la de la estación y la del día y la noche */
+  get seasonPart(): number {
+    return this.seasonOffset;
+  }
+
+  get dailyPart(): number {
+    return this.dailyOffset;
+  }
+
   /** Estación de la que viene y a la que va el clima, y cuánto lleva de transición (0..1) */
   get seasonBlend(): { readonly from: number; readonly to: number; readonly t: number } {
     return this.blend;

@@ -82,15 +82,40 @@ export interface SpeciesDef {
   /** Jóvenes que se van de su manada al hacerse adultos (y fundan otra), por sexo */
   readonly dispersal?: { readonly male: number; readonly female: number };
   /**
-   * Llegadas y marchas naturales [PROPUESTA]. Cada pocos días, si la isla puede alimentar a más de su especie,
-   * puede llegar un grupo por la orilla (`arrive`, más cuanto más sitio hay). Cada día, una manada hambrienta
-   * puede irse de la isla (`hungryLeave`, más cuanto más hambre). Sin este campo, la especie no llega sola.
+   * Llegadas y marchas naturales [PROPUESTA]. Sin este campo, la especie no llega sola.
+   * - `arrive`: cada pocos días, si la isla puede alimentar a más de su especie, puede llegar un grupo por la
+   *   orilla (más cuanto más sitio hay).
+   * - `groupsPerChunk`: su tope de grupos en la isla, tirado cada vez entre los dos valores (por chunk). Así
+   *   nunca la llena una sola especie: si se pasa, alguno de sus grupos puede irse (`crowdLeave`, más cuanto más
+   *   se pase).
+   * - `hungryLeave`: cada día, una manada con hambre de verdad puede irse de la isla (más cuanto más hambre).
+   * - `onlyIfAbsent`: solo llegan de fuera si no queda ni uno de su especie en la isla (los demás nacen aquí).
+   * - `carrionLure`: llegan atraídos por el olor de los cadáveres: sin carroña en la isla no llegan, y con ella la
+   *   tirada se multiplica por este valor.
+   * - `founders` y `youngChance`: quiénes llegan de fuera, si no son los fundadores de la especie (p. ej. el lobo:
+   *   una pareja, que es como se funda un territorio nuevo), y la probabilidad de que traigan además un joven.
    */
-  readonly migration?: { readonly arrive: number; readonly hungryLeave: number };
+  readonly migration?: {
+    readonly arrive: number;
+    readonly groupsPerChunk: readonly [number, number];
+    readonly crowdLeave: number;
+    readonly hungryLeave?: number;
+    readonly onlyIfAbsent?: boolean;
+    readonly carrionLure?: number;
+    readonly founders?: readonly { readonly sex: 'male' | 'female'; readonly age: 'adult' | 'young' }[];
+    readonly youngChance?: number;
+  };
+  /** Cuánto come en invierno respecto a lo normal (el ciervo real come menos y tira de sus reservas). Por defecto 1 */
+  readonly winterAppetite?: number;
   /**
    * Enfermedad contagiosa (tipo mixomatosis), el freno natural de las especies que crían mucho: con
    * superpoblación (densidad > crowdedAbove) brota al día con `outbreak`; se contagia dentro de la manada
    * (`spread` al día por enfermo), dura `days` días y mata con `lethality` (quien sobrevive queda inmune).
+   */
+  /**
+   * Enfermedad contagiosa. Brota (tirada al día `outbreak`) cuando la especie está apretada por encima de
+   * `crowdedAbove`: por falta de comida, por una colonia casi llena o por estar cerca de su tope de grupos en la
+   * isla; cuanto más apretada, más probable.
    */
   readonly disease?: {
     readonly outbreak: number;

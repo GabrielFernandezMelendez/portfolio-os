@@ -8,6 +8,7 @@ import { LandslideSystem } from './landslides';
 import { SpringChange, WaterOptions, WaterSystem } from './water';
 import { ThermalSystem } from './thermal';
 import { ClimateState } from '../climate/climate-state';
+import { WinterCold } from '../climate/winter-cold';
 import { rootsAt } from '../vegetation/vegetation';
 import { FireSystem } from '../fire/fire';
 import { FIRE_CHECK_MINUTES } from '../../config/fire.config';
@@ -35,11 +36,14 @@ export class TerrainPhysics {
   readonly fire: FireSystem;
   /** Estación y hora: desvío global de temperatura (lo actualiza quien lleva el reloj) */
   readonly climate = new ClimateState();
+  /** Cuánto frío de invierno le llega a cada tile (por altura y bioma) */
+  private readonly winter: WinterCold;
   private minutes = 0;
   private readonly landslides: LandslideSystem;
 
   constructor(private readonly world: World, private readonly waterOptions?: WaterOptions) {
     this.grid = new TerrainGrid(world);
+    this.winter = new WinterCold(world);
     this.fire = new FireSystem(world, new SeededRandom(world.seed * 48271 + 17));
     this.landslides = new LandslideSystem(this.grid);
     const offset = () => this.climate.offset;
@@ -59,6 +63,7 @@ export class TerrainPhysics {
   chunkRevealed(cx: number, cy: number): void {
     this.water.addChunk(this.world.chunk(cx, cy));
     this.thermal.addChunk(this.world.chunk(cx, cy));
+    this.winter.refresh();
   }
 
   /** Manantiales que se han tapado o abierto desde la última llamada (se vacía al leerla) */
@@ -76,6 +81,7 @@ export class TerrainPhysics {
     const changed = new Set<string>();
     for (let i = 0; i < LANDSLIDE_PASSES_PER_MINUTE; i++) this.landslides.step(changed);
     this.minutes++;
+    if (this.minutes % 60 === 0) this.winter.refresh();
     this.thermal.minute(changed);
     this.water.minute(changed);
     if (this.minutes % FIRE_CHECK_MINUTES === 0) this.fire.update(FIRE_CHECK_MINUTES, changed);
@@ -188,14 +194,13 @@ export class TerrainPhysics {
    */
   precipitate(amount: number): boolean {
     let snowed = 0, rained = 0;
-    const offset = this.climate.offset;
     for (const { cx, cy } of this.world.exploration.list()) {
       const c = this.world.chunk(cx, cy);
       for (let k = 0; k < C * C; k++) {
         const ci = k % C, cj = Math.floor(k / C);
         const gx = cx * C + ci, gy = cy * C + cj;
         const t = tileIndex(Math.floor(ci / G), Math.floor(cj / G));
-        if (temperatureAt(c, t) + offset < SNOW_TEMPERATURE) {
+        if (temperatureAt(c, t) + this.winter.offsetAt(c, t, this.climate) < SNOW_TEMPERATURE) {
           this.thermal.addCover(gx, gy, Material.SNOW, amount * SNOW_PER_RAIN, true);
           snowed++;
           continue;
@@ -232,7 +237,7 @@ export class TerrainPhysics {
       const c = cell.chunk, k = cell.k;
       if (c.water[k] <= WATER_MIN) continue;
       const t = tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G));
-      const cold = FREEZE_TEMPERATURE - (temperatureAt(c, t) + offset);
+      const cold = FREEZE_TEMPERATURE - (temperatureAt(c, t) + this.winter.offsetAt(c, t, this.climate));
       if (cold <= 0) continue;
       const ice = Math.min(c.water[k], FREEZE_RATE * FREEZE_CHECK_MINUTES * cold);
       c.water[k] -= ice;

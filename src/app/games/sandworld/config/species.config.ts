@@ -46,8 +46,9 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     thirstPerDay: 0.8, drinkPerMinute: 0.025,
     tirePerDay: 0.9, restPerHour: 0.15, sleepHours: [22, 5],
     waterRange: 12, thirstSearch: 30, corpseDays: 3,
-    // Llega una manada si hay hierba para más ciervos; con hambre de verdad, la manada puede irse de la isla
-    migration: { arrive: 0.3, hungryLeave: 0.4 },
+    // Llega una manada si hay hierba para más ciervos (de 1 a 5 manadas en un 2×2); en invierno come un 30 % menos
+    migration: { arrive: 0.3, groupsPerChunk: [0.25, 1.25], crowdLeave: 0.3 },
+    winterAppetite: 0.7,
   },
   {
     id: 1, key: 'rabbit', size: 'small',
@@ -94,8 +95,11 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       collapseDeath: 0.4, floodEscape: 0.7, drownPerHour: 0.3, unblock: 0.8,
     },
     dispersal: { male: 0.6, female: 0.25 },
-    migration: { arrive: 0.3, hungryLeave: 0.3 },
-    disease: { outbreak: 0.02, crowdedAbove: 1.3, spread: 0.25, days: 5, lethality: 0.6 },
+    // De 3 a 4 colonias en un 2×2 (así siempre queda sitio para otras especies); en invierno come un 20 % menos
+    migration: { arrive: 0.3, groupsPerChunk: [0.75, 1], crowdLeave: 0.3 },
+    winterAppetite: 0.8,
+    // Brota con la colonia casi llena o con la isla cerca de su tope de colonias (o si falta comida)
+    disease: { outbreak: 0.02, crowdedAbove: 0.8, spread: 0.25, days: 5, lethality: 0.6 },
     founders: [
       { sex: 'female', age: 'adult' }, { sex: 'female', age: 'adult' }, { sex: 'female', age: 'adult' },
       { sex: 'male', age: 'adult' }, { sex: 'male', age: 'adult' },
@@ -153,8 +157,14 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       collapseDeath: 0.5, floodEscape: 0.6, drownPerHour: 0.3, unblock: 0.6,
     },
     dispersal: { male: 0.5, female: 0.35 },
-    // Solo llega si hay presas (su capacidad sale de la carne en pie); con hambre de verdad, se va antes de morir
-    migration: { arrive: 0.3, hungryLeave: 0.5 },
+    // De 1 a 2 manadas en un 2×2. De fuera solo llegan si no queda ningún lobo y les atrae el olor de la carroña
+    // (la segunda manada nace aquí: jóvenes que fundan la suya). Con hambre de verdad, se van antes de morir
+    // De fuera llega una pareja (a veces con un joven): una manada de 5 no se sostiene en una isla pequeña
+    migration: {
+      arrive: 0.3, groupsPerChunk: [0.25, 0.5], crowdLeave: 0.3, hungryLeave: 0.5, onlyIfAbsent: true, carrionLure: 3,
+      founders: [{ sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }], youngChance: 0.4,
+    },
+    winterAppetite: 1.2,
     founders: [
       { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'female', age: 'adult' },
       { sex: 'male', age: 'adult' }, { sex: 'female', age: 'young' },

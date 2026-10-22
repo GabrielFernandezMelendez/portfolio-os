@@ -46,8 +46,10 @@ export function splitOff(members: readonly Animal[], s: SpeciesDef, now: number)
   const newLeader = females[0];
   if (!newLeader) return [];
   const leaving = new Set<Animal>([newLeader, ...alive.filter(m => m.mother === newLeader.id)]);
+  // Las crías no se separan de su madre: se van o se quedan con ella (las de madre muerta, como cualquiera)
+  const withMother = (m: Animal) => ageDays(m, now) < s.youngDays && alive.some(o => o.id === m.mother);
   const rest = alive
-    .filter(m => !leaving.has(m) && m !== leader && m.mother !== leader?.id)
+    .filter(m => !leaving.has(m) && m !== leader && m.mother !== leader?.id && !withMother(m))
     .sort((a, b) => b.bornAt - a.bornAt);
   for (const m of rest) {
     if (leaving.size >= Math.floor(alive.length / 2)) break;

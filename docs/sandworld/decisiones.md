@@ -3,6 +3,9 @@
 Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
 
 ## Mundo y arenas
+- **El invierno no hiela toda la isla**: el frío baja con la altura. La mitad más baja de la isla no se hiela ni se
+  nieva (siempre hay tierra y agua líquida en lo bajo) y el frío crece hasta lo más alto. El desierto nunca se
+  hiela; la tundra, siempre.
 - Cada partida tendrá semilla aleatoria (mapa y especies), con opción de introducir una semilla para repetir un mapa.
 - El Manantial **no** frena el fuego ni la Tierra Quemada; sobre la Tierra Quemada su agua se evapora.
 - La Duna no afecta al fuego. Escarcha y Marea sí: muro helado (hay que renovarlo) y zanja de roca sin combustible.
@@ -16,14 +19,26 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
 - Equilibrio con **riesgo doble**: mucha comida → muchas crías (se deciden en el celo, nacen meses después) → hambruna;
   una población pequeña o dispersa → vulnerable (sin pareja, presa fácil). Mantener el equilibrio es cosa del jugador.
 - Los animales no aparecen solos al empezar: **llegan por la orilla**. Cada 3 días, si la isla puede alimentar a más
-  de una especie, puede llegar un grupo suyo (más probable cuanto más sitio hay y menos grupos suyos hay ya). El
-  tope de grupos se tira cada vez entre 1 y 2 por chunk (en un 2×2, de 4 a 8): el tope también es una
-  probabilidad. Un depredador solo llega si hay presas para él. Así una isla no se queda vacía para siempre: el
-  equilibrio sale de llegadas y marchas, y lo que haga el jugador lo mueve, pero nada se extingue solo por existir.
-- **Una manada con hambre de verdad puede irse de la isla** (tirada diaria que sube con el hambre): normalmente
-  antes de morir, pero no siempre. Más adelante también llegarán con cartas y expansión.
-- **La isla tutorial (2×2)** tiene como mucho 6–7 grupos en general (de 3 a 5 colonias de conejos, de 1 a 5
-  manadas de ciervos y 1 de lobos, a veces 2).
+  de una especie, puede llegar un grupo suyo (más probable cuanto más sitio hay y menos grupos suyos hay ya). Así
+  una isla no se queda vacía para siempre: el equilibrio sale de llegadas y marchas, y lo que haga el jugador lo
+  mueve, pero nada se extingue solo por existir. Más adelante también llegarán con cartas y expansión.
+- **Topes de grupos (no de individuos), tirados cada vez**: el de la isla, de 1 a 2 grupos por chunk (en un 2×2, de 4
+  a 8), y el de cada especie, para que nunca la llene una sola: en un 2×2, de 3 a 4 colonias de conejos, de 1 a 5
+  manadas de ciervos y de 1 a 2 de lobos. **Si una especie se pasa de su tope, uno de sus grupos puede irse**
+  (tirada, más cuanto más se pase): se premia al jugador que mantiene el equilibrio.
+- **Una especie que desaparece de la isla** (se va o se extingue) no vuelve antes de 60 días; desde ahí la tirada
+  de que llegue sube poco a poco hasta los 80 días (y puede tardar más). Perderla es un castigo de verdad.
+- **Solo el depredador se va por hambre** (tirada diaria que sube con el hambre, cuando ya lo está pasando mal):
+  normalmente antes de morir, pero no siempre. Los herbívoros aguantan el invierno: premia al jugador que ha
+  mantenido una población sana el resto del año.
+- **Lobos de fuera**: solo llegan si no queda ni un lobo en la isla y les atrae el olor de la carroña, y llega una
+  pareja (a veces con un joven), que es como se funda un territorio nuevo. Las manadas que ya están al descubrir la
+  isla son de 5. La segunda manada nace aquí (jóvenes que fundan la suya), si cabe en su tope.
+- **Apetito en invierno por especie**: el ciervo come un 30 % menos y el conejo un 20 % menos (tiran de sus
+  reservas); el lobo, un 20 % más con el frío.
+- **La enfermedad brota con apretura**: falta de comida, colonia casi llena o especie cerca de su tope en la isla;
+  cuanto más apretada, más probable.
+- Al partirse una manada, las crías se quedan siempre con su madre.
 - **Buscan agua y comida hasta encontrarla o morir**: primero lo que ven, luego los sitios que recuerda su manada
   (los últimos donde bebió y comió bien) y, si no, cada hora buscan más lejos (hasta toda la isla), caminando con
   rumbo. Con mucha sed, beber va antes que cazar, volver a casa o dormir. En invierno la nieve y el hielo también
@@ -97,3 +112,5 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   cazas desesperadas, en vez de irse pronto de la isla.
 - Revisar los tiempos hasta morir de hambre y de sed si hace falta.
 - Lobos: matar de más (surplus killing), peleas entre manadas, enfermedades del lobo, carroñeros.
+- **Los lobos se van demasiado pronto de un 2×2** (en las pruebas pasaban entre 11 y 28 días de 120 en la isla) y
+  luego tardan en volver. Hoy llega una pareja; se revisará el equilibrio del lobo (cuánto come, la vuelta).

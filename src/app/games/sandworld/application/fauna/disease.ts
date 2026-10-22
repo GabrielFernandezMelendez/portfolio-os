@@ -13,10 +13,13 @@ const DAY = 1440;
 /** Celdas a las que un enfermo contagia a otro de su manada */
 const CONTAGION_RANGE = 3;
 
-/** ¿Brota hoy? Elige al primer enfermo (uno sano al azar) o null */
-export function outbreak(animals: readonly Animal[], s: SpeciesDef, density: number, random: RandomSource): Animal | null {
+/**
+ * ¿Brota hoy? Solo si la especie está apretada por encima de `crowdedAbove`; cuanto más apretada, más probable
+ * (su `outbreak` por el cuadrado de lo que se pasa). Elige al primer enfermo (uno sano al azar) o null.
+ */
+export function outbreak(animals: readonly Animal[], s: SpeciesDef, crowd: number, random: RandomSource): Animal | null {
   const d = s.disease;
-  if (!d || density <= d.crowdedAbove || random.next() >= d.outbreak) return null;
+  if (!d || crowd <= d.crowdedAbove || random.next() >= d.outbreak * (crowd / d.crowdedAbove) ** 2) return null;
   const healthy = animals.filter(a => a.sickUntil === null && !a.immune);
   return healthy.length ? healthy[Math.floor(random.next() * healthy.length)] : null;
 }
