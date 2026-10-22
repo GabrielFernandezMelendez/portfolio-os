@@ -31,6 +31,13 @@ export const THIRST_BELOW = 0.45;
 export const DRINK_RANGE = 1.6;
 /** Por debajo de esta hidratación la sed va antes que todo lo demás (cazar, volver a casa, dormir) */
 export const THIRST_URGENT = 0.2;
+/** Las aves vuelan si van a más de estas celdas (si no, andan a saltitos) */
+export const FLY_FROM = 3;
+/** Horas de sol (lo que quema a los goblins fuera de su nido) */
+export const SUN_HOURS: readonly [number, number] = [7, 19];
+/** Si en este rato (minutos) no consigue acercarse al agua, la da por imposible durante WATER_GIVE_UP_HOURS */
+export const WATER_STUCK_MINUTES = 60;
+export const WATER_GIVE_UP_HOURS = 6;
 
 // ── Correr ──
 /**
@@ -62,6 +69,10 @@ export const REFUGE_KINDS = {
   burrow: { collapsePerDig: 0.15, collapsePerHour: 0.03 },
   den: { collapsePerDig: 0.08, collapsePerHour: 0.015 },
   cave: { collapsePerDig: 0, collapsePerHour: 0 },
+  // En la copa de un árbol: la arena y la Marea no le llegan
+  nest: { collapsePerDig: 0, collapsePerHour: 0 },
+  hut: { collapsePerDig: 0.1, collapsePerHour: 0.02 },
+  lair: { collapsePerDig: 0.12, collapsePerHour: 0.02 },
 } as const;
 export const COVER_LEVELS = 0.6;
 

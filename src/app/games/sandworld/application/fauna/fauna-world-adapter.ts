@@ -50,14 +50,26 @@ export class FaunaWorldAdapter implements FaunaWorld {
     return out;
   }
 
-  walkable(gx: number, gy: number): boolean {
+  walkable(gx: number, gy: number, burnt = false): boolean {
     const c = this.cell(gx, gy);
     if (!c) return false;
     const ex = this.world.exploration;
     const { cx, cy } = c.chunk;
     if ((c.ci < EDGE && !ex.isRevealed(cx - 1, cy)) || (c.ci >= C - EDGE && !ex.isRevealed(cx + 1, cy)) ||
         (c.cj < EDGE && !ex.isRevealed(cx, cy - 1)) || (c.cj >= C - EDGE && !ex.isRevealed(cx, cy + 1))) return false;
-    return c.chunk.water[c.k] < DEEP && c.chunk.material[c.k] !== Material.CHARRED;
+    return c.chunk.water[c.k] < DEEP && (burnt || c.chunk.material[c.k] !== Material.CHARRED);
+  }
+
+  frozenAt(gx: number, gy: number): boolean {
+    const t = this.tile(Math.floor(gx / G), Math.floor(gy / G));
+    return !!t && t.chunk.frozen[tileIndex(t.i, t.j)] > 0;
+  }
+
+  feedBurnt(gx: number, gy: number, amount: number): void {
+    const t = this.tile(Math.floor(gx / G), Math.floor(gy / G));
+    if (!t) return;
+    const k = tileIndex(t.i, t.j);
+    if (t.chunk.burnt[k]) t.chunk.feed[k] = Math.min(1, t.chunk.feed[k] + amount);
   }
 
   shelterNear(gx: number, gy: number, max: number): { x: number; y: number } | null {
@@ -130,7 +142,7 @@ export class FaunaWorldAdapter implements FaunaWorld {
     return { food: biomass * p.food!.nutrition, plant: p.id, fruit: false };
   }
 
-  nearestWater(gx: number, gy: number, max: number): { x: number; y: number; distance: number } | null {
+  nearestWater(gx: number, gy: number, max: number, skip?: (x: number, y: number) => boolean): { x: number; y: number; distance: number } | null {
     for (let r = 0; r <= max; r++) {
       let best: { x: number; y: number; distance: number } | null = null;
       for (let dy = -r; dy <= r; dy++) {
@@ -139,6 +151,7 @@ export class FaunaWorldAdapter implements FaunaWorld {
           const c = this.cell(gx + dx, gy + dy);
           // Agua para beber: la de un lago, río o charco; en invierno también la nieve y el hielo (se los comen)
           if (!c || (c.chunk.water[c.k] < DEEP && c.chunk.cover[c.k] <= SNOWY)) continue;
+          if (skip?.(gx + dx, gy + dy)) continue;
           const d = Math.hypot(dx, dy);
           if (!best || d < best.distance) best = { x: gx + dx, y: gy + dy, distance: d };
         }

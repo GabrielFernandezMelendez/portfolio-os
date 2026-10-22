@@ -64,6 +64,51 @@ export const TEMPERAMENTS: Readonly<Record<string, Temperament>> = {
     predator: { reaction: 'ignore', fear: 0, radius: 0 },
     howl: { reaction: 'ignore', fear: 0, radius: 0 },
   },
+  // El cuervo: desconfía de todo lo nuevo (antes se asusta que se acerca), pero el aullido le atrae: hay comida
+  crow: {
+    fire: { reaction: 'flee', fear: 1, radius: 12, avoidHours: 48 },
+    sandFall: { reaction: 'flee', fear: 0.8, radius: 7, avoidHours: 6 },
+    dig: { reaction: 'flee', fear: 0.6, radius: 6, avoidHours: 6 },
+    spring: { reaction: 'startle', fear: 0.5, radius: 8 },
+    heat: { reaction: 'avoid', fear: 0.4, radius: 5, avoidHours: 12 },
+    frost: { reaction: 'startle', fear: 0.4, radius: 5 },
+    glow: { reaction: 'startle', fear: 0.4, radius: 8 },
+    lightning: { reaction: 'flee', fear: 1, radius: 10, avoidHours: 24 },
+    thunder: { reaction: 'startle', fear: 0.5, radius: Infinity },
+    corpse: { reaction: 'ignore', fear: 0, radius: 0 },
+    predator: { reaction: 'flee', fear: 0.7, radius: 8, avoidHours: 12 },
+    howl: { reaction: 'curious', fear: 0.1, radius: Infinity },
+  },
+  // Los humanos: prudentes con el fuego y los rayos, curiosos con lo nuevo; ante un depredador, se plantan
+  human: {
+    fire: { reaction: 'flee', fear: 0.8, radius: 8, avoidHours: 24 },
+    sandFall: { reaction: 'flee', fear: 0.6, radius: 6, avoidHours: 6 },
+    dig: { reaction: 'startle', fear: 0.4, radius: 5 },
+    spring: { reaction: 'curious', fear: 0.2, radius: 10 },
+    heat: { reaction: 'avoid', fear: 0.3, radius: 4, avoidHours: 12 },
+    frost: { reaction: 'startle', fear: 0.2, radius: 4 },
+    glow: { reaction: 'curious', fear: 0.1, radius: 10 },
+    lightning: { reaction: 'flee', fear: 0.8, radius: 8, avoidHours: 24 },
+    thunder: { reaction: 'startle', fear: 0.3, radius: Infinity },
+    corpse: { reaction: 'avoid', fear: 0.2, radius: 3, avoidHours: 12 },
+    predator: { reaction: 'startle', fear: 0.5, radius: 10, avoidHours: 24 },
+    howl: { reaction: 'startle', fear: 0.3, radius: Infinity },
+  },
+  // Los goblins: el fuego y el calor son su casa; les asusta lo que cava y el frío
+  goblin: {
+    fire: { reaction: 'ignore', fear: 0, radius: 0 },
+    sandFall: { reaction: 'startle', fear: 0.5, radius: 6 },
+    dig: { reaction: 'flee', fear: 0.6, radius: 6, avoidHours: 6 },
+    spring: { reaction: 'startle', fear: 0.3, radius: 6 },
+    heat: { reaction: 'ignore', fear: 0, radius: 0 },
+    frost: { reaction: 'flee', fear: 0.5, radius: 5, avoidHours: 24 },
+    glow: { reaction: 'ignore', fear: 0, radius: 0 },
+    lightning: { reaction: 'startle', fear: 0.4, radius: 8 },
+    thunder: { reaction: 'ignore', fear: 0, radius: 0 },
+    corpse: { reaction: 'ignore', fear: 0, radius: 0 },
+    predator: { reaction: 'ignore', fear: 0, radius: 0 },
+    howl: { reaction: 'ignore', fear: 0, radius: 0 },
+  },
 };
 
 /** Qué estímulo provoca cada arena al caer (el Humus no asusta) */

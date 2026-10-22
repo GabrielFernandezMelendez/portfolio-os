@@ -50,6 +50,8 @@ export function choosePrey(
     const ps = species[a.species];
     const like = pred.prey[ps.key];
     if (!like) continue;
+    // Las que no puede cazar (un lobo con un humano adulto) ni las mira: solo las de su tipo que sí
+    if (!(pred.catch[ps.key]?.[preyClass(a, ps, now)] ?? 0)) continue;
     const d = Math.hypot(a.x - hunter.x, a.y - hunter.y);
     if (d >= range || random.next() >= smellChance(s, d)) continue;
     const w = like * CLASS_WEIGHT[preyClass(a, ps, now)] * (alone(a) ? ALONE_WEIGHT : 1) / (1 + d / ISLAND);

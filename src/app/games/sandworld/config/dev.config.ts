@@ -34,6 +34,9 @@ export const DEV_ACTIONS = [
   'rabbitOutbreak', // brota la enfermedad ahora en la colonia más grande
   'findBurrow',    // llevar la cámara a una madriguera (para probar la Marea, la Duna o el agua encima)
   'wolfPack',      // soltar una manada de lobos con su cueva
+  'crowPair',      // soltar una pareja de cuervos (con jóvenes) y su nido
+  'humanBand',     // soltar una banda de humanos con su choza
+  'goblinNest',    // Tierra Quemada con un nido de goblins ya nacido
 ] as const;
 
 export type DevAction = (typeof DEV_ACTIONS)[number];

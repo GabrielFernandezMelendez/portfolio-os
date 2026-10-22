@@ -12,7 +12,7 @@ export type AnimalOrder = 'eat' | 'sleep' | 'run';
 /** Por qué murió */
 export type DeathCause =
   | 'starvation' | 'dehydration' | 'oldAge' | 'poison' | 'exhaustion' | 'fire' | 'lightning' | 'buried' | 'disease' | 'drowned' | 'orphaned'
-  | 'predation' | 'injury';
+  | 'predation' | 'injury' | 'sun' | 'frost';
 
 /** Algo que le afecta ahora a su felicidad (la ficha lo enseña como "Le afecta") */
 export interface Factor {
@@ -53,6 +53,8 @@ export interface Herd {
   /** Sitios donde bebió y comió bien (los últimos MEMORY_SPOTS): a ellos va primero cuando tiene sed o hambre */
   water: { x: number; y: number }[];
   food: { x: number; y: number }[];
+  /** Carroñeros: dónde ha encontrado cadáveres (vuelve a mirar allí: donde caza el lobo) */
+  kills: { x: number; y: number }[];
   /** Se va de la isla: hacia qué orilla y hasta qué minuto (pasado ese minuto se va igual), o null */
   leaving: { x: number; y: number; until: number; quiet: boolean } | null;
 }
@@ -64,8 +66,12 @@ export interface Herd {
 export interface Burrow {
   readonly id: number;
   readonly species: number;
-  /** 'burrow' agujero (conejo), 'den' guarida de ramas, 'cave' cueva de roca (natural: no se derrumba) */
-  readonly kind: 'burrow' | 'den' | 'cave';
+  /**
+   * 'burrow' agujero (conejo), 'den' guarida de ramas, 'cave' cueva de roca (natural: no se derrumba), 'nest'
+   * nido de ramas en la copa de un árbol (cuervo), 'hut' choza de pieles (humanos), 'lair' nido de carbón en la
+   * Tierra Quemada (goblins)
+   */
+  readonly kind: RefugeKindId;
   /** Altura del suelo en la entrada cuando se hizo (o se destapó): si la arena la sube, se va tapando */
   ground: number;
   herd: number;
@@ -79,6 +85,8 @@ export interface Burrow {
 
 /** Signo sobre la cabeza: '!' se asusta, '?' algo le da curiosidad (el dibujo lo enseña unos segundos) */
 export type AnimalSignal = 'alarm' | 'curious';
+
+export type RefugeKindId = 'burrow' | 'den' | 'cave' | 'nest' | 'hut' | 'lair';
 
 export interface Animal {
   readonly id: number;
@@ -172,6 +180,12 @@ export interface Animal {
    * última vez y hacia dónde camina mientras tanto (ángulo). null si no busca.
    */
   search: { kind: 'water' | 'food'; r: number; at: number; dir: number } | null;
+  /**
+   * El agua a la que va: dónde, lo más cerca que ha llegado y cuándo. Si en un rato no se acerca más (un barranco,
+   * un lago en el fondo de una terraza), la da por imposible un tiempo (`badWater`) y busca otra.
+   */
+  waterGoal: { x: number; y: number; best: number; at: number } | null;
+  badWater: { x: number; y: number; until: number }[];
   /**
    * Despistado tras separarse en una carrera de la manada: 0 = no; 1 = no sabe dónde están los suyos (al caer la
    * tarde los buscará, con suerte); 2 = no los ha encontrado (si no se cruza con ellos, esta noche se pierde).

@@ -2,6 +2,9 @@ import { Texture } from 'pixi.js';
 import { deerArt, DeerKind } from './deer-art';
 import { rabbitArt, RabbitKind } from './rabbit-art';
 import { wolfArt, WolfKind } from './wolf-art';
+import { crowArt, CrowPose } from './crow-art';
+import { humanArt, HumanKind, HumanPose } from './human-art';
+import { goblinArt, GoblinPose } from './goblin-art';
 import { refugeArt, RefugeKind, RefugeState } from './burrow-art';
 import { FAUNA_ANIM, SPECIES_ART } from '../../config/fauna-art.config';
 
@@ -11,7 +14,7 @@ import { FAUNA_ANIM, SPECIES_ART } from '../../config/fauna-art.config';
   = -1). Añadir una especie = su generador aquí (ART) y su entrada en SPECIES_ART.
 */
 
-export type FaunaPose = 'idle' | 'walk' | 'run' | 'eat' | 'drink' | 'sleep' | 'dead' | 'howl';
+export type FaunaPose = 'idle' | 'walk' | 'run' | 'eat' | 'drink' | 'sleep' | 'dead' | 'howl' | 'fly' | 'hunt';
 
 /** Lo que devuelve el generador de una especie: colores por píxel (-1 transparente) */
 interface Art {
@@ -19,14 +22,31 @@ interface Art {
   readonly h: number;
   readonly colors: Int32Array;
 }
-type ArtFn = (kind: string, pose: FaunaPose, t: number, back: boolean) => Art;
+type ArtFn = (kind: string, pose: FaunaPose, t: number, back: boolean, variant: number) => Art;
+
+/** Pose común → la que tiene dibujada la especie (lo que no tiene, con la que más se le parece) */
+type Basic = 'idle' | 'walk' | 'run' | 'eat' | 'drink' | 'sleep' | 'dead';
+const basic = (p: FaunaPose): Basic => (p === 'howl' ? 'idle' : p === 'fly' ? 'run' : p === 'hunt' ? 'run' : p);
+const CROW_POSE: Readonly<Record<FaunaPose, CrowPose>> = {
+  idle: 'idle', walk: 'walk', run: 'fly', eat: 'eat', drink: 'eat', sleep: 'sleep', dead: 'dead', howl: 'caw', fly: 'fly', hunt: 'walk',
+};
+const HUMAN_POSE: Readonly<Record<FaunaPose, HumanPose>> = {
+  idle: 'idle', walk: 'walk', run: 'run', eat: 'gather', drink: 'gather', sleep: 'sleep', dead: 'dead', howl: 'idle', fly: 'run', hunt: 'hunt',
+};
+const GOBLIN_POSE: Readonly<Record<FaunaPose, GoblinPose>> = {
+  idle: 'idle', walk: 'walk', run: 'run', eat: 'eat', drink: 'eat', sleep: 'idle', dead: 'dead', howl: 'attack', fly: 'run', hunt: 'attack',
+};
+const HUMAN_KIND: Readonly<Record<string, HumanKind>> = { male: 'man', female: 'woman', child: 'child' };
 
 /** Generador de cada especie */
 const ART: Readonly<Record<string, ArtFn>> = {
   // Solo el lobo aúlla: las demás especies lo dibujan quietas
-  deer: (k, p, t, b) => deerArt(k as DeerKind, p === 'howl' ? 'idle' : p, t, b),
-  rabbit: (k, p, t, b) => rabbitArt(k as RabbitKind, p === 'howl' ? 'idle' : p, t, b),
-  wolf: (k, p, t, b) => wolfArt(k as WolfKind, p, t, b),
+  deer: (k, p, t, b) => deerArt(k as DeerKind, basic(p), t, b),
+  rabbit: (k, p, t, b) => rabbitArt(k as RabbitKind, basic(p), t, b),
+  wolf: (k, p, t, b) => wolfArt(k as WolfKind, p === 'fly' || p === 'hunt' ? 'run' : p, t, b),
+  crow: (k, p, t, b) => crowArt(k === 'chick' ? 'chick' : 'adult', CROW_POSE[p], t, b),
+  human: (k, p, t, b, v) => humanArt(HUMAN_KIND[k] ?? 'man', HUMAN_POSE[p], t, b, v % 2),
+  goblin: (k, p, t, b) => goblinArt(k === 'young' ? 'young' : 'adult', GOBLIN_POSE[p], t, b),
 };
 
 const cache = new Map<string, Texture>();
@@ -43,24 +63,35 @@ export function frameTime(pose: FaunaPose, frame: number): number {
   return frames > 1 ? frame / frames : 0;
 }
 
-export function animalTexture(species: string, kind: string, pose: FaunaPose, frame: number, back: boolean): Texture {
-  const id = `${species}|${kind}|${pose}|${frame}|${back ? 1 : 0}`;
+export function animalTexture(species: string, kind: string, pose: FaunaPose, frame: number, back: boolean, variant = 0): Texture {
+  const id = `${species}|${kind}|${pose}|${frame}|${back ? 1 : 0}|${variant}`;
   let tex = cache.get(id);
   if (!tex) {
-    tex = toTexture(animalCanvas(species, kind, pose, frame, back));
+    tex = toTexture(animalCanvas(species, kind, pose, frame, back, variant));
     cache.set(id, tex);
   }
   return tex;
 }
 
 /** Píxeles de un fotograma volcados a un canvas (también lo usa el retrato de la ficha) */
-export function animalCanvas(species: string, kind: string, pose: FaunaPose, frame: number, back: boolean): HTMLCanvasElement {
-  const art = (ART[species] ?? ART['deer'])(kind, pose, frameTime(pose, frame), back);
+export function animalCanvas(species: string, kind: string, pose: FaunaPose, frame: number, back: boolean, variant = 0): HTMLCanvasElement {
+  const art = animalPixels(species, kind, pose, frame, back, variant);
   return toCanvas(art.colors, art.w, art.h);
 }
 
-/** Refugio (madriguera, cueva o guarida de ramas) en su estado, y el punto de su entrada en el dibujo */
-export function refugeTexture(kind: RefugeKind, state: RefugeState): { texture: Texture; footX: number; footY: number; w: number; h: number } {
+/** Píxeles de un fotograma (también los usa la moneda con retrato) */
+export function animalPixels(species: string, kind: string, pose: FaunaPose, frame: number, back: boolean, variant = 0): Art {
+  return (ART[species] ?? ART['deer'])(kind, pose, frameTime(pose, frame), back, variant);
+}
+
+/** Variante de dibujo de un individuo (p. ej. tono de piel), fija para toda su vida */
+export function artVariant(species: string, id: number): number {
+  const n = SPECIES_ART[species]?.variants ?? 1;
+  return n > 1 ? id % n : 0;
+}
+
+/** Refugio (madriguera, cueva, guarida, nido, choza...) en su estado, el punto de su entrada en el dibujo y su densidad */
+export function refugeTexture(kind: RefugeKind, state: RefugeState): { texture: Texture; footX: number; footY: number; w: number; h: number; density: number; lift: number } {
   const id = `refuge|${kind}|${state}`;
   const art = refugeArt(kind, state);
   let tex = cache.get(id);
@@ -68,7 +99,7 @@ export function refugeTexture(kind: RefugeKind, state: RefugeState): { texture: 
     tex = toTexture(toCanvas(art.colors, art.w, art.h));
     cache.set(id, tex);
   }
-  return { texture: tex, footX: art.footX, footY: art.footY, w: art.w, h: art.h };
+  return { texture: tex, footX: art.footX, footY: art.footY, w: art.w, h: art.h, density: art.density, lift: art.lift };
 }
 
 function toCanvas(colors: Int32Array, w: number, h: number): HTMLCanvasElement {

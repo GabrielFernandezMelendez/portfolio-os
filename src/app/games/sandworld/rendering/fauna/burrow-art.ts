@@ -1,5 +1,9 @@
 import { BURROW_COLORS as K } from '../../config/fauna-art.config';
 import { Pixels, clamp } from './pixel-canvas';
+import { crowNestArt } from './crow-art';
+import { hutArt, D as HUMAN_DENSITY } from './human-art';
+import { goblinLairArt } from './goblin-art';
+import { NEST_LIFT } from '../../config/fauna-art.config';
 
 /*
   Refugios en isométrico, generados por código (luz arriba a la izquierda):
@@ -7,10 +11,13 @@ import { Pixels, clamp } from './pixel-canvas';
     fondo y la oscuridad; alrededor, el anillo de tierra removida y algo de tierra echada a un lado.
   - 'cave' (guarida natural del lobo): un peñasco de roca con musgo y una boca oscura en la cara que da al jugador.
   - 'den' (guarida que construyen los lobos): un montón de ramas cruzadas y piedras con la boca delante.
+  - 'nest' (cuervo): nido de ramas en la copa de un árbol (se dibuja levantado del suelo).
+  - 'hut' (humanos): choza de pieles, a la densidad de los humanos.
+  - 'lair' (goblins): montículo de carbón con brasas; tapado por la arena, hundido en ceniza.
   Estados: 'digging' (cavándose o a medio construir), 'open' y 'blocked' (tapada de arena).
 */
 
-export type RefugeKind = 'burrow' | 'cave' | 'den';
+export type RefugeKind = 'burrow' | 'cave' | 'den' | 'nest' | 'hut' | 'lair';
 export type RefugeState = 'digging' | 'open' | 'blocked';
 
 export interface RefugeArt {
@@ -20,15 +27,31 @@ export interface RefugeArt {
   readonly footX: number;
   readonly footY: number;
   readonly colors: Int32Array;
+  /** Píxeles de arte por píxel de mundo (la choza va a la densidad de los humanos) */
+  readonly density: number;
+  /** Px de mundo por encima del suelo (el nido, en la copa) */
+  readonly lift: number;
 }
 
 const SIZE = { burrow: { w: 16, h: 9 }, cave: { w: 30, h: 22 }, den: { w: 26, h: 17 } } as const;
 
 export function refugeArt(kind: RefugeKind, state: RefugeState): RefugeArt {
+  if (kind === 'nest') {
+    const a = crowNestArt();
+    return { ...a, footX: Math.round(a.w / 2), footY: a.h - 2, density: 1, lift: state === 'digging' ? NEST_LIFT - 2 : NEST_LIFT };
+  }
+  if (kind === 'hut') {
+    const a = hutArt(), U = HUMAN_DENSITY;
+    return { ...a, footX: 14 * U, footY: 25 * U, density: U, lift: 0 };
+  }
+  if (kind === 'lair') {
+    const a = goblinLairArt(state === 'blocked' ? 'collapsed' : 'alive');
+    return { ...a, footX: 14, footY: 11, density: 1, lift: 0 };
+  }
   const { w: W, h: H } = SIZE[kind];
   const cv = new Pixels(W, H);
   const foot = kind === 'burrow' ? burrow(cv, W, H, state) : kind === 'cave' ? cave(cv, W, H, state) : den(cv, W, H, state);
-  return { w: W, h: H, footX: foot.x, footY: foot.y, colors: cv.outlined(K.outline) };
+  return { w: W, h: H, footX: foot.x, footY: foot.y, colors: cv.outlined(K.outline), density: 1, lift: 0 };
 }
 
 /** Rombo redondeado 2:1 (elipse isométrica): ¿está (x, y) dentro? y a qué "distancia" del centro (0..1) */

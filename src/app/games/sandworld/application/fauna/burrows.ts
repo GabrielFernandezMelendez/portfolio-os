@@ -43,8 +43,14 @@ export class Burrows {
     if (!s.refuge) return null;
     const ok = (gx: number, gy: number) => {
       const m = this.world.materialAt(gx, gy);
-      return m !== null && s.refuge!.digIn.includes(m) && this.world.walkable(gx, gy) && !this.world.flooded(gx, gy);
+      return m !== null && s.refuge!.digIn.includes(m) && this.world.walkable(gx, gy, !!s.fireproof) && !this.world.flooded(gx, gy);
     };
+    // Nido en un árbol (cuervo): en la copa del árbol más cercano
+    if (s.refuge.site === 'tree') {
+      const tree = this.world.shelterNear(Math.floor(x), Math.floor(y), BURROW_SEARCH * 2);
+      if (!tree) return null;
+      return this.place(herd, s, kind, tree.x, tree.y, now, ready);
+    }
     // A ser posible, cerca del agua (a su alcance de agua): como los animales de verdad, que no cavan lejos de beber
     const wet = (gx: number, gy: number) => !!this.world.nearestWater(gx, gy, s.waterRange);
     const here = ok(Math.floor(x), Math.floor(y)) ? { x: Math.floor(x), y: Math.floor(y) } : null;
@@ -58,10 +64,14 @@ export class Burrows {
     }
     spot ??= dry;
     if (!spot) return null;
+    return this.place(herd, s, kind, spot.x + 0.5, spot.y + 0.5, now, ready);
+  }
+
+  private place(herd: Herd, s: SpeciesDef, kind: Burrow['kind'], x: number, y: number, now: number, ready: boolean): Burrow {
     const b: Burrow = {
-      id: this.nextId++, species: s.id, kind, herd: herd.id, x: spot.x + 0.5, y: spot.y + 0.5,
-      ground: this.world.height(spot.x, spot.y),
-      readyAt: ready ? now : now + s.refuge.digHours * 60, blocked: false, abandonedAt: null,
+      id: this.nextId++, species: s.id, kind, herd: herd.id, x, y,
+      ground: this.world.height(Math.floor(x), Math.floor(y)),
+      readyAt: ready ? now : now + s.refuge!.digHours * 60, blocked: false, abandonedAt: null,
     };
     this.all.set(b.id, b);
     herd.burrow = b.id;

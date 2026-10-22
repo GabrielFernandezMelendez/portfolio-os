@@ -15,6 +15,8 @@ import { MEAT_BY_SIZE } from '../../config/fauna.config';
 import { arrivalChance, crowdLeaveChance, leaveChance, speciesCap } from './migration';
 import { RUN_STOP } from '../../config/fauna.config';
 import { Material } from '../../domain/models/material.model';
+import { BurntBorn } from './burnt-born';
+import { BurntLand, BurntRegion } from '../../domain/ports/burnt-land.port';
 
 const DAY = 1440;
 const G = 4;
@@ -69,11 +71,12 @@ class FakeIsland implements FaunaWorld {
     this.grass[t] -= b;
     return { food: b * GRASS.food!.nutrition, plant: GRASS.id, fruit: false };
   }
-  nearestWater(gx: number, gy: number, max: number) {
+  nearestWater(gx: number, gy: number, max: number, skip?: (x: number, y: number) => boolean) {
     let best: { x: number; y: number; distance: number } | null = null;
     for (const k of this.water) {
       const [x, y] = k.split(',').map(Number);
       const d = Math.hypot(x - gx, y - gy);
+      if (skip?.(x, y)) continue;
       if (d <= max && (!best || d < best.distance)) best = { x, y, distance: d };
     }
     return best;
@@ -106,6 +109,10 @@ class FakeIsland implements FaunaWorld {
   chunks = 0;
   coast: { x: number; y: number } | null = null;
   islandChunks(): number { return this.chunks; }
+  frozen = new Set<string>();
+  frozenAt(gx: number, gy: number): boolean { return this.frozen.has(`${Math.floor(gx / G)},${Math.floor(gy / G)}`); }
+  fed = 0;
+  feedBurnt(_gx: number, _gy: number, amount: number): void { this.fed += amount; }
   shore() { return this.coast; }
   totalFood(diets: readonly Diet[]): number {
     let s = 0;
@@ -978,7 +985,7 @@ describe('Fauna: topes y llegadas por especie', () => {
 });
 
 describe('Fauna: llegada natural del lobo', () => {
-  it('de fuera llega una pareja (a veces con un joven) atraída por la carroña, no una manada entera', () => {
+  it('de fuera llega una pareja con 1 a 3 jóvenes, atraída por la carroña, no una manada entera', () => {
     const sizes: number[] = [];
     for (let seed = 1; seed <= 6; seed++) {
       const { island, fauna } = setup(24, 0.8, seed);
@@ -997,6 +1004,107 @@ describe('Fauna: llegada natural del lobo', () => {
       if (arrived) sizes.push(arrived);
     }
     expect(sizes.length).toBeGreaterThan(0);
-    expect(sizes.every(n => n === 2 || n === 3)).toBe(true);
+    expect(sizes.every(n => n >= 3 && n <= 5)).toBe(true);
   }, 60000);
+});
+
+describe('Fauna: cuervos, humanos y goblins (comportamientos comunes con sus parámetros)', () => {
+  const crowS = SPECIES_DEFS.find(s => s.key === 'crow')!;
+  const humanS = SPECIES_DEFS.find(s => s.key === 'human')!;
+  const goblinS = SPECIES_DEFS.find(s => s.key === 'goblin')!;
+  const wolfS2 = SPECIES_DEFS.find(s => s.key === 'wolf')!;
+  type Internals = {
+    flying: boolean;
+    canStep(x: number, y: number, nx: number, ny: number): boolean;
+    strike(a: unknown, s: unknown, prey: unknown, now: number, ambush: boolean): void;
+    die(a: unknown, c: string, n: number): void;
+  };
+
+  it('volando, el agua no corta el paso (andando, sí)', () => {
+    const { island, fauna } = setup(16);
+    for (let y = 0; y < 64; y++) island.water.add(`20,${y}`);
+    const f = fauna as unknown as Internals;
+    f.flying = false;
+    expect(f.canStep(19.5, 10.5, 20.5, 10.5)).toBe(false);
+    f.flying = true;
+    expect(f.canStep(19.5, 10.5, 20.5, 10.5)).toBe(true);
+    expect(crowS.locomotion).toBe('fly');
+  });
+
+  it('una banda humana que plantan cara puede matar al lobo que ataca (a veces, no siempre); un ciervo, nunca', () => {
+    const now = at(Season.SUMMER);
+    let tries = 0, killed = 0, deerKilled = 0;
+    for (let seed = 1; seed <= 4; seed++) {
+      const { fauna } = setup(24, 0.8, seed);
+      const f = fauna as unknown as Internals;
+      const band = fauna.spawnHerd('human', 40, 40, now, false, [{ sex: 'male', age: 'adult' }, { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }]);
+      const herd = fauna.spawnHerd('deer', 60, 60, now, false, [{ sex: 'female', age: 'adult' }]);
+      for (let i = 0; i < 50; i++) {
+        const [w] = fauna.spawnHerd('wolf', 41, 41, now, false, [{ sex: 'male', age: 'adult' }]);
+        f.strike(w, wolfS2, band[0], now, false);
+        tries++;
+        if (fauna.corpses.some(c => c.id === w.id && c.cause === 'injury')) killed++;
+        if (band[0].diedAt !== null) break;
+        const [w2] = fauna.spawnHerd('wolf', 61, 61, now, false, [{ sex: 'male', age: 'adult' }]);
+        if (herd[0].diedAt === null) f.strike(w2, wolfS2, herd[0], now, false);
+        if (fauna.corpses.some(c => c.id === w2.id && c.cause === 'injury' && c.diary.some(d => d.key === 'kicked') === false)) deerKilled++;
+      }
+    }
+    expect(humanS.defend?.kill).toBeGreaterThan(0);
+    expect(killed / tries).toBeGreaterThan(0.05);
+    expect(killed / tries).toBeLessThan(0.7);
+    expect(deerKilled).toBe(0);
+  });
+
+  it('el sol quema a un goblin que se queda fuera de día; de noche no', () => {
+    const { island, fauna } = setup(16);
+    const noon = at(Season.SUMMER) + 3 * 60;          // 12:00
+    const out = fauna.spawnHerd('goblin', 30, 30, noon, false, [{ sex: 'male', age: 'adult' }]);
+    run(fauna, island, noon, 3 * 60);
+    expect(out[0].health).toBeLessThan(1);
+    expect(out[0].diary.some(d => d.key === 'sunburnt')).toBe(true);
+    const night = at(Season.SUMMER, 3) + 13 * 60;      // 22:00
+    const { island: i2, fauna: f2 } = setup(16);
+    const [g] = f2.spawnHerd('goblin', 30, 30, night, false, [{ sex: 'male', age: 'adult' }]);
+    run(f2, i2, night, 3 * 60);
+    expect(g.diary.some(d => d.key === 'sunburnt')).toBe(false);
+    expect(goblinS.sunHurt).toBeGreaterThan(0);
+  });
+});
+
+describe('Fauna: los goblins nacen con la Tierra Quemada y la mantienen viva', () => {
+  /** Tierra Quemada de mentira: una zona de 3 × 3 tiles que apunta si está viva */
+  class FakeBurnt implements BurntLand {
+    region: BurntRegion = { tiles: Array.from({ length: 9 }, (_, k) => ({ gi: 4 + (k % 3), gj: 4 + Math.floor(k / 3) })) };
+    alive: boolean | null = null;
+    regions(): BurntRegion[] { return [this.region]; }
+    setLife(_r: BurntRegion, alive: boolean): void { this.alive = alive; }
+  }
+
+  it('sus nidos aparecen de 5 a 7 días después; mientras quede un goblin vivo la zona vive, y sin ninguno remite', () => {
+    for (let seed = 1; seed <= 4; seed++) {
+      const { island, fauna } = setup(16, 0.8, seed);
+      const land = new FakeBurnt();
+      const born = new BurntBorn(land, fauna, new SeededRandom(seed));
+      const t0 = at(Season.SPRING);
+      const goblins = () => fauna.animals.filter(a => a.species === SPECIES_DEFS.find(s => s.key === 'goblin')!.id);
+      let bornAt = -1;
+      for (let h = 0; h < 8 * 24; h++) {
+        const now = t0 + h * 60;
+        const out = born.hour(now);
+        if (out.some(o => o.nests > 0) && bornAt < 0) bornAt = h / 24;
+      }
+      expect(bornAt).toBeGreaterThanOrEqual(5);
+      expect(bornAt).toBeLessThanOrEqual(7.05);
+      expect(goblins().length).toBeGreaterThanOrEqual(1);
+      expect(goblins().length).toBeLessThanOrEqual(3);
+      expect(land.alive).toBe(true);
+      // Mueren todos: la zona deja de vivir (remite)
+      const die = (fauna as unknown as { die(a: unknown, c: string, n: number): void }).die.bind(fauna);
+      for (const g of goblins()) die(g, 'injury', t0 + 8 * DAY);
+      born.hour(t0 + 8 * DAY + 60);
+      expect(land.alive).toBe(false);
+      void island;
+    }
+  });
 });

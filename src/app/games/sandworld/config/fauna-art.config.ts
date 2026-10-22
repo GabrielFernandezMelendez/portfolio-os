@@ -30,6 +30,10 @@ export const FAUNA_ANIM = {
   sleep: { frames: 1, ms: [1000] },
   dead: { frames: 1, ms: [1000] },
   howl: { frames: 1, ms: [1000] },
+  /** En vuelo (aves): aleteo */
+  fly: { frames: 4, ms: [110] },
+  /** Persiguiendo a una presa con el arma en alto (humanos y goblins); los demás la dibujan corriendo */
+  hunt: { frames: 4, ms: [95] },
 } as const;
 
 /** Lo deprisa que el sprite alcanza su posición (ms): suaviza el paso de minuto en minuto */
@@ -85,7 +89,7 @@ export const COIN = {
 /**
  * Cara de cada especie en su moneda (9 px de ancho; '.' = fondo) y sus colores. Añadir una especie = su cara aquí.
  */
-export const COIN_FACES: Readonly<Record<string, { readonly rows: readonly string[]; readonly colors: Readonly<Record<string, number>> }>> = {
+export const COIN_FACES: Readonly<Record<string, { readonly rows: readonly string[]; readonly colors: Readonly<Record<string, number>>; readonly oy?: number }>> = {
   deer: {
     rows: [
       'A.a...a.A',
@@ -126,6 +130,44 @@ export const COIN_FACES: Readonly<Record<string, { readonly rows: readonly strin
     ],
     colors: { E: 0x46423e, H: 0x8b857c, e: 0xff1a1a, c: 0xe3dacb, n: 0x141210, i: 0x7a5a50 },
   },
+  // Cuervo visto desde arriba: la cabeza arriba con los dos ojos rojos y el pico largo hacia abajo
+  crow: {
+    rows: [
+      '..bBBBb..',
+      '.bBBBBBb.',
+      'BkRBBBRkB',
+      'BBrBBBrBB',
+      '.BBGGGBB.',
+      '..BGgGB..',
+      '...GgG...',
+      '...GgG...',
+      '....g....',
+    ],
+    colors: { B: 0x1c1926, b: 0x4a4566, k: 0x0a0810, R: 0xff1a1a, r: 0x8a0a0a, G: 0x8a8a94, g: 0x4a4a52 },
+    oy: 3,
+  },
+  // Goblin de frente: orejas largas a los lados, ojos amarillos, sonrisa de colmillos
+  goblin: {
+    rows: [
+      'G.......g',
+      'GG.ggg.gg',
+      '.GGGGGgg.',
+      '.GyYGyYg.',
+      '..GGgGg..',
+      '..MtMtM..',
+      '...ggg...',
+    ],
+    colors: { G: 0x76a83e, g: 0x427022, y: 0xfff2a0, Y: 0xffd040, M: 0x1a0a06, t: 0xf4ecd8 },
+  },
+  // El humano no tiene patrón: su moneda lleva el retrato de su propio sprite en alta densidad (COIN_PORTRAIT)
+};
+
+/**
+ * Monedas con retrato (especies en alta densidad): el aro se dibuja a esa densidad y dentro va la cabeza y los
+ * hombros del sprite (`kind` quieto, de frente), recortada en círculo. `top` = filas del sprite que entran.
+ */
+export const COIN_PORTRAIT: Readonly<Record<string, { readonly kind: string; readonly top: number; readonly radius: number; readonly oy: number }>> = {
+  human: { kind: 'male', top: 17, radius: 11.6, oy: 7 },
 };
 
 /** Cifras de 3 × 5 px para la insignia */
@@ -182,6 +224,14 @@ export const WOLF_COLORS = {
   innerEar: 0x7a5a50,
 } as const;
 
+// ── Cuervo, humano y goblin (sus colores viven en su generador: rendering/fauna/crow-art.ts...) ──
+/** Lienzos (px de arte) y fila del suelo. El humano, a doble densidad (cada px de arte = medio px de mundo) */
+export const CROW_CANVAS = { w: 22, h: 18, ground: 15, footX: 11 } as const;
+export const HUMAN_CANVAS = { w: 40, h: 60, ground: 54, footX: 20 } as const;
+export const GOBLIN_CANVAS = { w: 22, h: 24, ground: 21, footX: 11 } as const;
+/** Nido del cuervo: px de mundo por encima del suelo (en la copa del árbol que lo sostiene) */
+export const NEST_LIFT = 13;
+
 /**
  * Dibujo de cada especie en el mapa: lienzo de sus fotogramas, escala de cada tipo (macho, hembra y su cría),
  * ancho de la sombra del adulto, altura (px de arte sobre los pies) del signo '!'/'?' y de la flecha de
@@ -197,6 +247,15 @@ export interface SpeciesArtDef {
   readonly head: Readonly<Record<string, number>>;
   readonly arrow: Readonly<Record<string, number>>;
   readonly hit: { readonly half: number; readonly top: number };
+  /**
+   * Densidad del dibujo: píxeles de arte por píxel de mundo (1 = como el resto; 2 = el humano, con el doble de
+   * detalle en el mismo tamaño). El lienzo va en píxeles de arte; head, arrow, hit y shadow, en píxeles de mundo.
+   */
+  readonly density?: number;
+  /** Variantes del mismo tipo (p. ej. tono de piel): cada individuo lleva la suya (por su id) */
+  readonly variants?: number;
+  /** Aves: altura (px de mundo) a la que vuela el sprite; la sombra se queda en el suelo */
+  readonly flyLift?: number;
 }
 
 export const SPECIES_ART: Readonly<Record<string, SpeciesArtDef>> = {
@@ -217,5 +276,26 @@ export const SPECIES_ART: Readonly<Record<string, SpeciesArtDef>> = {
     head: { male: 15, female: 14, pup: 10 },
     arrow: { male: 16, female: 15, pup: 11 },
     hit: { half: 8, top: 14 },
+  },
+  crow: {
+    canvas: CROW_CANVAS, young: 'chick', scale: { male: 0.78, female: 0.78, chick: 0.5 }, shadow: 7,
+    head: { male: 12, female: 12, chick: 8 },
+    arrow: { male: 13, female: 13, chick: 9 },
+    hit: { half: 5, top: 11 },
+    flyLift: 14,
+  },
+  human: {
+    canvas: HUMAN_CANVAS, young: 'child', scale: { male: 1, female: 0.93, child: 0.66 }, shadow: 9,
+    head: { male: 26, female: 24, child: 18 },
+    arrow: { male: 27, female: 25, child: 19 },
+    hit: { half: 5, top: 24 },
+    density: 2,
+    variants: 2,
+  },
+  goblin: {
+    canvas: GOBLIN_CANVAS, young: 'young', scale: { male: 1, female: 1, young: 0.7 }, shadow: 9,
+    head: { male: 20, female: 20, young: 15 },
+    arrow: { male: 21, female: 21, young: 16 },
+    hit: { half: 6, top: 18 },
   },
 };

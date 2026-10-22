@@ -4,6 +4,7 @@
 import { Diet } from './plant.model';
 import { SeasonId } from './time.model';
 import { MaterialId } from './material.model';
+import { RefugeKindId } from './animal.model';
 
 export type AnimalSize = 'small' | 'medium' | 'large';
 
@@ -25,8 +26,30 @@ export interface SpeciesDef {
   /** Horas del día en que más come (al amanecer y al atardecer) y en que sestea si hace calor */
   readonly activeHours: readonly (readonly [from: number, to: number])[];
   readonly siestaHours: readonly [from: number, to: number];
-  /** Velocidad andando y corriendo (celdas por minuto de juego) */
-  readonly speed: { readonly walk: number; readonly run: number };
+  /** Velocidad andando y corriendo (celdas por minuto de juego); las aves, también volando */
+  readonly speed: { readonly walk: number; readonly run: number; readonly fly?: number };
+  /**
+   * Cómo se mueve: andando (rodea agua y terrazas, busca camino) o volando (en línea recta por encima de todo;
+   * anda solo distancias cortas). Por defecto, andando.
+   */
+  readonly locomotion?: 'walk' | 'fly';
+  /** Vida que le quita el sol por hora fuera de su refugio, de día (los goblins) */
+  readonly sunHurt?: number;
+  /** Vida que le quita por hora estar en un refugio helado (la Escarcha apaga la brasa de los goblins) */
+  readonly frostHurt?: number;
+  /** No le hace nada el fuego ni le asusta (vive en la Tierra Quemada) y puede pisar el suelo calcinado */
+  readonly fireproof?: boolean;
+  /**
+   * Nace con la Tierra Quemada (goblins): pasados `delayDays` días desde que se forma, aparecen nidos (uno por cada
+   * `tilesPerNest` tiles) con `perNest` de ellos cada uno, por tirada. Mientras quede uno vivo, la Tierra Quemada
+   * vive; cuando no queda ninguno, remite. Lo que comen alimenta el suelo quemado (crece más deprisa).
+   */
+  readonly burntBorn?: {
+    readonly delayDays: readonly [number, number];
+    readonly tilesPerNest: number;
+    readonly perNest: readonly [number, number];
+    readonly feedsBurnt: number;
+  };
   /**
    * Distancias en islas (× WORLD.CELLS, así siguen valiendo si cambia el tamaño de una isla): cuánto se aleja un
    * adulto de su manada explorando por su cuenta de día y cuánto pone de por medio al huir de un peligro.
@@ -51,8 +74,11 @@ export interface SpeciesDef {
   readonly senses: { readonly smell: number; readonly vigilance: number };
   /** Depredador: qué caza, cuándo y cómo (ver PredatorDef) */
   readonly predator?: PredatorDef;
-  /** Presa grande que a veces planta cara: se planta, el depredador se va (o no) y puede salir herido */
-  readonly defend?: { readonly stand: number; readonly repel: number; readonly injure: number };
+  /**
+   * Planta cara a un depredador: se planta (`stand`), el depredador se va (`repel`) o no, puede salir herido
+   * (`injure`) y, si el grupo es capaz (humanos), puede matarlo: `kill` por cada compañero cerca que le ayuda.
+   */
+  readonly defend?: { readonly stand: number; readonly repel: number; readonly injure: number; readonly kill?: number };
   /** Lo que come solo si pasa mucha hambre (el lobo, bayas) */
   readonly starvingDiets?: readonly Diet[];
   /**
@@ -61,9 +87,11 @@ export interface SpeciesDef {
    * acabar esas horas. Y lo que le pasa con las arenas y el agua.
    */
   readonly refuge?: {
-    /** Qué construye ('burrow' agujero en la tierra, 'den' guarida de ramas) y qué refugio natural ocupa al llegar */
-    readonly kind: 'burrow' | 'den';
+    /** Qué construye (agujero, guarida de ramas, nido, choza, nido de carbón) y qué refugio natural ocupa al llegar */
+    readonly kind: RefugeKindId;
     readonly natural?: 'cave';
+    /** Dónde lo hace: en el suelo (por defecto) o en la copa de un árbol (nido de cuervo) */
+    readonly site?: 'ground' | 'tree';
     /** Si los adultos duermen dentro (conejo) o solo las crías (lobo: los adultos duermen fuera, a la entrada) */
     readonly adultsInside: boolean;
     readonly digIn: readonly MaterialId[];
@@ -92,8 +120,9 @@ export interface SpeciesDef {
    * - `onlyIfAbsent`: solo llegan de fuera si no queda ni uno de su especie en la isla (los demás nacen aquí).
    * - `carrionLure`: llegan atraídos por el olor de los cadáveres: sin carroña en la isla no llegan, y con ella la
    *   tirada se multiplica por este valor.
-   * - `founders` y `youngChance`: quiénes llegan de fuera, si no son los fundadores de la especie (p. ej. el lobo:
-   *   una pareja, que es como se funda un territorio nuevo), y la probabilidad de que traigan además un joven.
+   * - `founders` y `extraYoung`: quiénes llegan de fuera, si no son los fundadores de la especie (p. ej. el lobo:
+   *   una pareja, que es como se funda un territorio nuevo), y cuántos jóvenes traen además (tirada entre los dos
+   *   valores). `extraAdults`: adultos de más (tirada), para que cada grupo que llega sea distinto.
    */
   readonly migration?: {
     readonly arrive: number;
@@ -103,7 +132,8 @@ export interface SpeciesDef {
     readonly onlyIfAbsent?: boolean;
     readonly carrionLure?: number;
     readonly founders?: readonly { readonly sex: 'male' | 'female'; readonly age: 'adult' | 'young' }[];
-    readonly youngChance?: number;
+    readonly extraYoung?: readonly [number, number];
+    readonly extraAdults?: readonly [number, number];
   };
   /** Cuánto come en invierno respecto a lo normal (el ciervo real come menos y tira de sus reservas). Por defecto 1 */
   readonly winterAppetite?: number;
@@ -241,6 +271,12 @@ export interface PredatorDef {
   readonly trip: { readonly chance: number; readonly days: readonly [number, number]; readonly islands: number };
   /** Llevar carne a las crías de la guarida: cansa más (×) y probabilidad de que otro le releve */
   readonly carry: { readonly tire: number; readonly relay: number };
-  /** Aullido al anochecer (probabilidad por día) */
+  /** Aullido al anochecer (probabilidad por día); en los goblins, su grito de guerra al salir */
   readonly howl: number;
+  /** Saciedad por debajo de la que también come plantas (el lobo solo con mucha hambre; el cuervo, casi siempre) */
+  readonly plantsBelow?: number;
+  /** Carroñero que roba: probabilidad por bocado de llevarse un trozo de carne y alejarse con él (el cuervo) */
+  readonly hoard?: number;
+  /** Con hambre y sin carroña a la vista: probabilidad por hora de volver a mirar donde encontró cadáveres */
+  readonly revisit?: number;
 }

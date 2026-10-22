@@ -7,7 +7,8 @@ import {
 import { signalTexture } from './signal-art';
 import { badgeTexture, coinTexture } from './coin-art';
 import { HerdMark } from '../../application/fauna/herds';
-import { FaunaPose, animalTexture, artKind, refugeTexture } from './fauna-sprites';
+import { FaunaPose, animalTexture, artKind, artVariant, refugeTexture } from './fauna-sprites';
+import { FLY_FROM } from '../../config/fauna.config';
 import { shadowTexture } from '../vegetation/plant-sprites';
 import { ageDays } from '../../application/fauna/needs';
 
@@ -60,6 +61,8 @@ interface Shown {
   y: number;
   placed: boolean;
   pose: FaunaPose;
+  /** Aves: altura de vuelo actual (px de mundo), que sube y baja suave al despegar y al posarse */
+  lift: number;
   frame: number;
   frameMs: number;
   species: string;
@@ -201,7 +204,8 @@ export class FaunaLayer {
       if (!s.sprite.visible) continue;
       const art = SPECIES_ART[s.species], k = art.scale[s.kind] / Math.max(...Object.values(art.scale));
       const half = art.hit.half * k, top = art.hit.top * k;
-      if (wx < s.x - half || wx > s.x + half || wy < s.y - top || wy > s.y + 3) continue;
+      const y = s.y - s.lift;
+      if (wx < s.x - half || wx > s.x + half || wy < y - top || wy > y + 3) continue;
       if (s.y > bestY) {
         bestY = s.y;
         best = id;
@@ -272,6 +276,7 @@ export class FaunaLayer {
     shadow.position.set(1, 0);
     const coin = new Sprite(coinTexture(species));
     coin.anchor.set(0.5, 1);
+    coin.scale.set(COIN.size / coin.texture.width);
     coin.position.set(0, 1);
     const badge = new Sprite(badgeTexture(0));
     badge.anchor.set(0, 1);
@@ -303,10 +308,12 @@ export class FaunaLayer {
         h.sprite.texture = art.texture;
         // El punto de la entrada del dibujo, sobre la entrada en el mundo
         h.sprite.anchor.set(art.footX / art.w, art.footY / art.h);
+        h.sprite.scale.set(1 / art.density);
         const p = ground.point(b.x, b.y);
-        h.sprite.position.set(Math.round(p.x), Math.round(p.y));
-        // La madriguera es un agujero en el suelo (debajo de todo); la cueva y la guarida, con volumen (se ordenan)
-        h.sprite.zIndex = b.kind === 'burrow' ? p.y - 3 : p.y - 0.2;
+        h.sprite.position.set(Math.round(p.x), Math.round(p.y) - art.lift);
+        // La madriguera es un agujero en el suelo (debajo de todo); la cueva y la guarida, con volumen (se ordenan);
+        // el nido, en la copa, por delante del árbol que lo sostiene
+        h.sprite.zIndex = b.kind === 'burrow' ? p.y - 3 : art.lift > 0 ? p.y + 0.3 : p.y - 0.2;
         h.placed = true;
       }
     }
@@ -322,7 +329,7 @@ export class FaunaLayer {
     const shadow = new Sprite();
     shadow.anchor.set(0.5, 0.5);
     return {
-      sprite, shadow, parent: null, x: 0, y: 0, placed: false, pose: 'idle', frame: 0, frameMs: 0, species: '', kind: 'female', hidden: false,
+      sprite, shadow, parent: null, x: 0, y: 0, placed: false, pose: 'idle', lift: 0, frame: 0, frameMs: 0, species: '', kind: 'female', hidden: false,
       signal: null, signalAt: -1, signalMs: 0,
     };
   }
@@ -337,7 +344,7 @@ export class FaunaLayer {
       s.sprite.anchor.set(art.canvas.footX / art.canvas.w, art.canvas.ground / art.canvas.h);
     }
     const kind = artKind(species.key, ageDays(a, now) < species.youngDays, a.sex);
-    const pose: FaunaPose = a.action;
+    const pose = this.poseOf(a);
     if (pose !== s.pose) {
       s.pose = pose;
       s.frame = 0;
@@ -351,11 +358,17 @@ export class FaunaLayer {
       s.frame = (s.frame + 1) % anim.frames;
     }
     s.kind = kind;
-    s.sprite.texture = animalTexture(species.key, kind, pose, s.frame, a.back);
-    // El dibujo mira a la izquierda de frente y a la derecha de espaldas: el resto, en espejo
+    s.sprite.texture = animalTexture(species.key, kind, pose, s.frame, a.back, artVariant(species.key, a.id));
+    // El dibujo mira a la izquierda de frente y a la derecha de espaldas: el resto, en espejo. Las especies en alta
+    // densidad se encogen a su tamaño de mundo
     const flip = a.back ? a.facing === -1 : a.facing === 1;
-    s.sprite.scale.x = flip ? -1 : 1;
-    s.sprite.position.set(Math.round(s.x), Math.round(s.y));
+    const d = 1 / (art.density ?? 1);
+    s.sprite.scale.set(flip ? -d : d, d);
+    // En vuelo, el sprite sube (la sombra se queda en el suelo); al posarse, baja
+    const goal = pose === 'fly' ? art.flyLift ?? 0 : 0;
+    s.lift += (goal - s.lift) * (1 - Math.exp(-dtMs / 260));
+    if (Math.abs(goal - s.lift) < 0.3) s.lift = goal;
+    s.sprite.position.set(Math.round(s.x), Math.round(s.y - s.lift));
     s.sprite.zIndex = s.y + 0.05;
     // Los cadáveres se desvanecen el último día
     if (a.diedAt !== null) {
@@ -366,6 +379,20 @@ export class FaunaLayer {
     s.shadow.position.set(Math.round(s.x) + 1, Math.round(s.y));
     s.shadow.zIndex = s.y - 0.6;
     s.shadow.alpha = s.sprite.alpha;
+  }
+
+  /**
+   * Pose a dibujar: la acción del animal, salvo las aves que van lejos o huyen (en vuelo) y los cazadores que
+   * persiguen a su presa (arma en alto). Solo lee el estado de la simulación.
+   */
+  private poseOf(a: Animal): FaunaPose {
+    const s = SPECIES_DEFS[a.species];
+    if (s.locomotion === 'fly' && a.diedAt === null) {
+      if (a.action === 'run') return 'fly';
+      if (a.action === 'walk' && Math.hypot(a.tx - a.x, a.ty - a.y) > FLY_FROM) return 'fly';
+    }
+    if (a.hunt?.phase === 'chase' && a.action === 'run') return 'hunt';
+    return a.action;
   }
 
   /**
@@ -397,7 +424,7 @@ export class FaunaLayer {
     const lift = view.selected === a.id ? SIGNAL_ANIM.selectedLift : 0;
     s.signal.visible = s.sprite.visible;
     s.signal.alpha = Math.min(1, (SIGNAL_ANIM.ms - t) / SIGNAL_ANIM.fadeMs) * (popFrame === 0 ? 0.6 : 1);
-    s.signal.position.set(Math.round(s.x), Math.round(s.y) - SPECIES_ART[s.species].head[s.kind] - lift + dy);
+    s.signal.position.set(Math.round(s.x), Math.round(s.y - s.lift) - SPECIES_ART[s.species].head[s.kind] - lift + dy);
     s.signal.zIndex = s.y + 0.06;
   }
 
@@ -414,7 +441,7 @@ export class FaunaLayer {
     this.marker.position.set(Math.round(s.x), Math.round(s.y));
     this.marker.zIndex = s.y + 0.04;
     const bob = Math.round(Math.abs(Math.sin(this.clock / 260)) * 2);
-    this.arrow.position.set(0, -(s.hidden ? 6 : SPECIES_ART[s.species].arrow[s.kind]) - bob);
+    this.arrow.position.set(0, -(s.hidden ? 6 : SPECIES_ART[s.species].arrow[s.kind] + Math.round(s.lift)) - bob);
     this.arrow.zIndex = 1;
   }
 }

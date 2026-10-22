@@ -51,7 +51,10 @@
       "rabbitLitter": "Probar: las conejas paren ya",
       "rabbitOutbreak": "Probar: brote de enfermedad (conejos)",
       "findBurrow": "Probar: ir a una madriguera",
-      "wolfPack": "Probar: manada de lobos (al azar)"
+      "wolfPack": "Probar: manada de lobos (al azar)",
+      "crowPair": "Probar: pareja de cuervos (con crías)",
+      "humanBand": "Probar: banda de humanos",
+      "goblinNest": "Probar: Tierra Quemada con goblins"
     }
   },
   "lang": {
@@ -262,6 +265,160 @@
         "trip": "Una manada de lobos se va de caza lejos de su guarida.",
         "leaving": "Una manada de {count} lobos, sin nada que cazar, se va de la isla.",
         "left": "La manada de lobos ha dejado la isla. Las presas respiran."
+      },
+      "crow": {
+        "arrived": "Llegan a la isla {count} cuervos. Se posan, miran y apuntan.",
+        "born": "Nace un polluelo de cuervo: {name}, cría de {mother}.",
+        "twins": "{mother} ha sacado adelante dos polluelos. Uno se llama {name}.",
+        "litter": "{mother} tiene {count} polluelos en el nido. Uno se llama {name}.",
+        "died": {
+          "starvation": "{name} ha muerto de hambre.",
+          "oldAge": "{name} ha muerto de viejo. Se lo sabía todo.",
+          "poison": "{name} ha muerto envenenado.",
+          "exhaustion": "{name} ha muerto de agotamiento.",
+          "fire": "{name} no ha volado a tiempo del fuego.",
+          "dehydration": "{name} ha muerto de sed.",
+          "lightning": "A {name} le ha caído un rayo en pleno vuelo.",
+          "buried": "{name} ha quedado sepultado en su nido.",
+          "disease": "{name} ha muerto de una enfermedad.",
+          "drowned": "{name} se ha ahogado.",
+          "orphaned": "{name} no ha salido adelante sin su madre.",
+          "predation": "A {name} lo han cazado.",
+          "injury": "{name} ha muerto de sus heridas.",
+          "sun": "{name} ha muerto abrasado por el sol.",
+          "frost": "{name} se ha congelado en su nido."
+        },
+        "herdSplit": "Una bandada de cuervos se ha dividido: demasiados picos para un nido.",
+        "hunger": "Los cuervos pasan hambre: ni carroña ni nada que robar.",
+        "poisoned": "{name} se ha comido {food} y lo está pagando.",
+        "lost": {
+          "back": "{name} pasó la noche fuera, pero ha vuelto con su bandada.",
+          "joined": "{name} se ha unido a otra bandada.",
+          "rejected": "Otra bandada ha echado a {name} a picotazos.",
+          "alone": "{name} se ha perdido y ahora va por libre."
+        },
+        "discovered": "Los cuervos comen {food}.",
+        "stampede": "¡Algo ha espantado a los cuervos!",
+        "herdRun": "Los cuervos alzan el vuelo a la vez.",
+        "herdRunSplit": "Los cuervos alzan el vuelo; {count} se van por su cuenta.",
+        "burrow": {
+          "dug": "Una pareja de cuervos ha hecho su nido en un árbol.",
+          "collapsed": "¡Se ha caído un nido de cuervos!",
+          "blocked": "Un nido de cuervos ha quedado tapado.",
+          "flooded": "¡Se ha encharcado un nido de cuervos!"
+        },
+        "outbreak": "Brota una enfermedad entre los cuervos. {name} es el primero en caer.",
+        "dispersed": "{name} deja su bandada para buscar pareja.",
+        "killed": "Los cuervos han cazado a {name} ({prey}).",
+        "repelled": "{name} ({prey}) ha espantado a los cuervos.",
+        "howl": "Se oyen graznidos por toda la isla. Alguien ha encontrado algo.",
+        "trip": "Los cuervos se van a buscar comida lejos de su nido.",
+        "leaving": "{count} cuervos, sin nada que comer, se van de la isla.",
+        "left": "Los cuervos se han ido de la isla. Por fin, silencio.",
+        "defended": "{name} ha plantado cara a un {attacker} y lo ha matado."
+      },
+      "human": {
+        "arrived": "Desembarca en la isla una banda de {count} humanos. Ya nada volverá a ser igual.",
+        "born": "Nace un bebé humano: {name}, hijo de {mother}.",
+        "twins": "{mother} ha tenido mellizos. Uno se llama {name}.",
+        "litter": "{mother} ha tenido {count} bebés. Uno se llama {name}.",
+        "died": {
+          "starvation": "{name} ha muerto de hambre.",
+          "oldAge": "{name} ha muerto de viejo, rodeado de los suyos.",
+          "poison": "{name} se ha envenenado con lo que no debía.",
+          "exhaustion": "{name} ha muerto de agotamiento.",
+          "fire": "{name} no ha escapado del fuego.",
+          "dehydration": "{name} ha muerto de sed.",
+          "lightning": "A {name} le ha caído un rayo.",
+          "buried": "{name} ha quedado sepultado en su choza.",
+          "disease": "{name} ha muerto de una enfermedad.",
+          "drowned": "{name} se ha ahogado en su choza.",
+          "orphaned": "{name} no ha salido adelante sin su madre.",
+          "predation": "A {name} lo han cazado.",
+          "injury": "{name} ha muerto de sus heridas.",
+          "sun": "{name} ha muerto de una insolación.",
+          "frost": "{name} se ha congelado en su choza."
+        },
+        "herdSplit": "Una banda de humanos se ha dividido: no cabían todos en la choza (ni en la conversación).",
+        "hunger": "Los humanos pasan hambre: la caza y las bayas no dan para todos.",
+        "poisoned": "{name} se ha comido {food} y lo está pagando.",
+        "lost": {
+          "back": "{name} pasó la noche fuera, pero ha vuelto con su banda.",
+          "joined": "{name} se ha unido a otra banda.",
+          "rejected": "Otra banda ha echado a {name} a pedradas.",
+          "alone": "{name} se ha perdido y ahora vive solo."
+        },
+        "discovered": "Los humanos comen {food}.",
+        "stampede": "¡Algo ha espantado a una banda de humanos!",
+        "herdRun": "La banda de humanos sale corriendo en grupo.",
+        "herdRunSplit": "La banda de humanos sale corriendo; {count} se separan.",
+        "burrow": {
+          "dug": "Una banda de humanos ha levantado su choza.",
+          "collapsed": "¡Se ha hundido una choza!",
+          "blocked": "Una choza ha quedado enterrada en arena.",
+          "flooded": "¡Se inunda una choza!"
+        },
+        "outbreak": "Brota una enfermedad entre los humanos. {name} es el primero en caer.",
+        "dispersed": "{name} deja su banda para fundar la suya.",
+        "killed": "Los humanos han cazado a {name} ({prey}).",
+        "repelled": "{name} ({prey}) ha plantado cara a los humanos y se han ido.",
+        "howl": "Se oyen gritos de guerra en la isla.",
+        "trip": "Una partida de caza humana se aleja de su choza.",
+        "leaving": "Una banda de {count} humanos, sin nada que comer, hace las maletas.",
+        "left": "Los humanos se han ido de la isla. La naturaleza respira (y no se fía).",
+        "defended": "Los humanos se han defendido: {name} ha matado a un {attacker}."
+      },
+      "goblin": {
+        "arrived": "Aparecen {count} goblins en la isla.",
+        "born": "Nace un goblin: {name}, cría de {mother}. Ya muerde.",
+        "twins": "{mother} ha tenido dos goblins. Uno se llama {name}.",
+        "litter": "{mother} ha tenido {count} goblins en el nido. Uno se llama {name}.",
+        "died": {
+          "starvation": "{name} ha muerto de hambre.",
+          "oldAge": "{name} ha muerto de viejo (nadie sabe cómo).",
+          "poison": "{name} ha muerto envenenado.",
+          "exhaustion": "{name} ha muerto de agotamiento.",
+          "fire": "{name} se ha quemado. Ni el fuego lo quería.",
+          "dehydration": "{name} ha muerto de sed.",
+          "lightning": "A {name} le ha caído un rayo.",
+          "buried": "{name} ha quedado sepultado en su nido.",
+          "disease": "{name} ha muerto de una enfermedad.",
+          "drowned": "{name} se ha ahogado en su nido.",
+          "orphaned": "{name} no ha salido adelante sin su madre.",
+          "predation": "A {name} lo han cazado.",
+          "injury": "{name} ha muerto de sus heridas.",
+          "sun": "{name} se ha quedado al sol y se ha consumido.",
+          "frost": "La escarcha ha sellado el nido: {name} ha muerto congelado."
+        },
+        "herdSplit": "Una banda de goblins se ha dividido. A gritos, claro.",
+        "hunger": "Los goblins pasan hambre. Mala noticia para todos los demás.",
+        "poisoned": "{name} se ha comido {food} y lo está pagando.",
+        "lost": {
+          "back": "{name} ha vuelto al nido antes del alba.",
+          "joined": "{name} se ha unido a otra banda de goblins.",
+          "rejected": "Otra banda ha echado a {name} a garrotazos.",
+          "alone": "{name} se ha perdido y ahora caza solo."
+        },
+        "discovered": "Los goblins comen {food}.",
+        "stampede": "¡Algo ha espantado a los goblins!",
+        "herdRun": "Los goblins salen corriendo en grupo.",
+        "herdRunSplit": "Los goblins salen corriendo; {count} se separan.",
+        "burrow": {
+          "dug": "Los goblins han cavado un nido en la Tierra Quemada.",
+          "collapsed": "¡Se ha hundido un nido de goblins!",
+          "blocked": "Un nido de goblins ha quedado enterrado.",
+          "flooded": "¡Se inunda un nido de goblins!"
+        },
+        "outbreak": "Brota una enfermedad entre los goblins. {name} es el primero en caer.",
+        "dispersed": "{name} deja su banda para cavar su propio nido.",
+        "killed": "Los goblins han cazado a {name} ({prey}).",
+        "repelled": "{name} ({prey}) ha plantado cara a los goblins y se han ido.",
+        "howl": "Un grito de guerra goblin rompe la noche.",
+        "trip": "Los goblins salen de caza lejos de su nido.",
+        "leaving": "{count} goblins se van de la isla.",
+        "left": "Los goblins se han ido de la isla.",
+        "defended": "{name} ha matado a un {attacker} que venía a por él.",
+        "burntBorn": "Algo se mueve en la Tierra Quemada: han nacido {count} nidos de goblins."
       }
     }
   },
@@ -362,7 +519,10 @@
   "species": {
     "deer": "Ciervo rojo",
     "rabbit": "Conejo de monte",
-    "wolf": "Lobo gris"
+    "wolf": "Lobo gris",
+    "crow": "Cuervo grande",
+    "human": "Humano",
+    "goblin": "Goblin"
   },
   "animal": {
     "sex": {
@@ -487,7 +647,12 @@
       "howl": "Auuuuuuu. (Traducción: estamos aquí y somos muchos.)",
       "trip": "Aquí ya no queda nada que cazar. Nos vamos unos días.",
       "tripBack": "Volvemos a casa. Huele a nosotros.",
-      "leaving": "Aquí no queda nada. Nos vamos a buscar otra isla."
+      "leaving": "Aquí no queda nada. Nos vamos a buscar otra isla.",
+      "stole": "Le he robado un trozo al que lo ha cazado. Él hace el trabajo; yo, la digestión.",
+      "revisit": "Vuelvo a donde hubo carne la otra vez. La memoria es lo que tiene.",
+      "sunburnt": "¡El sol! ¡Me quema la piel! ¿Quién ha encendido eso?",
+      "frozenIn": "La escarcha ha sellado mi nido. Aquí dentro hace un frío de muerte. Literal.",
+      "killedAttacker": "Ha venido a por nosotros y no ha vuelto a casa."
     },
     "tab": {
       "status": "Estado",

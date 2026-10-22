@@ -23,12 +23,11 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 | 4F | Tercera especie y primer depredador: el lobo (olfato de hasta 2 islas, acecho y persecución por tiradas, presas débiles antes, plantar cara, carroña, viajes de caza, carne a los lobeznos con relevos, aullido, cría solo de la pareja dominante, cueva de roca natural o guarida de ramas). Refugios que se tapan y hunden por cantidad y tiempo (la cueva de roca solo se tapa) |
 | 4G | Equilibrio: llegadas y marchas naturales por la orilla según lo que cabe en la isla (cada 3 días, tope de 1 a 2 grupos por chunk y tope por especie; la especie de más pierde grupos; una especie que desaparece tarda de 60 a 80 días en volver; lobos de fuera solo sin lobos y atraídos por la carroña), el lobo hambriento se va, apetito de invierno por especie, enfermedad por apretura, invierno que solo hiela lo alto, memoria de agua y comida y búsqueda cada vez más lejos, crías de refugio que maman cuando la madre vuelve, ciervo con gemelos al 40 % y vida de 4 a 7 años |
 
+| 4H | Cuarta, quinta y sexta especie: el **cuervo** (vuela, nido en los árboles, roba presas, recuerda dónde hubo carne), los **humanos** (banda nómada, caza y recolección, choza, en grupo pueden matar al depredador; dibujados a doble densidad) y los **goblins** de la Tierra Quemada (nacen de 5 a 7 días después de la zona, cazan de noche, el sol les quema; la zona solo remite cuando mueren todos) |
+
 ## Ahora
 
-- Cuarta especie: el **cuervo** (investigar antes con Dwarf Fortress y RimWorld).
-- Después: los **humanos** y los casos de la **Tierra Quemada** (sus criaturas). Con 6 especies (ciervo, conejo,
-  lobo, cuervo, humanos y las criaturas de la Tierra Quemada) basta para el producto mínimo viable; al terminar se
-  pasa a la fase 5.
+- Probar el equilibrio con las 6 especies (producto mínimo viable) y pasar a la fase 5.
 
 ## Después (fase 4)
 
@@ -41,6 +40,6 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 |---|---|---|
 | 5 | Disparadores, cartas (Dios Espagueti), reglas permanentes, decisiones del jugador, guardado local | **MVP jugable** |
 | 6 | Escalera evolutiva, sociedades (huertos, descubrir el fuego), rivalidad con humanos | Evolución social |
-| 7 | Catástrofes, expansión con nubes, "las cosas" de la Tierra Quemada, fin de partida | Mundo ampliado |
+| 7 | Catástrofes, expansión con nubes, criatura de ceniza y brasa (diseño guardado), fin de partida | Mundo ampliado |
 | 8 | Simulación offline ("Mientras no estabas…"), combinaciones | Partidas largas |
 | 9 | Optimización móvil (Web Worker, atlas, culling) y **pulido** (ver decisiones) | Lista para probar en móvil |

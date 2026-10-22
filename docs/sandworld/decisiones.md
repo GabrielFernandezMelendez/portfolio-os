@@ -11,8 +11,8 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
 - La Duna no afecta al fuego. Escarcha y Marea sí: muro helado (hay que renovarlo) y zanja de roca sin combustible.
 - La Tierra Quemada nace con 9 tiles quemados juntos, crece despacio por sus bordes y no deja hacer lagos dentro.
   Mientras tenga criaturas no se puede destruir, solo contener; sin vida remite de fuera hacia dentro.
-  **No remite sola**: remitirá cuando se maten las criaturas que vivirán en ella (fase 7). Hasta entonces no se
-  cambia cómo funciona.
+  **No remite sola**: solo empieza a remitir cuando **han muerto todos los goblins de esa zona**. Las arenas pueden
+  destruir sus nidos, pero los goblins que sobreviven cavan otros.
 
 ## Fauna
 - Las especies se implementan de una en una; sus sprites son isométricos (mockup → aprobación → código).
@@ -39,6 +39,7 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
 - **La enfermedad brota con apretura**: falta de comida, colonia casi llena o especie cerca de su tope en la isla;
   cuanto más apretada, más probable.
 - Al partirse una manada, las crías se quedan siempre con su madre.
+- **Cuántos llegan es una tirada en todas las especies** (p. ej. cuervos y lobos: una pareja con de 1 a 3 crías).
 - **Buscan agua y comida hasta encontrarla o morir**: primero lo que ven, luego los sitios que recuerda su manada
   (los últimos donde bebió y comió bien) y, si no, cada hora buscan más lejos (hasta toda la isla), caminando con
   rumbo. Con mucha sed, beber va antes que cazar, volver a casa o dormir. En invierno la nieve y el hielo también
@@ -85,6 +86,23 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   lobeznos (cansa más; otro le releva por tirada). Aúlla al anochecer y las presas se sobresaltan. Ojos rojo
   saturado en el sprite y la moneda. Cuánto come y lo fácil que caza no se tocan: son realistas.
 - **Ciervo**: gemelos al 40 % (si la madre está bien comida) y vive de 4 a 7 años.
+- **Cuervo**: moneda con la cabeza vista desde arriba (dos ojos rojos, pico largo hacia abajo); ojos rojos también en
+  el sprite. **Humanos**: dibujados con el doble de píxeles que los animales (mismo tamaño en la isla), de tres
+  cuartos con volumen, sin blanco en los ojos; la mujer con su propio diseño (vestido largo con flecos, cinta,
+  melena larga y collar de cuentas). **Criaturas de la Tierra Quemada**: goblins verdes pequeños con garrote de
+  hueso; viven en nidos de carbón. El diseño de criatura de ceniza y brasa queda guardado para otra especie.
+- **Cuervo**: vuela (el agua y las terrazas no le cortan el paso; vuela a partir de 3 celdas), anida en la copa de
+  un árbol, caza crías de conejo, roba un trozo de las presas de otros, vuelve donde hubo carne y come frutos con
+  hambre. Llega en pareja con 1 a 3 crías.
+- **Humanos**: banda nómada (pareja con 1 a 3 hijos) que caza ciervos y conejos y recolecta; choza de pieles;
+  crían todo el año. Plantan cara al depredador y, en grupo, pueden matarlo. Los lobos cazan sobre todo a sus
+  niños. La expansión (colonia, refugios que mejoran) llega más adelante.
+- **Goblins** (criaturas de la Tierra Quemada): **nacen solos de 5 a 7 días después** de formarse una zona de
+  Tierra Quemada (un nido por cada 9 tiles, de 1 a 3 goblins en cada uno). Viven de noche: el sol les quema si les
+  pilla fuera; la escarcha que sella su nido les congela. El fuego no les hace nada, pero **la Brasa no les da
+  vida**. Cazan conejos, ciervos, cuervos y **también humanos**; comer alimenta su Tierra Quemada. No llegan ni se
+  van por la orilla.
+- Grupos de tamaño aleatorio en todas las especies (pareja más 1 a 3 crías en lobos y cuervos, por ejemplo).
 - Los olfatos, el miedo, la alarma y las señales "!" "?" son comunes a todas las especies.
 - Las madrigueras abandonadas las ocupa otra colonia o se hunden solas en 30 días.
 - **Volver a casa a tiempo es una tirada**: cada tarde (amanecer, en el conejo) un animal puede entretenerse y salir
@@ -112,5 +130,11 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   cazas desesperadas, en vez de irse pronto de la isla.
 - Revisar los tiempos hasta morir de hambre y de sed si hace falta.
 - Lobos: matar de más (surplus killing), peleas entre manadas, enfermedades del lobo, carroñeros.
+- **Zoom y humanos en alta densidad**: los humanos se dibujan con el doble de píxeles; en los zooms ×1,5 y ×3 sus
+  píxeles se ven desiguales. Se decide tras la primera prueba si se quitan esos zooms o se deja así.
+- **Mandar correr a un animal muchas veces en una semana hace que acabe yéndose de la isla** (así el jugador puede
+  intentar formar grupos equilibrados, con un coste).
+- **Rendimiento con islas grandes y mucha población**: ver el informe de rendimiento de la fase 4 (mover la física
+  a un Web Worker, repartir la física y la fauna por chunks cercanos a la cámara, etc. en la fase 9).
 - **Los lobos se van demasiado pronto de un 2×2** (en las pruebas pasaban entre 11 y 28 días de 120 en la isla) y
   luego tardan en volver. Hoy llega una pareja; se revisará el equilibrio del lobo (cuánto come, la vuelta).

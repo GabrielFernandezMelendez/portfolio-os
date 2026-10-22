@@ -1,3 +1,4 @@
+import { BurntLand, BurntRegion } from '../../domain/ports/burnt-land.port';
 import { ChunkData, PLANT_SLOTS, cellIndex, tileIndex } from '../../domain/models/chunk.model';
 import { Material, MaterialId } from '../../domain/models/material.model';
 import { SeasonId } from '../../domain/models/time.model';
@@ -62,7 +63,7 @@ interface TileRef {
  *   "vida" (sus criaturas hasta que llegue la fauna) que la mantiene y la hace crecer despacio por sus bordes.
  *   Se contiene igual que el fuego. Sin vida, remite de fuera hacia dentro y vuelve a ser tierra fértil.
  */
-export class FireSystem {
+export class FireSystem implements BurntLand {
   readonly conditions: FireConditions = { season: 0, droughtDays: 0, rain: 0 };
   readonly news: FireNews[] = [];
   /** Reloj propio (minutos): sirve para saber qué tiles ardieron hace poco */
@@ -189,6 +190,41 @@ export class FireSystem {
       if (r.chunk.life[r.t] > 0) { r.chunk.life[r.t] = 0; n++; }
     });
     return n;
+  }
+
+  /** Zonas de Tierra Quemada: tiles quemados unidos por sus lados (una vez por hora, no cada minuto) */
+  regions(): BurntRegion[] {
+    const seen = new Set<string>(), out: BurntRegion[] = [];
+    this.forEachTile(r => {
+      if (!r.chunk.burnt[r.t]) return;
+      const gi0 = r.chunk.cx * N + r.i, gj0 = r.chunk.cy * N + r.j;
+      if (seen.has(`${gi0},${gj0}`)) return;
+      const tiles: { gi: number; gj: number }[] = [];
+      const stack = [[gi0, gj0]];
+      seen.add(`${gi0},${gj0}`);
+      while (stack.length) {
+        const [gi, gj] = stack.pop()!;
+        tiles.push({ gi, gj });
+        for (const [di, dj] of SIDES) {
+          const k = `${gi + di},${gj + dj}`;
+          if (seen.has(k)) continue;
+          const n = this.tile(gi + di, gj + dj);
+          if (!n || !n.chunk.burnt[n.t]) continue;
+          seen.add(k);
+          stack.push([gi + di, gj + dj]);
+        }
+      }
+      out.push({ tiles });
+    });
+    return out;
+  }
+
+  /** Vida de toda una zona: con vida crece; sin ella, empieza a remitir */
+  setLife(region: BurntRegion, alive: boolean): void {
+    for (const { gi, gj } of region.tiles) {
+      const r = this.tile(gi, gj);
+      if (r) r.chunk.life[r.t] = alive ? Math.max(r.chunk.life[r.t], 1) : 0;
+    }
   }
 
   /** ¿Hay algo ardiendo? (para no recorrer nada si no) */

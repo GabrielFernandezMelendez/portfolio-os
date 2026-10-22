@@ -38,6 +38,7 @@ import { Translator } from './i18n/translator';
 import { SETTINGS_STORAGE } from './infrastructure/settings-storage.token';
 import { DEFAULT_SEED } from './config/world.config';
 import { FaunaNews, FaunaSystem } from './application/fauna/fauna-system';
+import { BurntBorn } from './application/fauna/burnt-born';
 import { FaunaWorldAdapter } from './application/fauna/fauna-world-adapter';
 import { AnimalOrder } from './domain/models/animal.model';
 import { SPECIES_DEFS } from './config/species.config';
@@ -92,6 +93,8 @@ export class SandworldService implements OnDestroy {
   readonly faunaWorld = new FaunaWorldAdapter(this.world, this.vegetation);
   /** Fauna: animales, manadas, celo y partos (bloque C: ciervos) */
   readonly fauna = new FaunaSystem(this.faunaWorld, new SeededRandom(this.world.seed * 2903 + 19));
+  /** Criaturas que nacen con la Tierra Quemada (goblins): sus nidos y la vida de cada zona */
+  readonly burntBorn = new BurntBorn(this.physics.fire, this.fauna, new SeededRandom(this.world.seed * 7121 + 5));
   /** Trazo en curso mientras el dedo vierte */
   private stroke: Stroke | null = null;
 
@@ -150,6 +153,12 @@ export class SandworldService implements OnDestroy {
       if (t.minute % CLOCK_STEP_MINUTES === 0) this.time.set(t);
     });
     this.events.on('hour', () => this.refreshIndicators());
+    this.events.on('hour', t => {
+      for (const b of this.burntBorn.hour(t.totalMinutes)) {
+        if (b.nests) this.log({ type: 'species', key: `chronicle.fauna.${SPECIES_DEFS[b.species].key}.burntBorn`, params: { count: b.nests }, priority: 9 });
+      }
+      this.reportFauna();
+    });
     this.events.on('minute', t => {
       this.physics.climate.update(t);
       this.reportWeather(this.weatherSystem.minute(t));
@@ -423,6 +432,8 @@ export class SandworldService implements OnDestroy {
         case 'howl': tell(n, 'howl', 3); break;
         case 'trip': tell(n, 'trip', 5); break;
         case 'leaving': tell(n, 'leaving', 7, { count: n.count }); break;
+        case 'defended': tell(n, 'defended', 8, { name: n.name, attacker: `@species.${SPECIES_DEFS[n.attacker].key}` }); break;
+        case 'burntBorn': break;
         case 'left': tell(n, 'left', 5); break;
         case 'died': tell(n, `died.${n.cause}`, 6, { name: n.name }); break;
         case 'herdSplit': tell(n, 'herdSplit', 5); break;
@@ -623,6 +634,21 @@ export class SandworldService implements OnDestroy {
     this.debugHerd('deer', herds);
   }
 
+  /** TEMPORAL (modo desarrollo): Tierra Quemada de 3 × 3 tiles en un sitio al azar con un nido de goblins ya nacido */
+  debugGoblins(): void {
+    const at = this.randomCell((c, k) => c.water[k] < 0.05, 6);
+    if (!at) return;
+    const G = WORLD.CELLS_PER_TILE;
+    const gi = Math.floor(at.gx / G), gj = Math.floor(at.gy / G);
+    this.physics.fire.makeBurntLand(gi, gj);
+    this.events.emit('terrainChanged', this.world.exploration.list());
+    const s = SPECIES_DEFS.find(d => d.burntBorn)!;
+    this.fauna.spawnHerd(s.key, (gi + 1) * G + 2, (gj + 1) * G + 2, this.engine.time.totalMinutes, true,
+      [{ sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }]);
+    this.reportFauna();
+    this.focus(at.gx, at.gy);
+  }
+
   /**
    * TEMPORAL (modo desarrollo): suelta `herds` manadas de una especie en sitios al azar con comida (y, si la
    * especie tiene madriguera, donde se pueda cavar: la colonia llega con ella ya cavada).
@@ -688,6 +714,9 @@ export class SandworldService implements OnDestroy {
       case 'rabbitOutbreak': this.fauna.debugOutbreak('rabbit', this.engine.time.totalMinutes); this.reportFauna(); return;
       case 'findBurrow': return this.debugFindBurrow();
       case 'wolfPack': return this.debugHerd('wolf');
+      case 'crowPair': return this.debugHerd('crow');
+      case 'humanBand': return this.debugHerd('human');
+      case 'goblinNest': return this.debugGoblins();
       case 'drainLife':
         if (this.physics.fire.drainLife() > 0) this.log({ type: 'world', key: 'chronicle.fire.drained', priority: 6 });
         return;

@@ -20,7 +20,8 @@ export interface Meal {
  */
 export interface FaunaWorld {
   /** ¿Puede pisar esta celda? (descubierta, sin agua honda, sin Tierra Quemada) */
-  walkable(gx: number, gy: number): boolean;
+  /** ¿Se puede pisar? (`burnt`: también el suelo calcinado de la Tierra Quemada, para los que viven en ella) */
+  walkable(gx: number, gy: number, burnt?: boolean): boolean;
   /** Altura del suelo (para no subir de golpe una terraza alta) */
   height(gx: number, gy: number): number;
   /** Comida que hay en el tile de esta celda para estas dietas, sin contar las plantas que evita */
@@ -28,7 +29,8 @@ export interface FaunaWorld {
   /** Come hasta `want` de comida del tile de esta celda (prefiere `favourite`); null si no hay nada */
   eat(gx: number, gy: number, diets: readonly Diet[], avoid: ReadonlySet<number>, want: number, favourite: number, now: number, season: SeasonId): Meal | null;
   /** Celda pisable junto al agua más cercana, a `max` celdas como mucho (null si no hay) */
-  nearestWater(gx: number, gy: number, max: number): { readonly x: number; readonly y: number; readonly distance: number } | null;
+  /** El agua más cercana (hasta `max` celdas), saltándose las celdas que `skip` descarte (p. ej. agua a la que no llega) */
+  nearestWater(gx: number, gy: number, max: number, skip?: (x: number, y: number) => boolean): { readonly x: number; readonly y: number; readonly distance: number } | null;
   /** Peligro aquí (0..1): fuego en el tile o al lado. `from` dice de dónde viene (para huir al otro lado). */
   danger(gx: number, gy: number): { readonly level: number; readonly fromX: number; readonly fromY: number };
   /** Pisoteo: la vegetación pequeña del tile pierde esta parte (0..1); mucho pisoteo empobrece el suelo */
@@ -51,4 +53,8 @@ export interface FaunaWorld {
   islandChunks(): number;
   /** Una celda pisable junto a la orilla de la isla (por donde llegan y se van los animales), o null */
   shore(random: RandomSource): { readonly x: number; readonly y: number } | null;
+  /** ¿Está helado el tile? (la Escarcha) */
+  frozenAt(gx: number, gy: number): boolean;
+  /** Lo que comen los goblins alimenta el suelo quemado donde viven (crece más deprisa) */
+  feedBurnt(gx: number, gy: number, amount: number): void;
 }

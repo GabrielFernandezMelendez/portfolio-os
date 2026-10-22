@@ -49,6 +49,34 @@ export const ANIMAL_NAMES: Readonly<Record<string, NamePool>> = {
       shadeBerries: ['Bayita'],
     },
   },
+  // Cuervos: nombres de sabio, de detective y de mal agüero (son los listos de la isla)
+  crow: {
+    male: ['Edgar', 'Sócrates', 'Don Nevermore', 'Sherlock', 'Profesor', 'Merlín', 'Baltasar', 'Notario', 'Agorero', 'Hugo'],
+    female: ['Morgana', 'Casandra', 'Doña Urraca', 'Agatha', 'Sibila', 'Medianoche', 'Tinta', 'Brígida', 'Viuda Negra'],
+    food: {
+      redBerries: ['Mermelada'],
+      blueberry: ['Arándano'],
+      appleTree: ['Pepita'],
+      oak: ['Bellota'],
+    },
+  },
+  // Humanos: nombres de oficina, de móvil y de cuñado, para la especie que cree que manda
+  human: {
+    male: ['Jonathan', 'Brayan', 'Kevin Costa', 'Mánager', 'Coach', 'Iván', 'Dani', 'Influencer', 'Paco Wifi', 'El Primo', 'Borja'],
+    female: ['Jessica', 'Vanessa', 'Yeni', 'Tamara', 'Coach Mari', 'Soraya', 'Paula', 'Cristina', 'Lorena', 'Desirée', 'Marisa'],
+    food: {
+      redBerries: ['Baya'],
+      blueberry: ['Arándano'],
+      appleTree: ['Manzana'],
+      oak: ['Bellota'],
+    },
+  },
+  // Goblins: nombres de ruido y de mascota, para las criaturas más horribles de la isla
+  goblin: {
+    male: ['Gorgo', 'Ñak', 'Bluk', 'Snik', 'Grumo', 'Mocoso', 'Pupas', 'Garrapato', 'Tizón', 'Chispa'],
+    female: ['Grisa', 'Ñaka', 'Verruga', 'Cenicienta', 'Mugre', 'Brasita', 'Hollín', 'Pústula', 'Tiznada'],
+    food: {},
+  },
 };
 
 /** Probabilidad de que una cría se llame como la comida favorita de su madre (o la suya) */
