@@ -29,6 +29,7 @@ export const FAUNA_ANIM = {
   drink: { frames: 2, ms: [900, 400] },
   sleep: { frames: 1, ms: [1000] },
   dead: { frames: 1, ms: [1000] },
+  howl: { frames: 1, ms: [1000] },
 } as const;
 
 /** Lo deprisa que el sprite alcanza su posición (ms): suaviza el paso de minuto en minuto */
@@ -111,6 +112,20 @@ export const COIN_FACES: Readonly<Record<string, { readonly rows: readonly strin
     ],
     colors: { E: 0x846a4e, i: 0xe2a49a, H: 0xa18664, e: 0x120c08, c: 0xece0c6, n: 0xc87a74 },
   },
+  // Ojos rojos: a simple vista, un depredador
+  wolf: {
+    rows: [
+      'E.......E',
+      'EE.....EE',
+      'EiEHHHEiE',
+      '.EHHHHHE.',
+      'HeHHHHHeH',
+      '.HHcccHH.',
+      '..ccncc..',
+      '...ccc...',
+    ],
+    colors: { E: 0x46423e, H: 0x8b857c, e: 0xff1a1a, c: 0xe3dacb, n: 0x141210, i: 0x7a5a50 },
+  },
 };
 
 /** Cifras de 3 × 5 px para la insignia */
@@ -143,6 +158,28 @@ export const BURROW_COLORS = {
   dirt: [0x5a4028, 0x7a5a38, 0x98764c],
   /** Tapada por la Duna */
   sand: [0xc9a35e, 0xe0c07a],
+  /** Cueva de roca (guarida natural del lobo): rampa de gris, musgo */
+  rock: [0x4e4b47, 0x6b6762, 0x8a857e, 0xa8a39a, 0xc4bfb5],
+  moss: [0x4f6e2c, 0x6a8c38],
+  /** Guarida de ramas (la construyen los lobos) */
+  branch: [0x3e2614, 0x5a3a20, 0x7a5430, 0x9a7044],
+} as const;
+
+// ── Lobo ──
+/** Lienzo de cada fotograma del lobo (px de arte) y fila del suelo */
+export const WOLF_CANVAS = { w: 26, h: 22, ground: 19, footX: 13 } as const;
+/** Escala de cada tipo: algo más bajo que el ciervo pero largo; el cachorro, pequeño */
+export const WOLF_SCALE = { male: 0.8, female: 0.74, pup: 0.5 } as const;
+/** Gris lobo de sombra a luz, lomo oscuro, vientre y hocico claros */
+export const WOLF_COLORS = {
+  outline: 0x1e1a18,
+  fur: [0x3c3a38, 0x55524e, 0x6f6a64, 0x8b857c, 0xa59f94, 0xc0b9ad],
+  saddle: [0x2e2c2a, 0x46423e],
+  cream: [0xc9bfae, 0xe3dacb],
+  nose: 0x141210,
+  /** Rojo saturado: a simple vista, un depredador */
+  eye: 0xff1a1a,
+  innerEar: 0x7a5a50,
 } as const;
 
 /**
@@ -174,5 +211,11 @@ export const SPECIES_ART: Readonly<Record<string, SpeciesArtDef>> = {
     head: { male: 13, female: 12, kit: 9 },
     arrow: { male: 14, female: 13, kit: 10 },
     hit: { half: 5, top: 12 },
+  },
+  wolf: {
+    canvas: WOLF_CANVAS, young: 'pup', scale: WOLF_SCALE, shadow: 12,
+    head: { male: 15, female: 14, pup: 10 },
+    arrow: { male: 16, female: 15, pup: 11 },
+    hit: { half: 8, top: 14 },
   },
 };

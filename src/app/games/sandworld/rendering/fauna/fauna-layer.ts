@@ -7,7 +7,7 @@ import {
 import { signalTexture } from './signal-art';
 import { badgeTexture, coinTexture } from './coin-art';
 import { HerdMark } from '../../application/fauna/herds';
-import { FaunaPose, animalTexture, artKind, burrowTexture } from './fauna-sprites';
+import { FaunaPose, animalTexture, artKind, refugeTexture } from './fauna-sprites';
 import { shadowTexture } from '../vegetation/plant-sprites';
 import { ageDays } from '../../application/fauna/needs';
 
@@ -28,6 +28,7 @@ export interface FaunaView {
 interface Hole {
   readonly sprite: Sprite;
   state: 'digging' | 'open' | 'blocked';
+  placed: boolean;
 }
 
 /** Moneda de una manada en la vista de lejos */
@@ -290,21 +291,23 @@ export class FaunaLayer {
       if (!ground) continue;
       seen.add(b.id);
       let h = this.holes.get(b.id);
-      if (!h) {
-        const sprite = new Sprite();
-        sprite.anchor.set(0.5, 0.55);
-        h = { sprite, state: 'open' };
-        h.sprite.texture = burrowTexture('open');
-        this.holes.set(b.id, h);
-        const p = ground.point(b.x, b.y);
-        sprite.position.set(Math.round(p.x), Math.round(p.y));
-        sprite.zIndex = p.y - 0.8;
-        ground.container.addChild(sprite);
-      }
       const state = b.readyAt > view.now ? 'digging' : b.blocked ? 'blocked' : 'open';
-      if (state !== h.state) {
+      if (!h) {
+        h = { sprite: new Sprite(), state: 'open', placed: false };
+        this.holes.set(b.id, h);
+        ground.container.addChild(h.sprite);
+      }
+      if (state !== h.state || !h.placed) {
         h.state = state;
-        h.sprite.texture = burrowTexture(state);
+        const art = refugeTexture(b.kind, state);
+        h.sprite.texture = art.texture;
+        // El punto de la entrada del dibujo, sobre la entrada en el mundo
+        h.sprite.anchor.set(art.footX / art.w, art.footY / art.h);
+        const p = ground.point(b.x, b.y);
+        h.sprite.position.set(Math.round(p.x), Math.round(p.y));
+        // La madriguera es un agujero en el suelo (debajo de todo); la cueva y la guarida, con volumen (se ordenan)
+        h.sprite.zIndex = b.kind === 'burrow' ? p.y - 3 : p.y - 0.2;
+        h.placed = true;
       }
     }
     for (const [id, h] of this.holes) {

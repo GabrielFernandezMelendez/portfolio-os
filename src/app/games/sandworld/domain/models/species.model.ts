@@ -44,27 +44,49 @@ export interface SpeciesDef {
    */
   readonly flight: { readonly mode: 'away' | 'refuge'; readonly freeze: number; readonly alarm: number; readonly zigzag: number };
   /**
+   * Sentidos (comunes a todas): olfato, en islas (× WORLD.CELLS): hasta dónde huele presas, carroña o
+   * depredadores; cuanto más lejos, menos probable olerlo. Vigilancia: probabilidad por minuto de ver a un
+   * depredador que se le acerca a menos de VIGIL_RANGE celdas.
+   */
+  readonly senses: { readonly smell: number; readonly vigilance: number };
+  /** Depredador: qué caza, cuándo y cómo (ver PredatorDef) */
+  readonly predator?: PredatorDef;
+  /** Presa grande que a veces planta cara: se planta, el depredador se va (o no) y puede salir herido */
+  readonly defend?: { readonly stand: number; readonly repel: number; readonly injure: number };
+  /** Lo que come solo si pasa mucha hambre (el lobo, bayas) */
+  readonly starvingDiets?: readonly Diet[];
+  /**
    * Refugio (madriguera): lo cava la manada donde el suelo lo permite y dentro duermen, crían y se esconden.
    * Probabilidades por hora: quedarse dentro con lluvia, salir a tomar el sol en sus horas de dormir, salir al
    * acabar esas horas. Y lo que le pasa con las arenas y el agua.
    */
   readonly refuge?: {
+    /** Qué construye ('burrow' agujero en la tierra, 'den' guarida de ramas) y qué refugio natural ocupa al llegar */
+    readonly kind: 'burrow' | 'den';
+    readonly natural?: 'cave';
+    /** Si los adultos duermen dentro (conejo) o solo las crías (lobo: los adultos duermen fuera, a la entrada) */
+    readonly adultsInside: boolean;
     readonly digIn: readonly MaterialId[];
     readonly digHours: number;
     readonly rainStay: number;
     readonly sunbathe: number;
     readonly leave: number;
-    /** Marea encima: probabilidad de derrumbe y de morir cada uno de los que están dentro */
-    readonly collapse: number;
+    /** Si se derrumba (Marea, o tapada mucho tiempo): probabilidad de morir cada uno de los que están dentro */
     readonly collapseDeath: number;
     /** Inundada: por hora, salir a tiempo; si no, ahogarse */
     readonly floodEscape: number;
     readonly drownPerHour: number;
-    /** Tapada (Duna): por hora, destaparla */
+    /** Tapada (arena o humus asentados en la entrada): por hora, destaparla */
     readonly unblock: number;
   };
   /** Jóvenes que se van de su manada al hacerse adultos (y fundan otra), por sexo */
   readonly dispersal?: { readonly male: number; readonly female: number };
+  /**
+   * Llegadas y marchas naturales [PROPUESTA]. Cada pocos días, si la isla puede alimentar a más de su especie,
+   * puede llegar un grupo por la orilla (`arrive`, más cuanto más sitio hay). Cada día, una manada hambrienta
+   * puede irse de la isla (`hungryLeave`, más cuanto más hambre). Sin este campo, la especie no llega sola.
+   */
+  readonly migration?: { readonly arrive: number; readonly hungryLeave: number };
   /**
    * Enfermedad contagiosa (tipo mixomatosis), el freno natural de las especies que crían mucho: con
    * superpoblación (densidad > crowdedAbove) brota al día con `outbreak`; se contagia dentro de la manada
@@ -86,6 +108,12 @@ export interface SpeciesDef {
    * (si no, se separa y sale por su cuenta) y de que uno separado encuentre a los suyos al caer la tarde.
    */
   readonly herdRun: { readonly together: number; readonly findBack: number };
+  /**
+   * Volver a dormir con los suyos tampoco es seguro: cada tarde, con `late`, se entretiene y sale tarde (entre
+   * `lateMinutes`), así que puede no llegar y pasar la noche perdido. Con refugio, la guía vuelve hacia él cada
+   * hora con `leaderReturn` cuando se ha alejado comiendo (alguna noche la manada come lejos).
+   */
+  readonly homing: { readonly late: number; readonly lateMinutes: readonly [number, number]; readonly leaderReturn?: number };
   /** Horas antes de dormir en que la manada empieza a juntarse en su sitio de descanso (los lejanos salen antes) */
   readonly gatherHours: number;
 
@@ -126,6 +154,13 @@ export interface SpeciesDef {
  */
 export interface RutBreeding {
   readonly mode: 'rut';
+  /** Solo cría la pareja dominante de la manada (lobo) */
+  readonly dominantOnly?: boolean;
+  /** Camada por tirada (si no, una cría o, bien comida, gemelos) */
+  readonly litter?: { readonly sizes: readonly number[]; readonly weights: readonly number[] };
+  /** Días que las crías pasan dentro del refugio y probabilidad al día de no salir adelante sin su madre */
+  readonly nurseDays?: number;
+  readonly orphanDeath?: number;
   readonly rutSeason: SeasonId;
   readonly birthSeason: SeasonId;
   /** Probabilidad al día, durante el celo, de que una hembra adulta con macho en la manada quede preñada */
@@ -155,4 +190,32 @@ export interface SeasonBreeding {
   readonly hungryShift: number;
   readonly nurseDays: number;
   readonly orphanDeath: number;
+}
+
+/**
+ * Depredador [PROPUESTA]. Con la saciedad por debajo de `huntBelow`, cada hora sale a cazar con `huntChance`
+ * (antes, si huele carroña, va a por ella con `carrion`). Elige presa por olfato: las de `prey` (peso de
+ * preferencia por especie), mejor las débiles (crías, viejas, enfermas, heridas, solas). Acecha andando; si la
+ * presa le ve, persigue corriendo; al alcanzarla la caza con `catch` (adulta, cría, débil) + `packBonus` por cada
+ * compañero que caza con él (hasta `packMax`) + `snowBonus` con nieve. Persiguiendo más de `giveUpAfter` minutos,
+ * cada 5 minutos abandona con `giveUp`. Con poca presa cerca de su guarida, se va de viaje de caza (`trip`).
+ */
+export interface PredatorDef {
+  readonly prey: Readonly<Record<string, number>>;
+  readonly huntBelow: number;
+  readonly huntChance: number;
+  readonly carrion: number;
+  readonly catch: Readonly<Record<string, { readonly adult: number; readonly young: number; readonly weak: number }>>;
+  readonly packBonus: number;
+  readonly packMax: number;
+  readonly joinHunt: number;
+  readonly snowBonus: number;
+  readonly giveUpAfter: number;
+  readonly giveUp: number;
+  /** Viajes de caza: probabilidad al día con poca presa cerca, días fuera y hasta dónde (islas) */
+  readonly trip: { readonly chance: number; readonly days: readonly [number, number]; readonly islands: number };
+  /** Llevar carne a las crías de la guarida: cansa más (×) y probabilidad de que otro le releve */
+  readonly carry: { readonly tire: number; readonly relay: number };
+  /** Aullido al anochecer (probabilidad por día) */
+  readonly howl: number;
 }

@@ -50,7 +50,8 @@
       "rabbitBoom": "Test: 6 rabbit colonies",
       "rabbitLitter": "Test: rabbits give birth now",
       "rabbitOutbreak": "Test: disease outbreak (rabbits)",
-      "findBurrow": "Test: go to a burrow"
+      "findBurrow": "Test: go to a burrow",
+      "wolfPack": "Test: wolf pack (random)"
     }
   },
   "lang": {
@@ -150,7 +151,9 @@
           "fire": "{name} didn't escape the fire.",
           "dehydration": "{name} died of thirst.",
           "lightning": "{name} was struck by lightning.",
-          "buried": "{name} was buried under the sand."
+          "buried": "{name} was buried under the sand.",
+          "predation": "{name} was caught by the wolves.",
+          "injury": "{name} has died of its wounds."
         },
         "herdSplit": "A deer herd has split up: there were too many of them.",
         "hunger": "The deer are starving: there isn't enough food for everyone.",
@@ -164,7 +167,9 @@
         "discovered": "The deer eat {food}.",
         "stampede": "Stampede! Something spooked a herd of deer.",
         "herdRun": "The deer herd runs off together.",
-        "herdRunSplit": "The deer herd runs off; {count} break away from the group."
+        "herdRunSplit": "The deer herd runs off; {count} break away from the group.",
+        "leaving": "A hungry herd of {count} deer leaves the island in search of grazing.",
+        "left": "The deer herd has left the island."
       },
       "rabbit": {
         "arrived": "A colony of {count} rabbits reaches the island.",
@@ -182,7 +187,9 @@
           "buried": "{name} was buried in its burrow.",
           "disease": "{name} has died of the disease.",
           "drowned": "{name} has drowned in its burrow.",
-          "orphaned": "{name} didn't make it without its mother."
+          "orphaned": "{name} didn't make it without its mother.",
+          "predation": "{name} was caught by the wolves.",
+          "injury": "{name} has died of its wounds."
         },
         "herdSplit": "A rabbit colony has split up: the burrow wasn't big enough.",
         "hunger": "The rabbits are going hungry: there isn't enough grass for so many.",
@@ -204,7 +211,57 @@
           "flooded": "A rabbit burrow is flooding!"
         },
         "outbreak": "{name} is the first to fall ill as a disease breaks out among the rabbits.",
-        "dispersed": "{name} leaves its colony to found its own."
+        "dispersed": "{name} leaves its colony to found its own.",
+        "leaving": "A starving colony of {count} rabbits abandons its burrow and moves on.",
+        "left": "The rabbit colony has left the island."
+      },
+      "wolf": {
+        "arrived": "A pack of {count} wolves reaches the island.",
+        "born": "A wolf pup is born: {name}, child of {mother}.",
+        "twins": "{mother} has had two pups. One is called {name}.",
+        "litter": "{mother} has had {count} pups in the den. One is called {name}.",
+        "died": {
+          "starvation": "{name} has starved to death.",
+          "oldAge": "{name} has died of old age.",
+          "poison": "{name} has been poisoned.",
+          "exhaustion": "{name} has died of exhaustion.",
+          "fire": "{name} didn't escape the fire.",
+          "dehydration": "{name} has died of thirst.",
+          "lightning": "{name} was struck by lightning.",
+          "buried": "{name} was buried in its den.",
+          "disease": "{name} has died of a disease.",
+          "drowned": "{name} has drowned in its den.",
+          "orphaned": "{name} didn't make it without its mother.",
+          "predation": "{name} was hunted down.",
+          "injury": "{name} has died of its wounds."
+        },
+        "herdSplit": "A wolf pack has split up: too many for one den.",
+        "hunger": "The wolves are going hungry: there isn't enough prey.",
+        "poisoned": "{name} ate {food} and is paying for it.",
+        "lost": {
+          "back": "{name} spent the night out, but has rejoined the pack.",
+          "joined": "{name} has joined another pack.",
+          "rejected": "Another pack has chased {name} off with bites.",
+          "alone": "{name} got lost and now hunts alone."
+        },
+        "discovered": "Wolves eat {food}.",
+        "stampede": "Something has spooked a wolf pack!",
+        "herdRun": "The wolf pack runs off together.",
+        "herdRunSplit": "The wolf pack runs off; {count} break away.",
+        "burrow": {
+          "dug": "A wolf pack has built its den.",
+          "collapsed": "A wolf den has caved in!",
+          "blocked": "A wolf den has been covered up.",
+          "flooded": "A wolf den is flooding!"
+        },
+        "outbreak": "A disease breaks out among the wolves. {name} is the first to fall ill.",
+        "dispersed": "{name} leaves its pack to found its own.",
+        "killed": "The wolves have caught {name} ({prey}).",
+        "repelled": "{name} ({prey}) stood up to the wolves and they left.",
+        "howl": "Howling echoes across the island.",
+        "trip": "A wolf pack heads off to hunt far from its den.",
+        "leaving": "A pack of {count} wolves, with nothing left to hunt, leaves the island.",
+        "left": "The wolf pack has left the island. The prey breathe again."
       }
     }
   },
@@ -304,7 +361,8 @@
   },
   "species": {
     "deer": "Red deer",
-    "rabbit": "European rabbit"
+    "rabbit": "European rabbit",
+    "wolf": "Grey wolf"
   },
   "animal": {
     "sex": {
@@ -325,7 +383,8 @@
       "run": "running",
       "dead": "dead",
       "drink": "drinking",
-      "inside": "in the burrow"
+      "inside": "in the burrow",
+      "howl": "howling"
     },
     "factor": {
       "goodFood": "Good food",
@@ -414,7 +473,21 @@
       "collapse": "Our burrow caved in on us. I got out by a whisker.",
       "sick": "My eyes are swollen and I don't even fancy clover.",
       "recovered": "I got over the disease. I'm practically indestructible now.",
-      "leaveHome": "I'm all grown up. Off to find a burrow of my own."
+      "leaveHome": "I'm all grown up. Off to find a burrow of my own.",
+      "hunting": "I can smell {prey}. Dinner's on.",
+      "sawPredator": "A {predator}! I saw it in the grass.",
+      "gaveUp": "It got away. It runs faster than my patience.",
+      "standGround": "I stood my ground and showed my antlers. Come and have a go.",
+      "kicked": "Got kicked so hard I saw stars.",
+      "killed": "I caught {name}. It's nothing personal.",
+      "gorged": "I've eaten until I can't move. I'll lie down for two days.",
+      "carryMeat": "Taking a chunk back to the pups. It's heavier than it looks.",
+      "feedPups": "The pups have eaten. Not even a thank you.",
+      "relay": "I took the meat over from {name}. They were dragging their paws.",
+      "howl": "Awoooooo. (Translation: we're here and there are lots of us.)",
+      "trip": "There's nothing left to hunt here. We're off for a few days.",
+      "tripBack": "Heading home. It smells like us.",
+      "leaving": "Nothing left here. We're off to find another island."
     },
     "tab": {
       "status": "Status",
@@ -452,7 +525,9 @@
       "buried": "Buried under the sand.",
       "disease": "Died of the disease.",
       "drowned": "Drowned in its burrow.",
-      "orphaned": "Didn't make it without its mother."
+      "orphaned": "Didn't make it without its mother.",
+      "predation": "Was hunted down.",
+      "injury": "Died of its wounds."
     }
   }
 }

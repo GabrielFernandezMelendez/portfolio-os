@@ -12,7 +12,9 @@ export type StimulusType =
   | 'glow'        // algo brilla (Despertar, Afinidad)
   | 'lightning'   // cae un rayo cerca
   | 'thunder'     // trueno: se oye en toda la isla
-  | 'corpse';     // uno de los suyos muerto
+  | 'corpse'      // uno de los suyos muerto
+  | 'predator'    // un depredador al acecho o persiguiendo
+  | 'howl';       // aullido: se oye en toda la isla
 
 /** Cómo reacciona una especie a un tipo de estímulo */
 export type Reaction = 'flee' | 'startle' | 'curious' | 'avoid' | 'ignore';

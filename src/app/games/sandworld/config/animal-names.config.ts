@@ -39,6 +39,16 @@ export const ANIMAL_NAMES: Readonly<Record<string, NamePool>> = {
       reed: ['Junco'],
     },
   },
+  // Lobos: nombres tiernos para el depredador de la isla (y alguno por la comida favorita de su madre)
+  wolf: {
+    male: ['Peluchín', 'Algodón', 'Copito', 'Bizcocho', 'Mimoso', 'Don Abrazos', 'Pompón', 'Ricitos', 'Caramelo', 'Gominola'],
+    female: ['Dulcinea', 'Princesa', 'Florecilla', 'Miel', 'Nube', 'Azucena', 'Bombón', 'Galletita', 'Margarita'],
+    food: {
+      redBerries: ['Mermelada'],
+      blueberry: ['Arándano'],
+      shadeBerries: ['Bayita'],
+    },
+  },
 };
 
 /** Probabilidad de que una cría se llame como la comida favorita de su madre (o la suya) */

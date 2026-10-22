@@ -29,6 +29,8 @@ export const STUCK_MINUTES = 120;
 /** Va a beber por debajo de esta hidratación (antes que a comer, salvo que el hambre apriete más); bebe a DRINK_RANGE celdas del agua */
 export const THIRST_BELOW = 0.45;
 export const DRINK_RANGE = 1.6;
+/** Por debajo de esta hidratación la sed va antes que todo lo demás (cazar, volver a casa, dormir) */
+export const THIRST_URGENT = 0.2;
 
 // ── Correr ──
 /**
@@ -51,6 +53,30 @@ export const BURROW_HIT = 2;
 export const BURROW_ENTER = 0.8;
 /** Días que aguanta una madriguera abandonada antes de hundirse (si nadie la ocupa) */
 export const BURROW_ABANDON_DAYS = 30;
+/**
+ * Lo que aguanta cada tipo de refugio [PROPUESTA]: probabilidad de derrumbarse con cada Marea encima y, tapado por
+ * arena o humus, por hora y por cada nivel que ha subido el suelo en la entrada (más cantidad y más tiempo, más
+ * probable). La cueva es roca: no se derrumba, como mucho se tapa. Se tapa a partir de COVER_LEVELS de subida.
+ */
+export const REFUGE_KINDS = {
+  burrow: { collapsePerDig: 0.15, collapsePerHour: 0.03 },
+  den: { collapsePerDig: 0.08, collapsePerHour: 0.015 },
+  cave: { collapsePerDig: 0, collapsePerHour: 0 },
+} as const;
+export const COVER_LEVELS = 0.6;
+
+// ── Depredación ──
+/** Celdas a las que una presa puede ver a un depredador que se le acerca (cada minuto, con su vigilancia) */
+export const VIGIL_RANGE = 8;
+/** Distancia (celdas) a la que el depredador alcanza a la presa o llega a la carroña */
+export const CONTACT = 1.2;
+/** Carne de un cadáver según su tamaño (comida; un lobo llena el estómago con 0,15) */
+export const MEAT_BY_SIZE = { small: 0.06, medium: 0.25, large: 0.6 } as const;
+/** Carne que come por minuto un carnívoro y trozo que lleva a la guarida */
+export const MEAT_BITE = 0.004;
+export const CARRY_PIECE = 0.05;
+/** Huele a sus presas cada vez que piensa con esta probabilidad como mucho (luego, menos cuanto más lejos) */
+export const SMELL_SHARPNESS = 0.9;
 /** Dentro sale si el hambre o la sed aprietan */
 export const INSIDE_HUNGRY = 0.3;
 
@@ -112,6 +138,30 @@ export const CORPSE_FERTILITY = 0.08;
 export const SEED_GUT_HOURS = 12;
 /** Días como mucho que tarda en nacer una cría desde que empieza su estación */
 export const BIRTH_SPREAD_DAYS = 10;
+
+// ── Llegadas y marchas [PROPUESTA] ──
+/** Cada cuántos días se mira si llega un grupo nuevo a la isla (con margen para que haya épocas tensas) */
+export const MIGRATION_EVERY_DAYS = 3;
+/**
+ * Grupos que caben por chunk: el tope se tira cada vez entre estos dos valores (en un 2×2, de 4 a 8 grupos).
+ * Así unas veces la isla está más llena y otras más vacía: el tope también es una probabilidad.
+ */
+export const GROUPS_PER_CHUNK: readonly [number, number] = [1, 2];
+/**
+ * Hambre de verdad: con la saciedad media por debajo de esto (estómago vacío) la manada se plantea irse; la
+ * probabilidad sube con la vida que ya han perdido, y es la máxima (`hungryLeave`) al perder LEAVE_HEALTH_SPAN.
+ */
+export const LEAVE_HUNGRY_BELOW = 0.05;
+export const LEAVE_HEALTH_SPAN = 0.5;
+/** Horas como mucho que tarda una manada en salir de la isla (si no llega a la orilla, se va igual) */
+export const LEAVE_HOURS = 24;
+
+// ── Memoria y búsqueda de agua y comida ──
+/** Sitios de agua y de comida que recuerda una manada (los últimos buenos) */
+export const MEMORY_SPOTS = 3;
+/** Cada hora sin encontrar, busca más lejos (por este factor), hasta SEARCH_MAX_ISLANDS islas */
+export const SEARCH_GROWTH = 1.5;
+export const SEARCH_MAX_ISLANDS = 4;
 
 // ── Diario ──
 export const DIARY_PER_DAY = 3;

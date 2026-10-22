@@ -4,14 +4,15 @@
 export type Sex = 'male' | 'female';
 
 /** Lo que está haciendo ahora (decide su animación) */
-export type AnimalAction = 'idle' | 'walk' | 'eat' | 'drink' | 'sleep' | 'run' | 'dead';
+export type AnimalAction = 'idle' | 'walk' | 'eat' | 'drink' | 'sleep' | 'run' | 'dead' | 'howl';
 
 /** Órdenes del jugador desde la ficha */
 export type AnimalOrder = 'eat' | 'sleep' | 'run';
 
 /** Por qué murió */
 export type DeathCause =
-  | 'starvation' | 'dehydration' | 'oldAge' | 'poison' | 'exhaustion' | 'fire' | 'lightning' | 'buried' | 'disease' | 'drowned' | 'orphaned';
+  | 'starvation' | 'dehydration' | 'oldAge' | 'poison' | 'exhaustion' | 'fire' | 'lightning' | 'buried' | 'disease' | 'drowned' | 'orphaned'
+  | 'predation' | 'injury';
 
 /** Algo que le afecta ahora a su felicidad (la ficha lo enseña como "Le afecta") */
 export interface Factor {
@@ -47,6 +48,13 @@ export interface Herd {
   bed: { x: number; y: number } | null;
   /** Su madriguera (id) si la especie tiene refugio, o null */
   burrow: number | null;
+  /** Viaje de caza: adónde va la manada y hasta qué minuto (luego vuelve a su guarida), o null */
+  trip: { x: number; y: number; until: number } | null;
+  /** Sitios donde bebió y comió bien (los últimos MEMORY_SPOTS): a ellos va primero cuando tiene sed o hambre */
+  water: { x: number; y: number }[];
+  food: { x: number; y: number }[];
+  /** Se va de la isla: hacia qué orilla y hasta qué minuto (pasado ese minuto se va igual), o null */
+  leaving: { x: number; y: number; until: number; quiet: boolean } | null;
 }
 
 /**
@@ -56,6 +64,10 @@ export interface Herd {
 export interface Burrow {
   readonly id: number;
   readonly species: number;
+  /** 'burrow' agujero (conejo), 'den' guarida de ramas, 'cave' cueva de roca (natural: no se derrumba) */
+  readonly kind: 'burrow' | 'den' | 'cave';
+  /** Altura del suelo en la entrada cuando se hizo (o se destapó): si la arena la sube, se va tapando */
+  ground: number;
   herd: number;
   readonly x: number;
   readonly y: number;
@@ -142,6 +154,24 @@ export interface Animal {
   immune: boolean;
   /** Manada de la que se fue al hacerse adulto (no vuelve a unirse a ella) o null */
   leftHerd: number | null;
+  /** Depredador: la presa que está cazando (acecho o persecución) y desde cuándo, o null */
+  hunt: { target: number; phase: 'stalk' | 'chase'; since: number } | null;
+  /** Carne que lleva a la guarida para las crías (0 = nada) */
+  carrying: number;
+  /** Cadáver (id) del que está comiendo, o null */
+  feeding: number | null;
+  /** Cadáver: carne que le queda (se la comen los carnívoros) */
+  meat: number;
+  /** Minutos que se ha entretenido hoy antes de volver a dormir con los suyos, y para qué noche (minuto de inicio) */
+  lateBy: number;
+  lateFor: number;
+  /** Cría de refugio: último minuto en que su madre estuvo con ella (si en un día no viene, puede no salir adelante) */
+  nursedAt: number;
+  /**
+   * Buscando agua o comida sin encontrarla cerca: hasta dónde busca (celdas, crece cada hora), cuándo lo amplió por
+   * última vez y hacia dónde camina mientras tanto (ángulo). null si no busca.
+   */
+  search: { kind: 'water' | 'food'; r: number; at: number; dir: number } | null;
   /**
    * Despistado tras separarse en una carrera de la manada: 0 = no; 1 = no sabe dónde están los suyos (al caer la
    * tarde los buscará, con suerte); 2 = no los ha encontrado (si no se cruza con ellos, esta noche se pierde).

@@ -50,7 +50,8 @@
       "rabbitBoom": "Probar: 6 colonias de conejos",
       "rabbitLitter": "Probar: las conejas paren ya",
       "rabbitOutbreak": "Probar: brote de enfermedad (conejos)",
-      "findBurrow": "Probar: ir a una madriguera"
+      "findBurrow": "Probar: ir a una madriguera",
+      "wolfPack": "Probar: manada de lobos (al azar)"
     }
   },
   "lang": {
@@ -150,7 +151,9 @@
           "fire": "{name} no ha escapado del fuego.",
           "dehydration": "{name} ha muerto de sed.",
           "lightning": "A {name} le ha caído un rayo.",
-          "buried": "{name} ha quedado sepultado bajo la arena."
+          "buried": "{name} ha quedado sepultado bajo la arena.",
+          "predation": "A {name} lo han cazado los lobos.",
+          "injury": "{name} ha muerto de sus heridas."
         },
         "herdSplit": "Una manada de ciervos se ha dividido: ya no cabían.",
         "hunger": "Los ciervos pasan hambre: ya no hay comida para todos.",
@@ -164,7 +167,9 @@
         "discovered": "Los ciervos comen {food}.",
         "stampede": "¡Estampida! Algo ha espantado a una manada de ciervos.",
         "herdRun": "La manada de ciervos sale corriendo en grupo.",
-        "herdRunSplit": "La manada de ciervos sale corriendo; {count} se separan del grupo."
+        "herdRunSplit": "La manada de ciervos sale corriendo; {count} se separan del grupo.",
+        "leaving": "Una manada de {count} ciervos, hambrienta, se va de la isla en busca de pastos.",
+        "left": "La manada de ciervos ha dejado la isla."
       },
       "rabbit": {
         "arrived": "Llega a la isla una colonia de {count} conejos.",
@@ -182,7 +187,9 @@
           "buried": "{name} ha quedado sepultado en su madriguera.",
           "disease": "{name} ha muerto de la enfermedad.",
           "drowned": "{name} se ha ahogado en su madriguera.",
-          "orphaned": "{name} no ha salido adelante sin su madre."
+          "orphaned": "{name} no ha salido adelante sin su madre.",
+          "predation": "A {name} lo han cazado los lobos.",
+          "injury": "{name} ha muerto de sus heridas."
         },
         "herdSplit": "Una colonia de conejos se ha dividido: ya no cabían en la madriguera.",
         "hunger": "Los conejos pasan hambre: ya no hay hierba para tantos.",
@@ -204,7 +211,57 @@
           "flooded": "¡Se inunda una madriguera de conejos!"
         },
         "outbreak": "Brota una enfermedad entre los conejos. {name} es el primero en caer enfermo.",
-        "dispersed": "{name} deja su colonia para fundar la suya."
+        "dispersed": "{name} deja su colonia para fundar la suya.",
+        "leaving": "Una colonia de {count} conejos, muerta de hambre, abandona su madriguera y se va.",
+        "left": "La colonia de conejos ha dejado la isla."
+      },
+      "wolf": {
+        "arrived": "Llega a la isla una manada de {count} lobos.",
+        "born": "Nace un lobezno: {name}, cría de {mother}.",
+        "twins": "{mother} ha tenido dos lobeznos. Uno se llama {name}.",
+        "litter": "{mother} ha tenido {count} lobeznos en la guarida. Uno se llama {name}.",
+        "died": {
+          "starvation": "{name} ha muerto de hambre.",
+          "oldAge": "{name} ha muerto de viejo.",
+          "poison": "{name} ha muerto envenenado.",
+          "exhaustion": "{name} ha muerto de agotamiento.",
+          "fire": "{name} no ha escapado del fuego.",
+          "dehydration": "{name} ha muerto de sed.",
+          "lightning": "A {name} le ha caído un rayo.",
+          "buried": "{name} ha quedado sepultado en su guarida.",
+          "disease": "{name} ha muerto de una enfermedad.",
+          "drowned": "{name} se ha ahogado en su guarida.",
+          "orphaned": "{name} no ha salido adelante sin su madre.",
+          "predation": "A {name} lo han cazado.",
+          "injury": "{name} ha muerto de sus heridas."
+        },
+        "herdSplit": "Una manada de lobos se ha dividido: demasiados para una guarida.",
+        "hunger": "Los lobos pasan hambre: no hay presas para todos.",
+        "poisoned": "{name} se ha comido {food} y lo está pagando.",
+        "lost": {
+          "back": "{name} pasó la noche fuera, pero ha vuelto con su manada.",
+          "joined": "{name} se ha unido a otra manada.",
+          "rejected": "Otra manada ha echado a {name} a dentelladas.",
+          "alone": "{name} se ha perdido y ahora caza solo."
+        },
+        "discovered": "Los lobos comen {food}.",
+        "stampede": "¡Algo ha espantado a una manada de lobos!",
+        "herdRun": "La manada de lobos sale corriendo en grupo.",
+        "herdRunSplit": "La manada de lobos sale corriendo; {count} se separan.",
+        "burrow": {
+          "dug": "Una manada de lobos ha construido su guarida.",
+          "collapsed": "¡Se ha hundido una guarida de lobos!",
+          "blocked": "Una guarida de lobos ha quedado tapada.",
+          "flooded": "¡Se inunda una guarida de lobos!"
+        },
+        "outbreak": "Brota una enfermedad entre los lobos. {name} es el primero en caer.",
+        "dispersed": "{name} deja su manada para fundar la suya.",
+        "killed": "Los lobos han cazado a {name} ({prey}).",
+        "repelled": "{name} ({prey}) ha plantado cara a los lobos y se han ido.",
+        "howl": "Se oyen aullidos en la isla.",
+        "trip": "Una manada de lobos se va de caza lejos de su guarida.",
+        "leaving": "Una manada de {count} lobos, sin nada que cazar, se va de la isla.",
+        "left": "La manada de lobos ha dejado la isla. Las presas respiran."
       }
     }
   },
@@ -304,7 +361,8 @@
   },
   "species": {
     "deer": "Ciervo rojo",
-    "rabbit": "Conejo de monte"
+    "rabbit": "Conejo de monte",
+    "wolf": "Lobo gris"
   },
   "animal": {
     "sex": {
@@ -325,7 +383,8 @@
       "run": "corriendo",
       "dead": "muerto",
       "drink": "bebiendo",
-      "inside": "en la madriguera"
+      "inside": "en la madriguera",
+      "howl": "aullando"
     },
     "factor": {
       "goodFood": "Buena comida",
@@ -414,7 +473,21 @@
       "collapse": "Se nos ha caído la madriguera encima. He salido de milagro.",
       "sick": "Tengo los ojos hinchados y no me apetece ni el trébol.",
       "recovered": "He pasado la enfermedad. Ahora soy prácticamente indestructible.",
-      "leaveHome": "Ya soy mayor. Me voy a buscar mi propia madriguera."
+      "leaveHome": "Ya soy mayor. Me voy a buscar mi propia madriguera.",
+      "hunting": "Huelo a {prey}. Hoy se come.",
+      "sawPredator": "¡Un {predator}! Lo he visto entre la hierba.",
+      "gaveUp": "Se me ha escapado. Corre más que mi paciencia.",
+      "standGround": "Me he plantado y le he enseñado los cuernos. A ver quién se atreve.",
+      "kicked": "Me han dado una coz que he visto las estrellas.",
+      "killed": "He cazado a {name}. No es nada personal.",
+      "gorged": "He comido hasta no poder más. Me voy a tumbar dos días.",
+      "carryMeat": "Llevo un trozo a los cachorros. Pesa más de lo que parece.",
+      "feedPups": "Los cachorros han comido. Ni las gracias.",
+      "relay": "Le he relevado a {name} con la carne. Iba arrastrando las patas.",
+      "howl": "Auuuuuuu. (Traducción: estamos aquí y somos muchos.)",
+      "trip": "Aquí ya no queda nada que cazar. Nos vamos unos días.",
+      "tripBack": "Volvemos a casa. Huele a nosotros.",
+      "leaving": "Aquí no queda nada. Nos vamos a buscar otra isla."
     },
     "tab": {
       "status": "Estado",
@@ -452,7 +525,9 @@
       "buried": "Quedó sepultado bajo la arena.",
       "disease": "Murió de la enfermedad.",
       "drowned": "Se ahogó en su madriguera.",
-      "orphaned": "No salió adelante sin su madre."
+      "orphaned": "No salió adelante sin su madre.",
+      "predation": "Lo cazaron.",
+      "injury": "Murió de sus heridas."
     }
   }
 }

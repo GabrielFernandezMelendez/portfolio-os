@@ -33,6 +33,7 @@ export const DEV_ACTIONS = [
   'rabbitLitter',  // las conejas adultas paren dentro de una hora (camadas de 2 a 7)
   'rabbitOutbreak', // brota la enfermedad ahora en la colonia más grande
   'findBurrow',    // llevar la cámara a una madriguera (para probar la Marea, la Duna o el agua encima)
+  'wolfPack',      // soltar una manada de lobos con su cueva
 ] as const;
 
 export type DevAction = (typeof DEV_ACTIONS)[number];

@@ -9,7 +9,8 @@ export type PlantKind = 'small' | 'bush' | 'tree';
 export type ToxicEffect = 'lethal' | 'sick' | 'confused';
 
 /** Dietas que pueden comerse una planta (la fauna llega en los bloques C y D) */
-export type Diet = 'grazer' | 'browser' | 'frugivore' | 'bird' | 'omnivore';
+/** Qué come (las plantas dicen qué dietas las comen; 'carnivore' come carne: presas y carroña) */
+export type Diet = 'grazer' | 'browser' | 'frugivore' | 'bird' | 'omnivore' | 'carnivore';
 
 export interface PlantDef {
   readonly id: number;

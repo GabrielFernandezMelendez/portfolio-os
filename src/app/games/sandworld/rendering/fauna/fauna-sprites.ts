@@ -1,8 +1,9 @@
 import { Texture } from 'pixi.js';
 import { deerArt, DeerKind } from './deer-art';
 import { rabbitArt, RabbitKind } from './rabbit-art';
-import { BURROW_COLORS, FAUNA_ANIM, SPECIES_ART } from '../../config/fauna-art.config';
-import { Pixels } from './pixel-canvas';
+import { wolfArt, WolfKind } from './wolf-art';
+import { refugeArt, RefugeKind, RefugeState } from './burrow-art';
+import { FAUNA_ANIM, SPECIES_ART } from '../../config/fauna-art.config';
 
 /*
   Texturas de la fauna a partir de los sprites generados por código: una por especie, tipo, pose, fotograma y
@@ -10,7 +11,7 @@ import { Pixels } from './pixel-canvas';
   = -1). Añadir una especie = su generador aquí (ART) y su entrada en SPECIES_ART.
 */
 
-export type FaunaPose = 'idle' | 'walk' | 'run' | 'eat' | 'drink' | 'sleep' | 'dead';
+export type FaunaPose = 'idle' | 'walk' | 'run' | 'eat' | 'drink' | 'sleep' | 'dead' | 'howl';
 
 /** Lo que devuelve el generador de una especie: colores por píxel (-1 transparente) */
 interface Art {
@@ -22,8 +23,10 @@ type ArtFn = (kind: string, pose: FaunaPose, t: number, back: boolean) => Art;
 
 /** Generador de cada especie */
 const ART: Readonly<Record<string, ArtFn>> = {
-  deer: (k, p, t, b) => deerArt(k as DeerKind, p, t, b),
-  rabbit: (k, p, t, b) => rabbitArt(k as RabbitKind, p, t, b),
+  // Solo el lobo aúlla: las demás especies lo dibujan quietas
+  deer: (k, p, t, b) => deerArt(k as DeerKind, p === 'howl' ? 'idle' : p, t, b),
+  rabbit: (k, p, t, b) => rabbitArt(k as RabbitKind, p === 'howl' ? 'idle' : p, t, b),
+  wolf: (k, p, t, b) => wolfArt(k as WolfKind, p, t, b),
 };
 
 const cache = new Map<string, Texture>();
@@ -56,35 +59,16 @@ export function animalCanvas(species: string, kind: string, pose: FaunaPose, fra
   return toCanvas(art.colors, art.w, art.h);
 }
 
-/**
- * Entrada de madriguera: agujero oscuro con la tierra removida alrededor (luz arriba a la izquierda). Mientras
- * la cavan, solo el montón de tierra; tapada (Duna), con el agujero lleno de arena.
- */
-export function burrowTexture(state: 'digging' | 'open' | 'blocked'): Texture {
-  const id = `burrow|${state}`;
+/** Refugio (madriguera, cueva o guarida de ramas) en su estado, y el punto de su entrada en el dibujo */
+export function refugeTexture(kind: RefugeKind, state: RefugeState): { texture: Texture; footX: number; footY: number; w: number; h: number } {
+  const id = `refuge|${kind}|${state}`;
+  const art = refugeArt(kind, state);
   let tex = cache.get(id);
   if (!tex) {
-    const W = 15, H = 9, cx = 7, cy = 4.6;
-    const cv = new Pixels(W, H);
-    const [d0, d1, d2] = BURROW_COLORS.dirt, [h0, h1] = BURROW_COLORS.hole;
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        const dx = (x + 0.5 - cx) / (state === 'digging' ? 5 : 7.2), dy = (y + 0.5 - cy) / (state === 'digging' ? 3 : 4.2);
-        if (dx * dx + dy * dy <= 1) {
-          const l = -(x - cx) * 0.3 - (y - cy) * 0.7;
-          cv.put(x, y, l > 1.2 ? d2 : l > -0.8 ? d1 : d0);
-        }
-        if (state === 'digging') continue;
-        const hx = (x + 0.5 - cx) / 4.2, hy = (y + 0.5 - (cy + 0.6)) / 2.3, hd = hx * hx + hy * hy;
-        if (hd <= 1) cv.put(x, y, state === 'blocked' ? (hd < 0.5 ? BURROW_COLORS.sand[1] : BURROW_COLORS.sand[0]) : hd < 0.55 || y > cy + 0.6 ? h0 : h1);
-      }
-    }
-    // Terrones sueltos alrededor
-    for (const [x, y] of [[2, 6], [12, 6], [3, 2]]) cv.put(x, y, d2);
-    tex = toTexture(toCanvas(cv.outlined(BURROW_COLORS.outline), W, H));
+    tex = toTexture(toCanvas(art.colors, art.w, art.h));
     cache.set(id, tex);
   }
-  return tex;
+  return { texture: tex, footX: art.footX, footY: art.footY, w: art.w, h: art.h };
 }
 
 function toCanvas(colors: Int32Array, w: number, h: number): HTMLCanvasElement {

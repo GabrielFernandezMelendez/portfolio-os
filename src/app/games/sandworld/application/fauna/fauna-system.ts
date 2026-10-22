@@ -7,11 +7,11 @@ import { WORLD } from '../../domain/models/world.model';
 import { PLANT_DEFS } from '../../config/plants.config';
 import { SPECIES_BY_KEY, SPECIES_DEFS } from '../../config/species.config';
 import {
-  BURROW_ENTER, CAPACITY_DAYS, COLLAPSE, CORPSE_FERTILITY, FREEZE_MINUTES, INSIDE_HUNGRY, CROWDED, DRINK_RANGE, EAT_BELOW, FIRE_HEALTH_PER_MINUTE,
+  BURROW_ENTER, CARRY_PIECE, CONTACT, MEAT_BITE, MEAT_BY_SIZE, VIGIL_RANGE, CAPACITY_DAYS, COLLAPSE, CORPSE_FERTILITY, FREEZE_MINUTES, INSIDE_HUNGRY, CROWDED, DRINK_RANGE, EAT_BELOW, FIRE_HEALTH_PER_MINUTE,
   FOOD_HERE, FORAGE_RADIUS, FORAGE_SAMPLES, FULL, GATHER_MARGIN, JOIN_RANGE, LOST_NIGHT, MAX_STEP, PATH_FROM, PATH_NODES,
   REJECT_HEALTH, RETURN_CHANCE, ROAM_CHANCE, ROAM_HOURS, RUN_MIN, RUN_STOP, RUN_TIRE_PER_MINUTE, SEED_GUT_HOURS,
   SLEEP_BELOW, SOIL_DAMAGE, SOIL_DAMAGE_FROM, STUCK_MINUTES, THINK_MINUTES, THIRST_BELOW, TOXIC_HEALTH, TRAMPLE,
-  WELCOME_CHANCE,
+  WELCOME_CHANCE, THIRST_URGENT, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
 } from '../../config/fauna.config';
 import { NeedMods, ageDays, appetite, lifeStage, passTime, updateHappiness } from './needs';
 import { Stimulus } from '../../domain/models/stimulus.model';
@@ -23,10 +23,20 @@ import { centre, leaderOf, splitOff } from './herds';
 import { litterSize, tryConceive, tryConceiveSeason } from './breeding';
 import { Burrows, BurrowHit } from './burrows';
 import { infect, outbreak, recover, spread } from './disease';
+import { catchChance, choosePrey, preyClass, smellChance } from './predation';
 import { nameFor, write } from './diary';
 import { findPath } from './pathfinding';
+import { arrivalChance, groupsCap, leaveChance } from './migration';
 
 const DAY = CALENDAR.MINUTES_PER_DAY;
+
+/** Apunta un sitio en la memoria de la manada: si ya tenía uno al lado, lo refresca; guarda los MEMORY_SPOTS últimos */
+function remember(spots: { x: number; y: number }[], x: number, y: number): void {
+  const i = spots.findIndex(p => Math.hypot(p.x - x, p.y - y) < 6);
+  if (i >= 0) spots.splice(i, 1);
+  spots.unshift({ x, y });
+  if (spots.length > MEMORY_SPOTS) spots.length = MEMORY_SPOTS;
+}
 const G = WORLD.CELLS_PER_TILE;
 /** Celdas por lado de una isla: las distancias de cada especie se dan en islas */
 const ISLAND = WORLD.CELLS;
@@ -55,7 +65,18 @@ export type FaunaNews =
   /** Brota una enfermedad en una especie (superpoblación) */
   | { readonly type: 'outbreak'; readonly species: number; readonly name: string }
   /** Un joven deja a los suyos para fundar su propia manada */
-  | { readonly type: 'dispersed'; readonly species: number; readonly name: string };
+  | { readonly type: 'dispersed'; readonly species: number; readonly name: string }
+  /** Un depredador ha cazado a una presa (`species` es la del depredador) */
+  | { readonly type: 'killed'; readonly species: number; readonly prey: number; readonly name: string }
+  /** Una presa grande ha plantado cara y ha echado a los depredadores */
+  | { readonly type: 'repelled'; readonly species: number; readonly prey: number; readonly name: string }
+  /** Una manada aúlla al anochecer (se oye en toda la isla) */
+  | { readonly type: 'howl'; readonly species: number }
+  /** Una manada se va de viaje de caza (poca presa cerca de su guarida) */
+  | { readonly type: 'trip'; readonly species: number }
+  /** Una manada se va de la isla (empieza a irse) y cuando el último sale */
+  | { readonly type: 'leaving'; readonly species: number; readonly count: number }
+  | { readonly type: 'left'; readonly species: number };
 
 /** El tiempo que hace, tal como lo notan los animales (lo pone quien lleva el reloj y el tiempo atmosférico) */
 export interface FaunaConditions {
@@ -112,6 +133,8 @@ export class FaunaSystem {
   conditions: FaunaConditions = { rain: 0, storm: false, snow: false, cold: false, hot: false, drought: false };
   /** Manadas que ya salieron en estampida este minuto (un aviso por manada) */
   private readonly stampeded = new Set<number>();
+  /** Depredadores acechando (se recalcula cada minuto) */
+  private stalkers: Animal[] = [];
 
   /** Madrigueras de las especies con refugio */
   readonly burrows: Burrows;
@@ -129,7 +152,7 @@ export class FaunaSystem {
    */
   sense(stim: Stimulus, now: number): void {
     // Lo que le hace a las madrigueras (la Marea las derrumba, la Duna las tapa)
-    for (const h of this.burrows.hit(stim, SPECIES_DEFS)) this.burrowHit(h, now);
+    for (const h of this.burrows.hit(stim)) this.burrowHit(h, now);
     const touched = new Map<Herd, boolean>();
     for (const a of [...this.animals]) {
       // Dentro de la madriguera no se entera de nada (está a salvo)
@@ -201,7 +224,8 @@ export class FaunaSystem {
     const s = SPECIES_BY_KEY[speciesKey];
     if (!s) return [];
     const herd = this.newHerd(s.id, gx, gy);
-    if (withBurrow) this.burrows.dig(herd, s, gx, gy, now, true);
+    // Con su refugio ya hecho: el natural de la especie si lo tiene (cueva del lobo) o el que construye
+    if (withBurrow) this.burrows.dig(herd, s, gx, gy, now, true, s.refuge?.natural ?? s.refuge?.kind);
     const out: Animal[] = [];
     for (const f of s.founders ?? FOUNDERS) {
       const days = f.age === 'young'
@@ -330,6 +354,9 @@ export class FaunaSystem {
   minute(t: GameTime): void {
     const now = t.totalMinutes;
     this.stampeded.clear();
+    // Depredadores al acecho este minuto: las presas cercanas pueden verlos (vigilancia de cada especie)
+    this.stalkers = this.animals.filter(a => a.hunt?.phase === 'stalk');
+    if (this.stalkers.length) this.watch(now);
     for (const a of [...this.animals]) {
       if (a.diedAt !== null) continue;
       const s = SPECIES_DEFS[a.species];
@@ -407,6 +434,13 @@ export class FaunaSystem {
         this.setAction(a, 'idle', now);
       } else return;
     }
+    // Se va de la isla: camino de la orilla (antes que comer, dormir o cazar)
+    if (herd?.leaving) return this.thinkLeaving(a, herd, now);
+    // Mucha sed: beber va antes que cazar, volver a casa o dormir (si está bebiendo, sigue hasta llenarse)
+    if (a.action === 'drink' && a.hydration < FULL) return;
+    if (a.hydration < THIRST_URGENT) return this.goDrink(a, s, now);
+    // Depredador: cazar, comer carroña, llevar carne a las crías
+    if (s.predator && this.thinkPredator(a, s, t, members, herd)) return;
     const night = sleepTime(s, t.hour);
     const c = this.conditions;
     const siesta = c.hot && inHours(s.siestaHours, t.hour) && a.satiety > 0.4 && a.hydration > 0.5;
@@ -431,25 +465,34 @@ export class FaunaSystem {
         this.news.push({ type: 'burrow', species: a.species, what: 'dug' });
       }
     }
-    const home = s.refuge && !a.strayed ? this.burrows.usable(herd, now) : undefined;
+    // (de viaje de caza, lejos de la guarida, no cuenta)
+    const home = s.refuge && !a.strayed && !herd?.trip ? this.burrows.usable(herd, now) : undefined;
     // La guía elige al caer la tarde dónde dormirá la manada (su madriguera; si no, bajo los árboles); de día no hay sitio
     if (herd && leader === a) {
       if (!gather) herd.bed = null;
-      else if (!herd.bed) herd.bed = home ? { x: home.x, y: home.y } : this.world.shelterNear(Math.floor(a.x), Math.floor(a.y), 14) ?? { x: a.x, y: a.y };
+      else if (!herd.bed) {
+        // De viaje de caza duermen fuera, donde estén; si no, en su refugio o bajo los árboles
+        herd.bed = herd.trip ? { x: a.x, y: a.y } : home ? { x: home.x, y: home.y } : this.world.shelterNear(Math.floor(a.x), Math.floor(a.y), 14) ?? { x: a.x, y: a.y };
+      }
     }
     // Con la adrenalina de una carrera no hay quien duerma (salvo que se caiga de agotamiento); tomando el sol, tampoco
     const wired = now < a.awakeUntil && a.rest > COLLAPSE;
     const basking = now < a.outUntil;
     const sleepy = (a.rest < SLEEP_BELOW || (night && a.rest < 0.9)) && !wired && !basking;
     if (sleepy && (!c.storm || a.rest < COLLAPSE || home)) {
-      // Con madriguera duerme dentro: va a la entrada y se mete
-      if (home && now >= a.stuckUntil) {
-        if (Math.hypot(a.x - home.x, a.y - home.y) <= BURROW_ENTER) return this.enter(a, home, now);
-        if (a.rest > COLLAPSE * 2) return this.walkTo(a, home.x, home.y, now);
+      // Con madriguera duerme dentro: va a la entrada y se mete (si no se ha entretenido: entonces se duerme
+      // donde le pille, fuera y a la intemperie)
+      if (home && gather && now >= a.stuckUntil) {
+        // Los que no duermen dentro (lobos adultos) se tumban a la entrada, cada uno en su hueco
+        if (!s.refuge!.adultsInside && ageDays(a, now) >= s.youngDays) {
+          const [ox, oy] = this.offset(a.id, s.herd.cohesion * s.spacing.huddle + 1);
+          if (Math.hypot(a.x - home.x - ox, a.y - home.y - oy) > 1.5 && a.rest > COLLAPSE * 2) return this.walkTo(a, home.x + ox, home.y + oy, now);
+        } else if (Math.hypot(a.x - home.x, a.y - home.y) <= BURROW_ENTER) return this.enter(a, home, now);
+        else if (a.rest > COLLAPSE * 2) return this.walkTo(a, home.x, home.y, now);
       }
       // De noche se duerme con los suyos: si está lejos de su sitio, antes vuelve (salvo que no pueda más)
       const bed = herd?.bed;
-      if (night && bed && leader !== a && !a.strayed && a.rest > COLLAPSE * 2 && now >= a.stuckUntil && Math.hypot(a.x - bed.x, a.y - bed.y) > s.herd.cohesion * 2) {
+      if (night && gather && bed && leader !== a && !a.strayed && a.rest > COLLAPSE * 2 && now >= a.stuckUntil && Math.hypot(a.x - bed.x, a.y - bed.y) > s.herd.cohesion * 2) {
         return this.goToBed(a, s, bed, now);
       }
       // Antes de tumbarse, si el suelo está nevado o llueve, busca refugio bajo los árboles
@@ -469,7 +512,8 @@ export class FaunaSystem {
     // Comen sobre todo al amanecer y al atardecer; con calor, a mediodía apenas
     const eatBelow = inAnyHours(s.activeHours, t.hour) ? 0.85 : siesta ? 0.4 : EAT_BELOW;
     // De excursión come por allí (no vuelve con la manada a comer)
-    if (a.satiety < eatBelow && !(gather && a.satiety > 0.3)) return this.goEat(a, s, now, t.season, !!a.roam);
+    // (los carnívoros solo buscan plantas si pasan mucha hambre)
+    if (a.satiety < eatBelow && !(gather && a.satiety > 0.3) && (!s.predator || a.satiety < 0.2)) return this.goEat(a, s, now, t.season, !!a.roam);
     // Siesta a la sombra con calor; refugio bajo los árboles con lluvia o tormenta
     if (siesta) {
       if (this.toShelter(a, s, now, 10)) return;
@@ -595,11 +639,20 @@ export class FaunaSystem {
 
   /**
    * ¿Toca juntarse para dormir? De noche, en las horas de antes (gatherHours) o, si está lejos, cuando ya no le
-   * queda más tiempo que el que tarda en volver andando.
+   * queda más tiempo que el que tarda en volver andando. Pero no siempre se da cuenta a tiempo: cada tarde tira
+   * un dado (homing.late) y, si le toca, se entretiene y sale más tarde (y quizá no llegue: pasará la noche perdido).
    */
   private gatherTime(a: Animal, s: SpeciesDef, t: GameTime, leader: Animal | null): boolean {
-    if (sleepTime(s, t.hour)) return true;
     const left = (s.sleepHours[0] * 60 - t.minuteOfDay + DAY) % DAY;
+    // Una tirada por noche (la noche es el minuto en que empieza la hora de dormir)
+    const night = t.totalMinutes + (sleepTime(s, t.hour) ? -((t.minuteOfDay - s.sleepHours[0] * 60 + DAY) % DAY) : left);
+    if (a.lateFor !== night) {
+      a.lateFor = night;
+      const [lo, hi] = s.homing.lateMinutes;
+      a.lateBy = this.random.next() < s.homing.late ? lo + this.random.next() * (hi - lo) : 0;
+    }
+    if (sleepTime(s, t.hour)) return (t.minuteOfDay - s.sleepHours[0] * 60 + DAY) % DAY >= a.lateBy;
+    if (a.lateBy > 0) return false;
     // Lo que tarda en volver: a su madriguera si la tiene; si no, con su guía
     const burrow = s.refuge ? this.burrows.get(this.herds.get(a.herd)?.burrow ?? null) : undefined;
     const home = burrow ? Math.hypot(a.x - burrow.x, a.y - burrow.y) : leader && leader !== a ? Math.hypot(a.x - leader.x, a.y - leader.y) : 0;
@@ -635,21 +688,25 @@ export class FaunaSystem {
     a.signal = { kind, at: now };
   }
 
-  /** Ir a beber: a la orilla del agua más cercana (a un paso del agua); si no hay a la vista, vaga buscándola */
+  /**
+   * Ir a beber: al agua más cercana que vea; si no ve ninguna, a la que recuerda la manada; si tampoco, busca cada
+   * hora más lejos (y mientras tanto camina con rumbo, no al azar) hasta encontrarla o morir de sed.
+   */
   private goDrink(a: Animal, s: SpeciesDef, now: number): void {
-    const w = this.world.nearestWater(Math.floor(a.x), Math.floor(a.y), s.thirstSearch);
+    const herd = this.herds.get(a.herd);
+    const fx = Math.floor(a.x), fy = Math.floor(a.y);
+    const w = this.world.nearestWater(fx, fy, s.thirstSearch)
+      ?? this.rememberedWater(a, herd)
+      ?? this.widerSearch(a, herd, 'water', s.thirstSearch, now, r => this.world.nearestWater(fx, fy, r));
     if (!w) {
       write(a, 'thirsty', now);
-      for (let n = 0; n < 8; n++) {
-        const angle = this.random.next() * Math.PI * 2;
-        const x = a.x + Math.cos(angle) * FORAGE_RADIUS, y = a.y + Math.sin(angle) * FORAGE_RADIUS;
-        if (this.world.walkable(Math.floor(x), Math.floor(y))) return this.walkTo(a, x, y, now);
-      }
-      return;
+      return this.searchWalk(a, now);
     }
     const wx = w.x + 0.5, wy = w.y + 0.5, d = Math.hypot(a.x - wx, a.y - wy);
     if (d <= DRINK_RANGE) {
       this.face(a, wx - a.x, wy - a.y);
+      a.search = null;
+      if (herd) remember(herd.water, w.x, w.y);
       return this.setAction(a, 'drink', now);
     }
     // Si ya estaba yendo y no ha podido acercarse más, bebe desde donde está si el agua está a dos pasos
@@ -662,9 +719,22 @@ export class FaunaSystem {
    * colonia come alrededor de ella: si la guía se ha alejado demasiado, vuelve hacia allí.
    */
   private lead(a: Animal, herd: Herd, s: SpeciesDef, now: number, season: SeasonId): void {
+    // De viaje de caza: la manada va hacia allí hasta que se acaba (luego, de vuelta a la guarida)
+    if (herd.trip) {
+      if (now > herd.trip.until) {
+        herd.trip = null;
+        write(a, 'tripBack', now);
+      } else {
+        herd.tx = herd.trip.x;
+        herd.ty = herd.trip.y;
+        if (Math.hypot(a.x - herd.tx, a.y - herd.ty) > 3 && a.action !== 'walk') this.walkTo(a, herd.tx, herd.ty, now);
+        return;
+      }
+    }
     const burrow = this.burrows.get(herd.burrow);
     const near = burrow ? FORAGE_RADIUS : Infinity;
-    if (burrow && Math.hypot(a.x - burrow.x, a.y - burrow.y) > near) {
+    // Lejos de la madriguera: vuelve hacia ella, pero no siempre a la primera (tirada por hora de la especie)
+    if (burrow && Math.hypot(a.x - burrow.x, a.y - burrow.y) > near && this.random.next() < perThink(s.homing.leaderReturn ?? 1)) {
       herd.tx = burrow.x;
       herd.ty = burrow.y;
       return;
@@ -676,6 +746,7 @@ export class FaunaSystem {
     if (spot) {
       herd.tx = spot.x;
       herd.ty = spot.y;
+      remember(herd.food, spot.x, spot.y);
     }
   }
 
@@ -683,20 +754,82 @@ export class FaunaSystem {
   private goEat(a: Animal, s: SpeciesDef, now: number, season: SeasonId, alone: boolean): void {
     const avoid = this.avoid(a);
     const food = (x: number, y: number) => this.world.foodAt(Math.floor(x), Math.floor(y), s.diets, avoid, now, season);
-    if (food(a.x, a.y) > FOOD_HERE) return this.setAction(a, 'eat', now);
+    if (food(a.x, a.y) > FOOD_HERE) {
+      if (a.search?.kind === 'food') a.search = null;
+      return this.setAction(a, 'eat', now);
+    }
     const herd = this.herds.get(a.herd);
     if (!alone && herd) {
       const [ox, oy] = this.offset(a.id, s.herd.cohesion * s.spacing.graze);
       const px = herd.tx + ox, py = herd.ty + oy;
       if (Math.hypot(px - a.x, py - a.y) > 1 && food(px, py) > FOOD_HERE) return this.walkTo(a, px, py, now);
     }
-    const spot = this.searchFood(a, s, avoid, now, season, FORAGE_RADIUS) ?? this.searchFood(a, s, avoid, now, season, FORAGE_RADIUS * 2.5);
+    const near = this.searchFood(a, s, avoid, now, season, FORAGE_RADIUS) ?? this.searchFood(a, s, avoid, now, season, FORAGE_RADIUS * 2.5);
+    if (near) {
+      a.search = null;
+      if (herd) remember(herd.food, near.x, near.y);
+      return this.walkTo(a, near.x, near.y, now);
+    }
+    // Nada a la vista: a donde la manada recuerda haber comido bien; si no, busca cada hora más lejos
+    const spot = this.rememberedFood(a, s, herd, now, season)
+      ?? this.widerSearch(a, herd, 'food', FORAGE_RADIUS * 2.5, now, r => this.searchFood(a, s, avoid, now, season, r));
     if (spot) return this.walkTo(a, spot.x, spot.y, now);
-    // Nada a la vista: vaga hacia algún sitio por el que se pueda andar, a ver si encuentra algo
+    this.searchWalk(a, now);
+  }
+
+  // ── Memoria y búsqueda de agua y comida ──
+
+  /** El agua que recuerda la manada, la más cercana que siga ahí (las que se han secado se olvidan) */
+  private rememberedWater(a: Animal, herd: Herd | undefined): { x: number; y: number } | null {
+    if (!herd) return null;
+    const spots = [...herd.water].sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y));
+    for (const p of spots) {
+      const w = this.world.nearestWater(p.x, p.y, 2);
+      if (w) return w;
+      herd.water.splice(herd.water.indexOf(p), 1);
+    }
+    return null;
+  }
+
+  /** La comida que recuerda la manada, la más cercana que siga ahí (las que se han acabado se olvidan) */
+  private rememberedFood(a: Animal, s: SpeciesDef, herd: Herd | undefined, now: number, season: SeasonId): { x: number; y: number } | null {
+    if (!herd) return null;
+    const spots = [...herd.food].sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y));
+    for (const p of spots) {
+      if (this.world.foodAt(Math.floor(p.x), Math.floor(p.y), s.diets, herd.avoid, now, season) > FOOD_HERE) return p;
+      herd.food.splice(herd.food.indexOf(p), 1);
+    }
+    return null;
+  }
+
+  /**
+   * Búsqueda que crece: la primera vez apunta desde dónde busca; cada hora sin encontrar amplía el radio
+   * (SEARCH_GROWTH, hasta SEARCH_MAX_ISLANDS islas) y vuelve a mirar. Lo que encuentra lo recuerda la manada.
+   */
+  private widerSearch(
+    a: Animal, herd: Herd | undefined, kind: 'water' | 'food', base: number, now: number,
+    find: (r: number) => { x: number; y: number } | null,
+  ): { x: number; y: number } | null {
+    if (!a.search || a.search.kind !== kind) {
+      a.search = { kind, r: base, at: now, dir: this.random.next() * Math.PI * 2 };
+      return null;
+    }
+    if (now - a.search.at < 60) return null;
+    a.search.r = Math.min(SEARCH_MAX_ISLANDS * ISLAND, a.search.r * SEARCH_GROWTH);
+    a.search.at = now;
+    const found = find(a.search.r);
+    if (found && herd) remember(kind === 'water' ? herd.water : herd.food, found.x, found.y);
+    return found;
+  }
+
+  /** Mientras busca: camina con rumbo (si choca, gira), así recorre la isla en vez de dar vueltas en el sitio */
+  private searchWalk(a: Animal, now: number): void {
+    if (a.action === 'walk') return;
+    const search = a.search ?? (a.search = { kind: 'water', r: 0, at: now, dir: this.random.next() * Math.PI * 2 });
     for (let n = 0; n < 8; n++) {
-      const angle = this.random.next() * Math.PI * 2;
-      const x = a.x + Math.cos(angle) * FORAGE_RADIUS, y = a.y + Math.sin(angle) * FORAGE_RADIUS;
+      const x = a.x + Math.cos(search.dir) * FORAGE_RADIUS, y = a.y + Math.sin(search.dir) * FORAGE_RADIUS;
       if (this.world.walkable(Math.floor(x), Math.floor(y))) return this.walkTo(a, x, y, now);
+      search.dir += (this.random.next() < 0.5 ? 1 : -1) * Math.PI / 2;
     }
   }
 
@@ -725,8 +858,15 @@ export class FaunaSystem {
       if (passTime(a, s, 1, now, this.needMods(a, s))) this.die(a, a.hydration <= 0 ? 'dehydration' : a.satiety <= 0 ? 'starvation' : 'exhaustion', now);
       return;
     }
+    if (a.carrying > 0) a.rest = Math.max(0, a.rest - (s.tirePerDay / DAY) * ((s.predator?.carry.tire ?? 1) - 1));
     switch (a.action) {
-      case 'eat': this.eatHere(a, s, now, t.season); break;
+      case 'eat':
+        if (a.feeding !== null) this.feedOn(a, s, now);
+        else this.eatHere(a, s, now, t.season);
+        break;
+      case 'howl':
+        if (now - a.actionSince >= HOWL_MINUTES) this.setAction(a, 'idle', now);
+        break;
       case 'drink':
         a.hydration = Math.min(1, a.hydration + s.drinkPerMinute);
         if (a.hydration >= 1) this.setAction(a, 'idle', now);
@@ -837,8 +977,10 @@ export class FaunaSystem {
 
   private runStep(a: Animal, s: SpeciesDef, now: number): void {
     a.rest = Math.max(0, a.rest - RUN_TIRE_PER_MINUTE);
-    // Corriendo hacia su madriguera: al llegar se mete dentro
-    if (a.runTo) {
+    // Persiguiendo una presa: corre hacia ella y, al alcanzarla, intenta cazarla
+    if (a.hunt?.phase === 'chase' && this.chaseStep(a, s, now)) return;
+    // Corriendo hacia su madriguera: al llegar se mete dentro (persiguiendo una presa, no: corre hacia ella)
+    if (a.runTo && !a.hunt) {
       const tx = a.runTo.x - a.x, ty = a.runTo.y - a.y, td = Math.hypot(tx, ty);
       const home = this.burrows.usable(this.herds.get(a.herd), now);
       if (home && td <= BURROW_ENTER) {
@@ -859,6 +1001,16 @@ export class FaunaSystem {
     // Hacia dónde le conviene ir: a su madriguera; huyendo, lejos del peligro; corriendo por orden, hacia donde iba
     const fx = a.x - a.fearX, fy = a.y - a.fearY, fd = Math.hypot(fx, fy);
     const [wx, wy] = a.fleeing && !a.runTo && fd > 0.1 ? [fx / fd, fy / fd] : [a.runDx, a.runDy];
+    if (a.hunt) {
+      // Persiguiendo: hacia la presa (sin giros raros)
+      const nx = a.x + a.runDx * s.speed.run, ny = a.y + a.runDy * s.speed.run;
+      if (this.canStep(a.x, a.y, nx, ny)) {
+        this.face(a, a.runDx, a.runDy);
+        a.x = nx;
+        a.y = ny;
+        return;
+      }
+    }
     let moved = false;
     for (const turn of a.fleeing || !this.canStep(a.x, a.y, a.x + a.runDx * s.speed.run, a.y + a.runDy * s.speed.run) ? RUN_TURNS : [0]) {
       // Choca con algo: gira hacia el lado que más le aleje del peligro (el menor giro, si da igual)
@@ -929,6 +1081,302 @@ export class FaunaSystem {
     a.awakeUntil = now + s.afterRun.awake;
   }
 
+  // ── Depredadores ──
+
+  /**
+   * Lo que hace un depredador antes que nada: seguir con su caza, llevar carne a las crías, comer carroña que
+   * huele o salir a cazar si tiene hambre (todo por tiradas). Devuelve true si ha decidido algo.
+   */
+  private thinkPredator(a: Animal, s: SpeciesDef, t: GameTime, members: Animal[], herd: Herd | undefined): boolean {
+    const now = t.totalMinutes, pred = s.predator!;
+    if (ageDays(a, now) < s.youngDays) return false;      // los cachorros no cazan
+    // Cazando: acecha andando hacia la presa (la persecución va minuto a minuto, corriendo)
+    if (a.hunt) {
+      const prey = this.animals.find(p => p.id === a.hunt!.target);
+      if (!prey || prey.inside !== null) {
+        a.hunt = null;
+        return false;
+      }
+      if (a.hunt.phase === 'stalk') {
+        if (dist(a, prey) <= CONTACT) {
+          // Llega sin que le vea: le salta encima por sorpresa
+          this.strike(a, s, prey, now, true);
+          return true;
+        }
+        this.walkTo(a, prey.x, prey.y, now);
+        return true;
+      }
+      return false;
+    }
+    // Comiendo de un cadáver: sigue (lo lleva act)
+    if (a.feeding !== null && a.action === 'eat') return true;
+    // Con carne para las crías: a la guarida
+    if (a.carrying > 0) return this.carryHome(a, s, members, herd, now);
+    const nursing = herd ? members.some(m => this.nursling(m, s, now) && m.inside !== null) : false;
+    const hungry = a.satiety < pred.huntBelow;
+    // Carroña: si huele un cadáver con carne (y tiene hambre o hay crías esperando), va a por él
+    if (hungry || (nursing && a.satiety >= 0.8)) {
+      const carrion = this.smellCarrion(a, s);
+      if (carrion && this.random.next() < pred.carrion) {
+        if (Math.hypot(a.x - carrion.x, a.y - carrion.y) <= CONTACT) {
+          if (!hungry && nursing) {
+            // Ya ha comido: coge un trozo para las crías
+            const piece = Math.min(CARRY_PIECE, carrion.meat);
+            carrion.meat -= piece;
+            a.carrying = piece;
+            write(a, 'carryMeat', now);
+            return this.carryHome(a, s, members, herd, now);
+          }
+          a.feeding = carrion.id;
+          this.setAction(a, 'eat', now);
+          return true;
+        }
+        this.walkTo(a, carrion.x, carrion.y, now);
+        return true;
+      }
+    }
+    // Hambre: sale a cazar (tirada por hora); los compañeros cercanos se le unen (tirada)
+    if (hungry && a.rest > RUN_MIN && this.random.next() < perThink(pred.huntChance)) {
+      const prey = choosePrey(a, s, this.animals, SPECIES_DEFS, x => this.alone(x), now, this.random);
+      if (!prey) return false;
+      a.hunt = { target: prey.id, phase: 'stalk', since: now };
+      a.roam = null;
+      write(a, 'hunting', now, { prey: `@species.${SPECIES_DEFS[prey.species].key}` });
+      for (const m of members) {
+        if (m === a || m.hunt || ageDays(m, now) < s.youngDays || m.satiety > 0.8 || dist(m, a) > 12 || m.rest <= RUN_MIN) continue;
+        if (this.random.next() < pred.joinHunt) m.hunt = { target: prey.id, phase: 'stalk', since: now };
+      }
+      this.walkTo(a, prey.x, prey.y, now);
+      return true;
+    }
+    return false;
+  }
+
+  /** El cadáver con carne que huele (el más cercano de los que huele, por tirada de distancia) */
+  private smellCarrion(a: Animal, s: SpeciesDef): Animal | null {
+    let best: Animal | null = null, bestD = Infinity;
+    for (const c of this.corpses) {
+      if (c.meat <= 0.005) continue;
+      const d = Math.hypot(c.x - a.x, c.y - a.y);
+      if (d < bestD && (d <= CONTACT || this.random.next() < smellChance(s, d))) {
+        best = c;
+        bestD = d;
+      }
+    }
+    return best;
+  }
+
+  /** ¿Va sola? (lejos de su manada, despistada o de una manada de uno): presa fácil */
+  private alone(a: Animal): boolean {
+    if (a.strayed) return true;
+    const m = this.members(a.herd);
+    if (m.length <= 1) return true;
+    const s = SPECIES_DEFS[a.species];
+    return !m.some(o => o !== a && dist(o, a) < s.herd.cohesion * 3);
+  }
+
+  /**
+   * Presas vigilando: cada minuto, cada presa con un depredador acechando a menos de VIGIL_RANGE puede verlo
+   * (su vigilancia). Si lo ve, es un estímulo 'predator' (miedo y huida para las de alrededor, con su '!') y los
+   * que acechaban a cualquiera de esa zona pasan a perseguir.
+   */
+  private watch(now: number): void {
+    const seen = new Set<Animal>();
+    for (const p of this.animals) {
+      const ps = SPECIES_DEFS[p.species];
+      if (ps.predator || p.inside !== null || p.action === 'sleep' && this.random.next() < 0.7) continue;
+      for (const w of this.stalkers) {
+        if (seen.has(w) || Math.hypot(w.x - p.x, w.y - p.y) > VIGIL_RANGE) continue;
+        if (this.random.next() >= ps.senses.vigilance) continue;
+        seen.add(w);
+        this.sense({ type: 'predator', gx: w.x, gy: w.y, strength: 1 }, now);
+        write(p, 'sawPredator', now, { predator: `@species.${SPECIES_DEFS[w.species].key}` });
+      }
+    }
+    // Descubiertos: persiguen a su presa
+    for (const w of seen) {
+      for (const h of this.stalkers) {
+        if (!h.hunt || h.hunt.target !== w.hunt?.target) continue;
+        h.hunt.phase = 'chase';
+        h.hunt.since = now;
+        h.order = null;
+        this.startRun(h, 1, 0, now);
+      }
+    }
+  }
+
+  /**
+   * Un minuto de persecución: corre hacia la presa; al alcanzarla, intenta cazarla. Abandona si la pierde (se
+   * mete en su refugio), si se agota o, pasado `giveUpAfter`, con la tirada `giveUp` cada 5 minutos.
+   * Devuelve true si ya ha movido al depredador este minuto.
+   */
+  private chaseStep(a: Animal, s: SpeciesDef, now: number): boolean {
+    const pred = s.predator!, hunt = a.hunt!;
+    const prey = this.animals.find(p => p.id === hunt.target);
+    const long = now - hunt.since > pred.giveUpAfter && (now - hunt.since) % 5 === 0 && this.random.next() < pred.giveUp;
+    if (!prey || prey.inside !== null || a.rest < RUN_STOP || long) {
+      a.hunt = null;
+      if (prey && long) write(a, 'gaveUp', now);
+      this.endRun(a, s, now);
+      return true;
+    }
+    if (dist(a, prey) <= CONTACT) {
+      this.strike(a, s, prey, now, false);
+      return true;
+    }
+    a.runTo = { x: prey.x, y: prey.y };
+    const dx = prey.x - a.x, dy = prey.y - a.y, d = Math.hypot(dx, dy) || 1;
+    a.runDx = dx / d;
+    a.runDy = dy / d;
+    return false;
+  }
+
+  /**
+   * La alcanza: tirada de caza (su tipo de presa + la manada + la nieve). Una presa grande adulta puede
+   * plantarse antes: entonces los depredadores se van (tirada) y alguno puede salir herido.
+   */
+  private strike(a: Animal, s: SpeciesDef, prey: Animal, now: number, ambush: boolean): void {
+    const ps = SPECIES_DEFS[prey.species];
+    const hunters = this.animals.filter(h => h.hunt?.target === prey.id);
+    const helpers = hunters.filter(h => h !== a && dist(h, prey) < 4).length;
+    // Plantar cara
+    if (ps.defend && preyClass(prey, ps, now) === 'adult' && this.random.next() < ps.defend.stand) {
+      write(prey, 'standGround', now, undefined, true);
+      if (this.random.next() < ps.defend.injure) {
+        a.health -= 0.3;
+        write(a, 'kicked', now, undefined, true);
+        if (a.health <= 0) return this.die(a, 'injury', now);
+      }
+      if (this.random.next() < ps.defend.repel) {
+        for (const h of hunters) {
+          h.hunt = null;
+          if (h.action === 'run') this.endRun(h, SPECIES_DEFS[h.species], now);
+        }
+        this.news.push({ type: 'repelled', species: a.species, prey: prey.species, name: prey.name });
+        return;
+      }
+    }
+    const snow = this.conditions.snow || this.world.snowAt(Math.floor(prey.x), Math.floor(prey.y));
+    const chance = catchChance(s, prey, ps, helpers, snow, now) + (ambush ? 0.15 : 0);
+    if (this.random.next() >= chance) {
+      // Se le escapa: si acechaba, ahora persigue (la presa ya huye)
+      if (ambush) {
+        this.sense({ type: 'predator', gx: a.x, gy: a.y, strength: 1 }, now);
+        for (const h of hunters) {
+          h.hunt = { target: prey.id, phase: 'chase', since: now };
+          this.startRun(h, prey.x - h.x, prey.y - h.y, now);
+        }
+      }
+      return;
+    }
+    // Cazada: los cazadores comen de ella (la pareja dominante, la primera: los demás esperan su turno comiendo después)
+    this.die(prey, 'predation', now);
+    write(a, 'killed', now, { name: prey.name }, true);
+    this.news.push({ type: 'killed', species: a.species, prey: prey.species, name: prey.name });
+    for (const h of hunters) {
+      h.hunt = null;
+      if (h.action === 'run') this.endRun(h, SPECIES_DEFS[h.species], now);
+      h.pantUntil = now;
+      h.feeding = prey.id;
+      this.setAction(h, 'eat', now);
+    }
+  }
+
+  /** Come del cadáver: bocados de carne hasta llenarse o acabarlo */
+  private feedOn(a: Animal, s: SpeciesDef, now: number): void {
+    const c = this.corpses.find(x => x.id === a.feeding);
+    if (!c || c.meat <= 0.005 || Math.hypot(c.x - a.x, c.y - a.y) > CONTACT * 2 || a.satiety >= FULL) {
+      a.feeding = null;
+      this.setAction(a, 'idle', now);
+      if (c && a.satiety >= FULL) write(a, 'gorged', now);
+      return;
+    }
+    const bite = Math.min(MEAT_BITE, c.meat);
+    c.meat -= bite;
+    a.satiety = Math.min(1, a.satiety + bite / s.stomach);
+    this.face(a, c.x - a.x, c.y - a.y);
+  }
+
+  /**
+   * Lleva carne a las crías de la guarida. Cansa más; si se agota por el camino, otro de la manada que esté
+   * cerca le releva (tirada) o, si no, se para a descansar con ella.
+   */
+  private carryHome(a: Animal, s: SpeciesDef, members: Animal[], herd: Herd | undefined, now: number): boolean {
+    const den = this.burrows.usable(herd, now);
+    if (!den) {
+      a.carrying = 0;
+      return false;
+    }
+    if (Math.hypot(a.x - den.x, a.y - den.y) <= 2) {
+      // Reparte la carne entre las crías de dentro
+      const pups = members.filter(m => m.inside === den.id);
+      for (const p of pups) p.satiety = Math.min(1, p.satiety + a.carrying / Math.max(1, pups.length) / s.stomach * 2);
+      write(a, 'feedPups', now);
+      a.carrying = 0;
+      return true;
+    }
+    if (a.rest < 0.25) {
+      const mate = members.find(m => m !== a && !m.hunt && m.carrying === 0 && m.rest > 0.5 && dist(m, a) < 6 && ageDays(m, now) >= s.youngDays);
+      if (mate && this.random.next() < s.predator!.carry.relay) {
+        mate.carrying = a.carrying;
+        a.carrying = 0;
+        write(mate, 'relay', now, { name: a.name });
+        this.walkTo(mate, den.x, den.y, now);
+        return false;
+      }
+      this.setAction(a, 'sleep', now);
+      return true;
+    }
+    this.walkTo(a, den.x, den.y, now);
+    return true;
+  }
+
+  /**
+   * Aullido: al anochecer (al empezar sus horas activas), cada manada aúlla con su tirada. Los despiertos y fuera
+   * se paran a aullar; se oye en toda la isla (las presas se asustan, con la costumbre cada vez menos).
+   */
+  private howlHour(t: GameTime): void {
+    const now = t.totalMinutes;
+    for (const h of this.herds.values()) {
+      const s = SPECIES_DEFS[h.species];
+      if (!s.predator || t.hour !== s.activeHours[0][0] || this.random.next() >= s.predator.howl) continue;
+      const members = this.members(h.id).filter(m => m.inside === null && m.action !== 'sleep' && m.action !== 'run' && !m.hunt);
+      const leader = leaderOf(members, s, now);
+      if (!leader) continue;
+      for (const m of members) if (dist(m, leader) < s.herd.cohesion * 3) this.setAction(m, 'howl', now);
+      write(leader, 'howl', now);
+      this.news.push({ type: 'howl', species: s.id });
+      this.sense({ type: 'howl', gx: leader.x, gy: leader.y, strength: 1 }, now);
+    }
+  }
+
+  /**
+   * Viajes de caza (una vez al día): si una manada no huele presas desde su guarida y no tiene crías dentro,
+   * con su tirada se va unos días lejos (hasta `trip.islands`), duerme fuera y luego vuelve.
+   */
+  private planTrips(s: SpeciesDef, now: number): void {
+    const pred = s.predator!;
+    for (const h of this.herds.values()) {
+      if (h.species !== s.id || h.trip) continue;
+      const members = this.members(h.id);
+      if (members.length < 2 || members.some(m => this.nursling(m, s, now))) continue;
+      const c = centre(members)!;
+      const range = s.senses.smell * ISLAND;
+      const prey = this.animals.filter(p => pred.prey[SPECIES_DEFS[p.species].key] && Math.hypot(p.x - c.x, p.y - c.y) < range * 0.5).length;
+      if (prey >= 3 || this.random.next() >= pred.trip.chance) continue;
+      for (let n = 0; n < 8; n++) {
+        const angle = this.random.next() * Math.PI * 2, r = pred.trip.islands * ISLAND * (0.6 + this.random.next() * 0.4);
+        const x = c.x + Math.cos(angle) * r, y = c.y + Math.sin(angle) * r;
+        if (!this.world.walkable(Math.floor(x), Math.floor(y))) continue;
+        const [lo, hi] = pred.trip.days;
+        h.trip = { x, y, until: now + (lo + this.random.next() * (hi - lo)) * DAY };
+        this.news.push({ type: 'trip', species: s.id });
+        for (const m of members) write(m, 'trip', now);
+        break;
+      }
+    }
+  }
+
   // ── Madriguera ──
 
   /** Se mete en su madriguera: no se ve, está a salvo y duerme o descansa */
@@ -966,8 +1414,27 @@ export class FaunaSystem {
   }
 
   /** Cría que aún no sale de la madriguera (la madre le da de mamar dentro) */
+  /**
+   * Cada hora: las crías de refugio cuya madre está con ellas (dentro del mismo refugio o a su lado) maman y
+   * quedan apuntadas. Se mira cada hora y no una vez al día porque la madre entra y sale: lo que cuenta es que
+   * venga, no dónde esté a una hora concreta.
+   */
+  private nurseHour(now: number): void {
+    for (const k of this.animals) {
+      const s = SPECIES_DEFS[k.species];
+      if (!this.nursling(k, s, now)) continue;
+      const mum = this.animals.find(m => m.id === k.mother && m.herd === k.herd);
+      if (!mum) continue;
+      if ((k.inside !== null && mum.inside === k.inside) || Math.hypot(mum.x - k.x, mum.y - k.y) < 3) {
+        k.nursedAt = now;
+        k.satiety = k.hydration = 1;
+      }
+    }
+  }
+
   private nursling(a: Animal, s: SpeciesDef, now: number): boolean {
-    return s.breeding.mode === 'season' && a.mother !== null && ageDays(a, now) < s.breeding.nurseDays;
+    const days = s.breeding.nurseDays;
+    return !!days && a.mother !== null && ageDays(a, now) < days;
   }
 
   /** Una arena ha derrumbado o tapado una madriguera: lo que les pasa a los de dentro */
@@ -1050,6 +1517,7 @@ export class FaunaSystem {
   private hour(t: GameTime): void {
     const now = t.totalMinutes;
     this.refreshCapacity(now, t.season);
+    this.nurseHour(now);
     const perTile = new Map<string, number>();
     for (const a of [...this.animals]) {
       const s = SPECIES_DEFS[a.species];
@@ -1097,6 +1565,7 @@ export class FaunaSystem {
     }
     this.refugeHour(t);
     this.diseaseHour(now);
+    this.howlHour(t);
     // Quien no ha vuelto a dormir con los suyos, se ha perdido
     for (const h of [...this.herds.values()]) {
       const s = SPECIES_DEFS[h.species];
@@ -1124,6 +1593,8 @@ export class FaunaSystem {
       const nh = this.newHerd(h.species, h.tx + Math.cos(angle) * 8, h.ty + Math.sin(angle) * 8);
       for (const m of leaving) m.herd = nh.id;
       this.news.push({ type: 'herdSplit', species: h.species });
+      // Isla llena: los que se separan no encuentran sitio y se van de la isla
+      if (this.islandFull()) this.startLeaving(nh, s, now);
     }
   }
 
@@ -1134,6 +1605,8 @@ export class FaunaSystem {
    */
   private refugeHour(t: GameTime): void {
     const now = t.totalMinutes, c = this.conditions;
+    // El terreno: la arena o el humus que se asientan en una entrada la tapan y, con tiempo, la hunden
+    for (const h of this.burrows.cover()) this.burrowHit(h, now);
     const told = new Set<number>();
     for (const a of [...this.animals]) {
       const s = SPECIES_DEFS[a.species], r = s.refuge;
@@ -1156,7 +1629,7 @@ export class FaunaSystem {
       }
       if (b.blocked) {
         if (this.random.next() < r.unblock) {
-          b.blocked = false;
+          this.burrows.unblock(b);
           write(a, 'dugOut', now, undefined, true);
         }
         continue;
@@ -1214,16 +1687,16 @@ export class FaunaSystem {
         }
       }
       for (const f of all) if (f.dueAt !== null && f.dueAt <= now) this.giveBirth(f, s, now);
-      // Crías de madriguera: la madre les da de mamar si sigue con ellas; si no, cada día pueden no salir adelante
-      if (b.mode === 'season') {
+      // Crías de refugio: si su madre no ha pasado a darles de mamar en todo el día, pueden no salir adelante
+      // (las visitas se apuntan cada hora en nurseHour: la madre sale a comer y vuelve)
+      if (b.nurseDays) {
         for (const k of all) {
-          if (!this.nursling(k, s, now)) continue;
-          const mum = this.animals.find(m => m.id === k.mother && m.herd === k.herd);
-          if (mum && (mum.inside === k.inside || Math.hypot(mum.x - k.x, mum.y - k.y) < 3)) {
-            k.satiety = k.hydration = 1;
-          } else if (this.random.next() < b.orphanDeath) this.die(k, 'orphaned', now);
+          if (!this.nursling(k, s, now) || now - k.nursedAt < DAY) continue;
+          if (this.random.next() < (b.orphanDeath ?? 0)) this.die(k, 'orphaned', now);
         }
       }
+      // Depredadores: con poca presa cerca de la guarida (y sin crías que cuidar), se van de viaje de caza
+      if (s.predator) this.planTrips(s, now);
       // Jóvenes que se hacen adultos: algunos se van a fundar su propia manada
       if (s.dispersal) {
         for (const a of all) {
@@ -1246,6 +1719,87 @@ export class FaunaSystem {
         this.news.push({ type: 'hunger', species: s.id });
       }
     }
+    this.migrate(t);
+  }
+
+  // ── Llegadas y marchas ──
+
+  /**
+   * Una vez al día: las manadas con hambre de verdad pueden irse de la isla (tirada). Cada MIGRATION_EVERY_DAYS,
+   * si caben más grupos (tope tirado), puede llegar uno por la orilla, de la especie que tenga sitio (tirada por
+   * especie, en orden al azar; como mucho uno). Un depredador solo tiene sitio si hay presas.
+   */
+  private migrate(t: GameTime): void {
+    const now = t.totalMinutes;
+    for (const h of [...this.herds.values()]) {
+      const s = SPECIES_DEFS[h.species];
+      if (h.leaving || !s.migration) continue;
+      const adults = this.members(h.id).filter(a => ageDays(a, now) >= s.youngDays);
+      if (!adults.length) continue;
+      const satiety = adults.reduce((sum, a) => sum + a.satiety, 0) / adults.length;
+      const health = adults.reduce((sum, a) => sum + a.health, 0) / adults.length;
+      if (this.random.next() < leaveChance(s, satiety, health)) this.startLeaving(h, s, now);
+    }
+    if (t.day % MIGRATION_EVERY_DAYS !== 0) return;
+    const groups = [...this.herds.values()].filter(h => !h.leaving && this.members(h.id).length >= 2);
+    if (this.islandFull()) return;
+    const order = SPECIES_DEFS.filter(s => s.migration).sort(() => this.random.next() - 0.5);
+    for (const s of order) {
+      const population = this.animals.filter(a => a.species === s.id).length;
+      const own = groups.filter(h => h.species === s.id).length;
+      const chance = arrivalChance(s, population, this.capacity.get(s.id) ?? 0, own, (s.founders ?? FOUNDERS).length);
+      if (this.random.next() >= chance) continue;
+      const at = this.world.shore(this.random);
+      if (!at) return;
+      this.spawnHerd(s.key, at.x, at.y, now);
+      return;
+    }
+  }
+
+  /** La manada se va de la isla: hacia la orilla más cercana de unas cuantas (sale de su refugio; las crías, con ella) */
+  private startLeaving(h: Herd, s: SpeciesDef, now: number): void {
+    const members = this.members(h.id);
+    const c = centre(members) ?? { x: members[0]?.x ?? 0, y: members[0]?.y ?? 0 };
+    let best: { x: number; y: number } | null = null;
+    for (let n = 0; n < 6; n++) {
+      const p = this.world.shore(this.random);
+      if (p && (!best || Math.hypot(p.x - c.x, p.y - c.y) < Math.hypot(best.x - c.x, best.y - c.y))) best = p;
+    }
+    if (!best) return;
+    // Uno solo (un joven que no encuentra sitio) se va sin noticia en la crónica: solo lo cuenta su diario
+    const quiet = members.length < 2;
+    h.leaving = { x: best.x, y: best.y, until: now + LEAVE_HOURS * 60, quiet };
+    h.trip = null;
+    for (const a of members) {
+      if (a.inside !== null) this.exit(a, now);
+      a.hunt = null;
+      a.roam = null;
+      a.order = null;
+      write(a, 'leaving', now, undefined, true);
+    }
+    if (!quiet) this.news.push({ type: 'leaving', species: s.id, count: members.length });
+  }
+
+  /** De camino a la orilla para irse: anda hacia allí y, al llegar (o pasado el plazo), deja la isla */
+  private thinkLeaving(a: Animal, h: Herd, now: number): void {
+    const l = h.leaving!;
+    if (now >= l.until || Math.hypot(a.x - l.x, a.y - l.y) < 2) return this.depart(a, now);
+    const [ox, oy] = this.offset(a.id, 1.5);
+    if (a.action !== 'walk' || Math.hypot(a.tx - l.x - ox, a.ty - l.y - oy) > 1) this.walkTo(a, l.x + ox, l.y + oy, now);
+  }
+
+  /** Deja la isla: no muere, se va (no deja cadáver) */
+  private depart(a: Animal, now: number): void {
+    const i = this.animals.indexOf(a);
+    if (i < 0) return;
+    this.animals.splice(i, 1);
+    a.action = 'idle';
+    a.actionSince = now;
+    if (!this.members(a.herd).length) {
+      const quiet = this.herds.get(a.herd)?.leaving?.quiet;
+      this.herds.delete(a.herd);
+      if (!quiet) this.news.push({ type: 'left', species: a.species });
+    }
   }
 
   private giveBirth(mother: Animal, s: SpeciesDef, now: number): void {
@@ -1254,11 +1808,13 @@ export class FaunaSystem {
       const sex: Sex = this.random.next() < 0.5 ? 'male' : 'female';
       const kid = this.create(s, sex, now, mother.x + (this.random.next() - 0.5), mother.y + (this.random.next() - 0.5), mother.herd, mother, now);
       kid.satiety = 0.7;
-      // Si la madre está en la madriguera, nacen dentro (y ahí se quedan sus primeros días)
-      if (mother.inside !== null) {
-        kid.inside = mother.inside;
-        kid.x = kid.tx = mother.x;
-        kid.y = kid.ty = mother.y;
+      // Si la madre está en la madriguera, nacen dentro; si su especie cría en guarida (lobo), en la guarida de
+      // la manada (y ahí se quedan sus primeros días)
+      const den = mother.inside !== null ? this.burrows.get(mother.inside) : s.breeding.nurseDays ? this.burrows.usable(this.herds.get(mother.herd), now) : undefined;
+      if (den) {
+        kid.inside = den.id;
+        kid.x = kid.tx = den.x;
+        kid.y = kid.ty = den.y;
         kid.action = 'sleep';
       }
       kids.push(kid);
@@ -1292,6 +1848,22 @@ export class FaunaSystem {
     }
     write(a, 'leaveHome', now, undefined, true);
     this.news.push({ type: 'dispersed', species: s.id, name: a.name });
+    // Isla llena (no caben más grupos): no encuentra dónde fundar el suyo y se va de la isla, como los jóvenes
+    // de verdad cuando todos los territorios están ocupados
+    if (this.islandFull()) this.startLeaving(this.herds.get(a.herd)!, s, now);
+  }
+
+  /** Grupos (de 2 o más) que hay en la isla, sin contar los que se están yendo */
+  private groupCount(): number {
+    let n = 0;
+    for (const h of this.herds.values()) if (!h.leaving && this.members(h.id).length >= 2) n++;
+    return n;
+  }
+
+  /** ¿Está la isla llena de grupos? (el tope se tira cada vez: unas veces cabe uno más y otras no) */
+  private islandFull(): boolean {
+    const chunks = this.world.islandChunks();
+    return chunks > 0 && this.groupCount() >= groupsCap(chunks, this.random);
   }
 
   /** Lo que se le pasa por la cabeza (diario), con calma: unas pocas frases al día */
@@ -1328,7 +1900,8 @@ export class FaunaSystem {
       mother: mother?.id ?? null, x, y, tx: x, ty: y, facing: this.random.next() < 0.5 ? 1 : -1, back: false, herd,
       health: 1, rest: 0.8, satiety: 0.8, hydration: 0.8, happiness: 0.6, factors: [], action: 'idle', actionSince: now, order: null,
       fear: 0, fearX: x, fearY: y, curious: null, fleeing: false, signal: null, pantUntil: 0, awakeUntil: 0, roam: null, path: null, stuckUntil: 0, strayed: 0,
-      inside: null, outUntil: 0, frozenUntil: 0, runTo: null, sickUntil: null, immune: false, leftHerd: null,
+      inside: null, outUntil: 0, frozenUntil: 0, runTo: null, sickUntil: null, immune: false, leftHerd: null, lateBy: 0, lateFor: -1, nursedAt: now, search: null,
+      hunt: null, carrying: 0, feeding: null, meat: 0,
       runDx: 0, runDy: 0, runX: x, runY: y, dueAt: null, litter: 0, lastRutYear: -1, seeds: [], diary: [], diaryDay: -1,
       diaryToday: 0, diedAt: null, cause: null,
     };
@@ -1347,6 +1920,10 @@ export class FaunaSystem {
     a.order = null;
     a.action = 'dead';
     a.actionSince = now;
+    a.hunt = null;
+    a.feeding = null;
+    // Su cuerpo es comida para los carnívoros (carroña)
+    a.meat = MEAT_BY_SIZE[SPECIES_DEFS[a.species].size] * (ageDays(a, now) < SPECIES_DEFS[a.species].youngDays ? 0.4 : 1);
     this.corpses.push(a);
     this.news.push({ type: 'died', species: a.species, name: a.name, cause });
     if (!this.members(a.herd).length) this.herds.delete(a.herd);
@@ -1355,7 +1932,7 @@ export class FaunaSystem {
   }
 
   private newHerd(species: number, x: number, y: number): Herd {
-    const h: Herd = { id: this.nextHerd++, species, tx: x, ty: y, avoid: new Set(), habit: new Map(), zones: [], bed: null, burrow: null };
+    const h: Herd = { id: this.nextHerd++, species, tx: x, ty: y, avoid: new Set(), habit: new Map(), zones: [], bed: null, burrow: null, trip: null, water: [], food: [], leaving: null };
     this.herds.set(h.id, h);
     return h;
   }
@@ -1398,6 +1975,16 @@ export class FaunaSystem {
   private refreshCapacity(now: number, season: SeasonId): void {
     for (const s of SPECIES_DEFS) {
       const daily = s.stomach * s.hungerPerDay;
+      if (s.predator) {
+        // Un depredador vive de sus presas: la carne que hay en pie (repartida en el tiempo que tardan en reponerse)
+        let meat = 0;
+        for (const p of this.animals) {
+          const ps = SPECIES_DEFS[p.species];
+          if (s.predator.prey[ps.key]) meat += MEAT_BY_SIZE[ps.size] * PREY_TURNOVER;
+        }
+        this.capacity.set(s.id, meat / (daily * CAPACITY_DAYS));
+        continue;
+      }
       this.capacity.set(s.id, this.world.totalFood(s.diets, now, season) / (daily * CAPACITY_DAYS));
     }
   }
@@ -1440,6 +2027,10 @@ const DETOURS = [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8];
 /** Giros que prueba corriendo, de menor a mayor (huyendo, nunca hacia el peligro) */
 const RUN_TURNS = [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.6, -1.6, 2.1, -2.1, 2.6, -2.6];
 const dist = (a: Animal, b: Animal): number => Math.hypot(a.x - b.x, a.y - b.y);
+/** Minutos que dura un aullido */
+const HOWL_MINUTES = 8;
+/** Parte de la carne de las presas que un depredador puede cazar sin acabar con ellas [PROPUESTA] */
+const PREY_TURNOVER = 0.25;
 /** Probabilidad por hora repartida entre las veces que piensa en esa hora */
 const perThink = (perHour: number): number => 1 - Math.pow(1 - perHour, THINK_MINUTES / 60);
 const reached = (a: Animal): boolean => Math.hypot(a.tx - a.x, a.ty - a.y) < 0.1;

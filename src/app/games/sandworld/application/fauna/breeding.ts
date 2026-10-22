@@ -4,7 +4,7 @@ import { CALENDAR, DAYS_PER_YEAR, SeasonId } from '../../domain/models/time.mode
 import { RandomSource } from '../../domain/ports/random-source.port';
 import { BIRTH_SPREAD_DAYS, BREED_HAPPINESS } from '../../config/fauna.config';
 import { ageDays } from './needs';
-import { hasAdultMale } from './herds';
+import { hasAdultMale, leaderOf } from './herds';
 
 const DAY = CALENDAR.MINUTES_PER_DAY;
 
@@ -30,11 +30,16 @@ export function tryConceive(
   if (female.lastRutYear === year || ageDays(female, now) < s.adultDays) return null;
   if (female.satiety < b.minSatiety || female.happiness < BREED_HAPPINESS) return null;
   if (!hasAdultMale(herd, s, now)) return null;
+  // Solo la pareja dominante (lobo): la hembra guía y el macho adulto más viejo
+  if (b.dominantOnly && leaderOf(herd, s, now) !== female) return null;
   if (random.next() >= b.conceivePerDay * days) return null;
   female.lastRutYear = year;
-  female.litter = female.satiety > b.twinsSatiety && random.next() < b.twinsChance ? 2 : 1;
+  female.litter = b.litter
+    ? litterSize({ litter: b.litter, crowdShift: 0, hungryShift: 1 }, female.satiety, false, random)
+    : female.satiety > b.twinsSatiety && random.next() < b.twinsChance ? 2 : 1;
   female.dueAt = nextSeasonStart(now, b.birthSeason) + Math.floor(random.next() * BIRTH_SPREAD_DAYS * DAY);
   const males = herd.filter(m => m.sex === 'male' && m.diedAt === null && ageDays(m, now) >= s.adultDays);
+  if (b.dominantOnly) return males.sort((x, y) => x.bornAt - y.bornAt)[0] ?? null;
   return males[Math.floor(random.next() * males.length)] ?? null;
 }
 
@@ -61,7 +66,10 @@ export function tryConceiveSeason(
  * Cuántas crías: una tirada con los pesos de la especie (unas tienen pocas, otras muchas). Con superpoblación o
  * hambre la tirada baja unos puestos, pero nunca por debajo del mínimo.
  */
-export function litterSize(b: SeasonBreeding, satiety: number, crowded: boolean, random: RandomSource): number {
+export function litterSize(
+  b: { readonly litter: SeasonBreeding['litter']; readonly crowdShift: number; readonly hungryShift: number },
+  satiety: number, crowded: boolean, random: RandomSource,
+): number {
   const { sizes, weights } = b.litter;
   const total = weights.reduce((t, w) => t + w, 0);
   let r = random.next() * total, i = 0;

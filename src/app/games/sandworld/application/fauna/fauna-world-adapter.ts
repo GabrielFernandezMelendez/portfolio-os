@@ -5,6 +5,7 @@ import { SeasonId, toGameTime } from '../../domain/models/time.model';
 import { WORLD } from '../../domain/models/world.model';
 import { ChunkCoord } from '../../domain/events/game-events';
 import { FaunaWorld, Meal } from '../../domain/ports/fauna-world.port';
+import { RandomSource } from '../../domain/ports/random-source.port';
 import { PLANT_DEFS, PLANT_MIN } from '../../config/plants.config';
 import { World } from '../world/world';
 import { VegetationSystem } from '../vegetation/vegetation';
@@ -136,7 +137,8 @@ export class FaunaWorldAdapter implements FaunaWorld {
         for (let dx = -r; dx <= r; dx++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
           const c = this.cell(gx + dx, gy + dy);
-          if (!c || c.chunk.water[c.k] < DEEP) continue;
+          // Agua para beber: la de un lago, río o charco; en invierno también la nieve y el hielo (se los comen)
+          if (!c || (c.chunk.water[c.k] < DEEP && c.chunk.cover[c.k] <= SNOWY)) continue;
           const d = Math.hypot(dx, dy);
           if (!best || d < best.distance) best = { x: gx + dx, y: gy + dy, distance: d };
         }
@@ -198,6 +200,34 @@ export class FaunaWorldAdapter implements FaunaWorld {
       for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) sum += this.tileFood(chunk, i, j, diets, EMPTY, now, season);
     }
     return sum;
+  }
+
+  islandChunks(): number {
+    return this.world.exploration.list().length;
+  }
+
+  /**
+   * Una celda pisable junto a la orilla: elige al azar un chunk con un lado que da al vacío, un punto de ese lado y
+   * entra hacia dentro hasta encontrar suelo pisable (el borde mismo no se pisa).
+   */
+  shore(random: RandomSource): { x: number; y: number } | null {
+    const ex = this.world.exploration;
+    const sides: { cx: number; cy: number; dx: number; dy: number }[] = [];
+    for (const { cx, cy } of ex.list()) {
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) if (!ex.isRevealed(cx + dx, cy + dy)) sides.push({ cx, cy, dx, dy });
+    }
+    for (let n = 0; n < 20 && sides.length; n++) {
+      const side = sides[Math.floor(random.next() * sides.length)];
+      const along = Math.floor(random.next() * C);
+      for (let depth = EDGE; depth < EDGE + 10; depth++) {
+        // Desde el lado que da al vacío hacia el centro del chunk
+        const ci = side.dx === 1 ? C - 1 - depth : side.dx === -1 ? depth : along;
+        const cj = side.dy === 1 ? C - 1 - depth : side.dy === -1 ? depth : along;
+        const gx = side.cx * C + ci, gy = side.cy * C + cj;
+        if (this.walkable(gx, gy)) return { x: gx + 0.5, y: gy + 0.5 };
+      }
+    }
+    return null;
   }
 
   // ── Utilidades ──

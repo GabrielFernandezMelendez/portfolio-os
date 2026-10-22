@@ -1,6 +1,7 @@
 import { Diet } from '../models/plant.model';
 import { MaterialId } from '../models/material.model';
 import { SeasonId } from '../models/time.model';
+import { RandomSource } from './random-source.port';
 
 /** Lo que se ha comido un animal de una vez */
 export interface Meal {
@@ -46,4 +47,8 @@ export interface FaunaWorld {
   flooded(gx: number, gy: number): boolean;
   /** Comida de toda la isla para estas dietas (para la capacidad de cada especie) */
   totalFood(diets: readonly Diet[], now: number, season: SeasonId): number;
+  /** Chunks descubiertos de la isla (para saber cuántos grupos caben) */
+  islandChunks(): number;
+  /** Una celda pisable junto a la orilla de la isla (por donde llegan y se van los animales), o null */
+  shore(random: RandomSource): { readonly x: number; readonly y: number } | null;
 }

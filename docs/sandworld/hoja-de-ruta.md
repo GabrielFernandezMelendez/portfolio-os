@@ -20,14 +20,16 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 | 4D3 | Vista de lejos: una moneda por manada (cara de la especie y cuántos son) a zoom ×1 y ×1,5; tocarla abre la ficha de la guía |
 | 4D4 | Correr desde la vista de moneda: corre toda la manada; 75 % juntos y 25 % se separan, que luego quizá encuentran a los suyos |
 | 4E | Segunda especie: el conejo (madrigueras, vida nocturna, cría por temporada con camadas de 2 a 7, quedarse quieto o correr a la madriguera, zigzag, jóvenes que fundan colonias, enfermedad, arenas contra la madriguera) |
+| 4F | Tercera especie y primer depredador: el lobo (olfato de hasta 2 islas, acecho y persecución por tiradas, presas débiles antes, plantar cara, carroña, viajes de caza, carne a los lobeznos con relevos, aullido, cría solo de la pareja dominante, cueva de roca natural o guarida de ramas). Refugios que se tapan y hunden por cantidad y tiempo (la cueva de roca solo se tapa) |
+| 4G | Equilibrio: llegadas y marchas naturales por la orilla según lo que cabe en la isla (cada 3 días, tope de 1 a 2 grupos por chunk), manadas hambrientas que se van, memoria de agua y comida y búsqueda cada vez más lejos, crías de refugio que maman cuando la madre vuelve, ciervo con gemelos al 40 % y vida de 4 a 7 años |
 
 ## Ahora
 
-- Siguiente especie (propuesta: el lobo, el primer depredador; investigar antes con Dwarf Fortress y RimWorld).
+- Siguiente especie (por proponer tras validar el equilibrio del 2×2; investigar antes con Dwarf Fortress y RimWorld).
 
 ## Después (fase 4)
 
-- Más especies, una a una: ciervo y conejo hechos → lobo → … hasta ~20.
+- Más especies, una a una: ciervo, conejo y lobo hechos → … hasta ~20.
   Orden recomendado: presa pequeña que compite por la hierba (conejo) y luego el depredador (lobo), que trae
   el riesgo de que una manada pequeña o dispersa sea cazada.
 - Panel de Equilibrio con la densidad de cada especie.

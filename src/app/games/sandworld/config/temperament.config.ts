@@ -31,6 +31,8 @@ export const TEMPERAMENTS: Readonly<Record<string, Temperament>> = {
     lightning: { reaction: 'flee', fear: 1, radius: 10, avoidHours: 48 },
     thunder: { reaction: 'startle', fear: 0.3, radius: Infinity },
     corpse: { reaction: 'avoid', fear: 0.2, radius: 4, avoidHours: 24 },
+    predator: { reaction: 'flee', fear: 0.9, radius: 10, avoidHours: 48 },
+    howl: { reaction: 'startle', fear: 0.3, radius: Infinity },
   },
   // El conejo: nervioso, poco curioso (lo nuevo le asusta antes que interesarle) y de alcance corto
   rabbit: {
@@ -44,6 +46,23 @@ export const TEMPERAMENTS: Readonly<Record<string, Temperament>> = {
     lightning: { reaction: 'flee', fear: 1, radius: 8, avoidHours: 48 },
     thunder: { reaction: 'startle', fear: 0.4, radius: Infinity },
     corpse: { reaction: 'avoid', fear: 0.3, radius: 3, avoidHours: 24 },
+    predator: { reaction: 'flee', fear: 0.95, radius: 8, avoidHours: 24 },
+    howl: { reaction: 'startle', fear: 0.35, radius: Infinity },
+  },
+  // El lobo: solo le asustan el fuego y los rayos; los cadáveres son comida; curioso con el agua nueva
+  wolf: {
+    fire: { reaction: 'flee', fear: 1, radius: 10, avoidHours: 48 },
+    sandFall: { reaction: 'startle', fear: 0.5, radius: 6, avoidHours: 3 },
+    dig: { reaction: 'startle', fear: 0.35, radius: 5 },
+    spring: { reaction: 'curious', fear: 0.2, radius: 10 },
+    heat: { reaction: 'avoid', fear: 0.3, radius: 4, avoidHours: 12 },
+    frost: { reaction: 'startle', fear: 0.2, radius: 4 },
+    glow: { reaction: 'curious', fear: 0.1, radius: 8 },
+    lightning: { reaction: 'flee', fear: 0.9, radius: 10, avoidHours: 24 },
+    thunder: { reaction: 'startle', fear: 0.2, radius: Infinity },
+    corpse: { reaction: 'ignore', fear: 0, radius: 0 },
+    predator: { reaction: 'ignore', fear: 0, radius: 0 },
+    howl: { reaction: 'ignore', fear: 0, radius: 0 },
   },
 };
 

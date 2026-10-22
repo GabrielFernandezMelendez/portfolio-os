@@ -418,6 +418,12 @@ export class SandworldService implements OnDestroy {
         case 'burrow': tell(n, `burrow.${n.what}`, n.what === 'dug' ? 4 : 7); break;
         case 'outbreak': tell(n, 'outbreak', 9, { name: n.name }); break;
         case 'dispersed': tell(n, 'dispersed', 4, { name: n.name }); break;
+        case 'killed': tell(n, 'killed', 8, { name: n.name, prey: `@species.${SPECIES_DEFS[n.prey].key}` }); break;
+        case 'repelled': tell(n, 'repelled', 6, { name: n.name, prey: `@species.${SPECIES_DEFS[n.prey].key}` }); break;
+        case 'howl': tell(n, 'howl', 3); break;
+        case 'trip': tell(n, 'trip', 5); break;
+        case 'leaving': tell(n, 'leaving', 7, { count: n.count }); break;
+        case 'left': tell(n, 'left', 5); break;
         case 'died': tell(n, `died.${n.cause}`, 6, { name: n.name }); break;
         case 'herdSplit': tell(n, 'herdSplit', 5); break;
         case 'hunger': tell(n, 'hunger', 8); break;
@@ -630,7 +636,9 @@ export class SandworldService implements OnDestroy {
         const C = WORLD.CELLS, gx = c.cx * C + (k % C), gy = c.cy * C + Math.floor(k / C);
         const m = this.faunaWorld.materialAt(gx, gy);
         if (s.refuge && (m === null || !s.refuge.digIn.includes(m))) return false;
-        return this.faunaWorld.walkable(gx, gy) && this.faunaWorld.foodAt(gx, gy, s.diets, new Set(), now, season) > 0.05;
+        // Un depredador no busca pasto: le basta un sitio pisable (sus presas ya irá a olerlas)
+        if (!this.faunaWorld.walkable(gx, gy)) return false;
+        return !!s.predator || this.faunaWorld.foodAt(gx, gy, s.diets, new Set(), now, season) > 0.05;
       }, 4);
       if (!at) continue;
       this.fauna.spawnHerd(s.key, at.gx + 0.5, at.gy + 0.5, now, !!s.refuge);
@@ -679,6 +687,7 @@ export class SandworldService implements OnDestroy {
       case 'rabbitLitter': this.fauna.debugBirths('rabbit', this.engine.time.totalMinutes); return;
       case 'rabbitOutbreak': this.fauna.debugOutbreak('rabbit', this.engine.time.totalMinutes); this.reportFauna(); return;
       case 'findBurrow': return this.debugFindBurrow();
+      case 'wolfPack': return this.debugHerd('wolf');
       case 'drainLife':
         if (this.physics.fire.drainLife() > 0) this.log({ type: 'world', key: 'chronicle.fire.drained', priority: 6 });
         return;
