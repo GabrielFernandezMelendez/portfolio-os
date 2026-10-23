@@ -144,6 +144,8 @@ export class FaunaSystem {
   private readonly lastSeen = new Map<number, number>();
   private readonly ateFavouriteAt = new Map<number, number>();
   private hungerToldDay = -1;
+  /** Desde cuándo está solo cada animal de especie que no vive sola (`keepMin`), para irse si no encuentra grupo */
+  private readonly loneSince = new Map<number, number>();
   /** Plantas que cada especie ya ha comido alguna vez ("especie:planta") */
   private readonly eaten = new Set<string>();
 
@@ -621,8 +623,18 @@ export class FaunaSystem {
       const dx = a.x - crowd.x, dy = a.y - crowd.y, d = Math.hypot(dx, dy) || 1;
       return this.walkTo(a, a.x + (dx / d) * personal, a.y + (dy / d) * personal, now);
     }
-    // Solo: busca otra manada a la vista
-    if (members.length === 1 && this.random.next() < 0.1) this.tryJoin(a, s, now);
+    // Solo: busca otra manada a la vista; si su especie no vive sola (lobo), va a buscar un grupo pequeño de lejos
+    if (members.length === 1) {
+      if (this.random.next() < 0.1 && this.tryJoin(a, s, now)) return;
+      const pack = this.smallPackNear(a, s);
+      if (pack) {
+        if (a.action !== 'walk' || Math.hypot(a.tx - pack.x, a.ty - pack.y) > 3) {
+          if (a.action !== 'walk') write(a, 'seekPack', now);
+          this.walkTo(a, pack.x, pack.y, now);
+        }
+        return;
+      }
+    }
     // A veces se va por su cuenta a ver mundo (de día, tranquilo y sin tener que apiñarse); antes que picar algo
     // más aquí, que con hierba de sobra se pasaría el día comiendo en el mismo sitio
     if (!a.roam && !a.strayed && range > 0 && anchor && !huddle && !gather && this.random.next() < ROAM_CHANCE && this.startRoam(a, s, anchor, range, now, t.season)) return;
@@ -1679,7 +1691,8 @@ export class FaunaSystem {
       if (!this.nursling(k, s, now)) continue;
       const mum = this.animals.find(m => m.id === k.mother && m.herd === k.herd);
       if (!mum) continue;
-      if ((k.inside !== null && mum.inside === k.inside) || Math.hypot(mum.x - k.x, mum.y - k.y) < 3) {
+      // Junto a la guarida cuenta (la loba duerme a la entrada, a unas celdas de los cachorros)
+      if ((k.inside !== null && mum.inside === k.inside) || Math.hypot(mum.x - k.x, mum.y - k.y) < Math.max(3, s.herd.cohesion)) {
         k.nursedAt = now;
         k.satiety = k.hydration = 1;
       }
@@ -1725,7 +1738,11 @@ export class FaunaSystem {
   private lostAtNight(a: Animal, s: SpeciesDef, now: number): void {
     let outcome: 'back' | 'joined' | 'rejected' | 'alone';
     a.strayed = 0;
-    if (this.random.next() < RETURN_CHANCE) {
+    // Los que no viven solos (lobo) encuentran a los suyos por el olfato (y el aullido) si están a su alcance:
+    // una cacería larga no parte la manada
+    const bed = this.herds.get(a.herd)?.bed;
+    const smells = !!s.keepMin && !!bed && Math.hypot(a.x - bed.x, a.y - bed.y) <= s.senses.smell * ISLAND;
+    if (smells || this.random.next() < RETURN_CHANCE) {
       outcome = 'back';
       write(a, 'nightAlone', now, undefined, true);
     } else {
@@ -1754,7 +1771,9 @@ export class FaunaSystem {
     }
     if (!best) return null;
     const old = a.herd;
-    if (this.random.next() < WELCOME_CHANCE) {
+    // Un grupo de los que no viven solos que se ha quedado pequeño acoge casi siempre: le hace falta
+    const small = s.keepMin && this.members(best.herd).length < s.herd.min;
+    if (this.random.next() < (small ? s.keepMin!.welcome : WELCOME_CHANCE)) {
       a.herd = best.herd;
       write(a, 'joinedGood', now, undefined, true);
       if (!this.members(old).length) this.herds.delete(old);
@@ -1855,7 +1874,9 @@ export class FaunaSystem {
         this.herds.delete(h.id);
         continue;
       }
-      if (members.length <= s.herd.max || this.nestsFull(s)) continue;
+      // Las crías no cuentan: una camada no parte la manada (la madre se iría con ellas lejos de la guarida y morirían)
+      const grown = members.filter(m => ageDays(m, now) >= s.youngDays).length;
+      if (grown <= s.herd.max || this.nestsFull(s)) continue;
       const leaving = splitOff(members, s, now);
       if (!leaving.length) continue;
       const angle = this.random.next() * Math.PI * 2;
@@ -1979,11 +2000,15 @@ export class FaunaSystem {
       if (s.predator) this.planTrips(s, now);
       // Manada de depredadores más grande de lo que dan las presas: los jóvenes se van antes a buscar territorio
       if (s.predator?.shareKill) this.packToPrey(s, capacity, now);
+      // Solos que no encuentran grupo: pasados unos días se van de la isla en vez de morir de hambre solos
+      if (s.keepMin) this.lonesLeave(all, s, now);
       // Jóvenes que se hacen adultos: algunos se van a fundar su propia manada
       if (s.dispersal) {
         for (const a of all) {
           const age = ageDays(a, now);
           if (age < s.adultDays || age >= s.adultDays + 1 || this.members(a.herd).length < 2 || this.nestsFull(s)) continue;
+          // Los que no viven solos no dejan a su grupo por debajo del mínimo
+          if (s.keepMin && this.members(a.herd).filter(m => ageDays(m, now) >= s.youngDays).length <= s.herd.min) continue;
           if (this.random.next() >= s.dispersal[a.sex]) continue;
           this.disperse(a, s, now);
         }
@@ -2255,10 +2280,12 @@ export class FaunaSystem {
   private packToPrey(s: SpeciesDef, capacity: number, now: number): void {
     const herds = this.groupsOf(s.id);
     if (!herds.length) return;
-    const limit = Math.max(2, Math.min(s.herd.max, Math.floor(capacity / herds.length)));
+    // Nunca por debajo de su mínimo (`keepMin`: 3 lobos); con pocas presas pasan hambre juntos
+    const limit = Math.max(s.keepMin ? s.herd.min : 2, Math.min(s.herd.max, Math.floor(capacity / herds.length)));
     for (const h of herds) {
       const members = this.members(h.id);
-      if (members.length <= limit) continue;
+      // Cuentan los destetados: las crías aún no cazan (y si se fuera un adulto por ellas, se quedarían sin quien las cuide)
+      if (members.filter(m => ageDays(m, now) >= s.youngDays).length <= limit) continue;
       const leader = leaderOf(members, s, now);
       const young = members
         .filter(m => m !== leader && m.dueAt === null && ageDays(m, now) >= s.youngDays && m.inside === null)
@@ -2268,6 +2295,42 @@ export class FaunaSystem {
       // Sin presas para uno más en toda la isla: no se queda a cazar solo, se va de la isla
       const herd = this.herds.get(young.herd);
       if (herd && !herd.leaving && this.animals.filter(a => a.species === s.id).length > capacity) this.startLeaving(herd, s, now);
+    }
+  }
+
+  /**
+   * El grupo pequeño de los suyos (de menos de `herd.min`, también otro solitario) más cercano a su olfato
+   * (`keepMin.seekIslands`): adonde va un solitario de especie que no vive sola. Así se forman manadas nuevas.
+   */
+  private smallPackNear(a: Animal, s: SpeciesDef): { x: number; y: number } | null {
+    if (!s.keepMin || a.inside !== null || this.herds.get(a.herd)?.leaving) return null;
+    let best: { x: number; y: number; d: number } | null = null;
+    for (const h of this.herds.values()) {
+      if (h.id === a.herd || h.id === a.leftHerd || h.species !== a.species || h.leaving) continue;
+      const members = this.members(h.id);
+      if (!members.length || members.length >= s.herd.min) continue;
+      const c = centre(members)!;
+      const d = Math.hypot(c.x - a.x, c.y - a.y);
+      if (d <= s.keepMin.seekIslands * ISLAND && (!best || d < best.d)) best = { x: c.x, y: c.y, d };
+    }
+    return best;
+  }
+
+  /** Una vez al día: el adulto que lleva `keepMin.loneLeaveDays` solo puede irse de la isla (tirada `loneLeave`) */
+  private lonesLeave(all: Animal[], s: SpeciesDef, now: number): void {
+    const k = s.keepMin!;
+    for (const a of all) {
+      const h = this.herds.get(a.herd);
+      if (!h || h.leaving || this.members(h.id).length > 1 || ageDays(a, now) < s.youngDays) {
+        this.loneSince.delete(a.id);
+        continue;
+      }
+      const since = this.loneSince.get(a.id);
+      if (since === undefined) this.loneSince.set(a.id, now);
+      else if ((now - since) / DAY >= k.loneLeaveDays && this.random.next() < k.loneLeave) {
+        this.loneSince.delete(a.id);
+        this.startLeaving(h, s, now);
+      }
     }
   }
 
@@ -2331,6 +2394,7 @@ export class FaunaSystem {
   }
 
   private die(a: Animal, cause: DeathCause, now: number): void {
+    this.loneSince.delete(a.id);
     const i = this.animals.indexOf(a);
     if (i < 0) return;
     this.animals.splice(i, 1);

@@ -28,6 +28,8 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 ## Ahora
 
 - Probar el equilibrio con las 6 especies (producto mínimo viable) y pasar a la fase 5.
+- **Sentidos comunes (vista y oído)**: distancias de alerta y de huida, acecho con sigilo y estampida al ver o oír
+  cazar a uno de los suyos. En propuesta, con mockup antes del código.
 
 ## Después (fase 4)
 

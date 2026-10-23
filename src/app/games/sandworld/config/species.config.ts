@@ -180,11 +180,16 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       collapseDeath: 0.5, floodEscape: 0.6, drownPerHour: 0.3, unblock: 0.6,
     },
     dispersal: { male: 0.5, female: 0.35 },
+    // Manada de 3 como mínimo: los solitarios buscan una pequeña (hasta 2 islas) y casi siempre los acogen, como en
+    // Denali, donde es habitual que una manada acepte lobos sin parentesco; el que sigue solo se va de la isla
+    keepMin: { seekIslands: 2, welcome: 0.85, loneLeaveDays: 3, loneLeave: 0.4 },
     // De 1 a 2 manadas en un 2×2. De fuera solo llegan si no queda ningún lobo y les atrae el olor de la carroña
     // (la segunda manada nace aquí: jóvenes que fundan la suya). Con hambre de verdad, se van antes de morir
     // De fuera llega una pareja (a veces con un joven): una manada de 5 no se sostiene en una isla pequeña
     migration: {
       arrive: 0.3, groupsPerChunk: [0.25, 0.5], crowdLeave: 0.3, hungryLeave: 0.5, onlyIfAbsent: true, carrionLure: 3,
+      // La loba que llega en primavera (entre el celo de invierno y los partos) viene preñada a menudo
+      pregnant: 0.6,
       founders: [{ sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }], extraYoung: [1, 3],
     },
     winterAppetite: 1.2,

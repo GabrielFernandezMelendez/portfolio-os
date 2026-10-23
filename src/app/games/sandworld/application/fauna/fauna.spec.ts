@@ -1396,3 +1396,70 @@ describe('Fauna: manada según las presas y ciervas que llegan preñadas', () =>
     expect(summer.every(d => d.dueAt === null)).toBe(true);
   });
 });
+
+describe('Fauna: la manada de lobos no baja de 3', () => {
+  it('con pocas presas la manada se recorta, pero nunca por debajo de 3', () => {
+    for (let seed = 1; seed <= 4; seed++) {
+      const { island, fauna } = setup(16, 0.8, seed);
+      island.chunks = 4;
+      island.coast = { x: 40.5, y: 40.5 };
+      const t0 = at(Season.SUMMER, 2);
+      fauna.spawnHerd('deer', 20, 20, t0, false, [{ sex: 'female', age: 'adult' }]);
+      const pack = fauna.spawnHerd('wolf', 40, 40, t0, true, [
+        { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' },
+      ]);
+      for (const w of pack) w.satiety = 1;
+      const herd = pack[0].herd;
+      // Cada día: los que siguen en la manada (sin contar a los muertos) no bajan de 3
+      for (let d = 0; d < 6; d++) {
+        run(fauna, island, t0 + d * DAY, DAY);
+        const dead = pack.filter(w => w.diedAt !== null).length;
+        const left = fauna.members(herd).filter(w => w.diedAt === null).length;
+        // (o se va toda la manada junta, con hambre)
+        if (left > 0) expect(left + dead).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
+  it('un lobo solo va a buscar una manada pequeña de lejos y casi siempre lo acogen', () => {
+    let joined = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const { island, fauna } = setup(16, 0.8, seed);
+      island.chunks = 4;
+      const t0 = at(Season.SUMMER, 2);
+      fauna.spawnHerd('deer', 20, 20, t0, false);
+      const pair = fauna.spawnHerd('wolf', 15, 15, t0, true, [{ sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }]);
+      const [lone] = fauna.spawnHerd('wolf', 50, 50, t0, true, [{ sex: 'male', age: 'adult' }]);
+      for (const w of [...pair, lone]) w.satiety = 1;
+      run(fauna, island, t0, 2 * DAY);
+      if (lone.diedAt === null && lone.herd === pair[0].herd) joined++;
+    }
+    expect(joined).toBeGreaterThanOrEqual(4);
+  });
+
+  it('el que sigue solo (sin manada en la isla) acaba yéndose en vez de morir solo', () => {
+    let gone = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const { island, fauna } = setup(16, 0.8, seed);
+      island.coast = { x: 30.5, y: 30.5 };
+      const t0 = at(Season.SUMMER, 2);
+      fauna.spawnHerd('deer', 20, 20, t0, false);
+      const [lone] = fauna.spawnHerd('wolf', 30, 30, t0, true, [{ sex: 'male', age: 'adult' }]);
+      lone.satiety = 1;
+      run(fauna, island, t0, 10 * DAY);
+      if (!fauna.animals.includes(lone) && lone.diedAt === null) gone++;
+    }
+    expect(gone).toBeGreaterThanOrEqual(4);
+  });
+
+  it('la loba que llega en primavera suele venir preñada', () => {
+    let pregnant = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      const { fauna } = setup(16, 0.8, seed);
+      const pack = fauna.spawnHerd('wolf', 30, 30, at(Season.SPRING, 2), false, [{ sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }], true);
+      if (pack.some(w => w.dueAt !== null)) pregnant++;
+    }
+    expect(pregnant).toBeGreaterThanOrEqual(2);
+    expect(pregnant).toBeLessThanOrEqual(7);
+  });
+});

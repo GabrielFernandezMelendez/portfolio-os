@@ -123,6 +123,20 @@ export interface SpeciesDef {
   /** Jóvenes que se van de su manada al hacerse adultos (y fundan otra), por sexo */
   readonly dispersal?: { readonly male: number; readonly female: number };
   /**
+   * Especies que no viven solas (lobo) [PROPUESTA]: el grupo no baja de `herd.min` por falta de presas ni porque se
+   * vayan los jóvenes, y el que se queda solo busca un grupo pequeño de los suyos. De noche, el que se aleja encuentra
+   * a los suyos por el olfato si están a su alcance (`senses.smell`): no se pierde.
+   * - `seekIslands`: hasta dónde huele un grupo pequeño (de menos de `herd.min`) y va a buscarlo.
+   * - `welcome`: un grupo pequeño acoge al que llega con esta probabilidad (más que `WELCOME_CHANCE`: les hace falta).
+   * - `loneLeaveDays` y `loneLeave`: pasados esos días solo y sin grupo, cada día puede irse de la isla (tirada).
+   */
+  readonly keepMin?: {
+    readonly seekIslands: number;
+    readonly welcome: number;
+    readonly loneLeaveDays: number;
+    readonly loneLeave: number;
+  };
+  /**
    * Llegadas y marchas naturales [PROPUESTA]. Sin este campo, la especie no llega sola.
    * - `arrive`: cada pocos días, si la isla puede alimentar a más de su especie, puede llegar un grupo por la
    *   orilla (más cuanto más sitio hay).

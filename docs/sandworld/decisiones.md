@@ -127,8 +127,20 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   comido lleva comida (regurgita) al joven más hambriento que aún no caza; desde la mitad de su edad de cría los
   jóvenes pueden acompañar una cacería. Los goblins cazan menos lobos (preferencia 0,2).
 - **Manada según las presas** (lobo): lo que la isla puede alimentar de lobos, repartido entre sus manadas (como
-  mínimo la pareja). Si una manada se pasa, cada día se va el más joven de los destetados; si no hay presas para uno
+  mínimo 3). Si una manada se pasa, cada día se va el más joven de los destetados; si no hay presas para uno
   más en la isla, se va de la isla.
+- **Manada de 3 como mínimo** (común, parámetro `keepMin`; ahora solo el lobo): la manada no baja de 3 por falta de
+  presas ni porque se vayan los jóvenes (con pocas presas pasan hambre juntos). Un solitario huele un grupo pequeño de
+  los suyos (menos de 3, también otro solitario) hasta a 2 islas y va a buscarlo; lo acogen con un 85 % (los lobos de
+  verdad aceptan a menudo lobos sin parentesco). El que lleva 3 días solo se va de la isla (40 % cada día) en vez de
+  morir solo. Así el jugador puede defender a una manada pequeña con las arenas.
+  Los que no viven solos encuentran a los suyos de noche por el olfato (si están a su alcance): una cacería
+  larga no parte la manada.
+- **Las crías no cuentan para el tamaño de la manada** (todas las especies): ni para partirla ni para ajustarla a
+  las presas. Una camada partía la manada y la madre se iba lejos de la guarida. La loba que duerme a la entrada
+  de la guarida (a menos de `herd.cohesion`) cuenta como que amamanta.
+- **Lobas que llegan preñadas**: la que llega en primavera (entre el celo de invierno y los partos) viene preñada con
+  un 60 %. La que llega en invierno cría en el celo normal.
 - **Ciervas que llegan preñadas**: las que llegan entre el celo y los partos (invierno y primavera) vienen preñadas con
   un 60 % y paren en su época: hay crías el primer año.
 - **Temperatura** (escala del mundo 0..1, ~0,2 hiela, ~0,5 templado; 0,1 ≈ 5 °C): la Tierra Quemada viva
