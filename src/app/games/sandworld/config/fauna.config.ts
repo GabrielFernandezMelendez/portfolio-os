@@ -275,3 +275,8 @@ export const SHARE_MARGIN = 0.1;
  */
 export const CORPSE_COLD = 0.3;
 export const CORPSE_COLD_KEEP = 0.75;
+/**
+ * Un cadáver se pudre a sus `corpseDays` (ciervo 3, conejo 2, lobo 3, cuervo 2, humano 3, goblin 1; más con frío):
+ * la carne se echa a perder y solo queda carroña en los huesos (la que pica el cuervo) durante CARRION_DAYS más
+ */
+export const CARRION_DAYS = 2;

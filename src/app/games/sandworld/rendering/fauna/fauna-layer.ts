@@ -1,6 +1,7 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { Animal, Burrow } from '../../domain/models/animal.model';
 import { SPECIES_DEFS } from '../../config/species.config';
+import { CARRION_DAYS } from '../../config/fauna.config';
 import {
   COIN, COMBAT_FX, FAUNA_ANIM, FAUNA_COMBAT, FAUNA_CROUCH, FAUNA_LOD, FAUNA_SMOOTH_MS, SELECT_COLOR, SELECT_HALF_W, SIGNAL_ANIM,
   SPECIES_ART,
@@ -483,7 +484,7 @@ export class FaunaLayer {
     s.sprite.zIndex = s.y + 0.05;
     // Los cadáveres se desvanecen el último día
     if (a.diedAt !== null) {
-      const left = species.corpseDays - (now - a.diedAt - (a.kept ?? 0)) / 1440;
+      const left = species.corpseDays + CARRION_DAYS - (now - a.diedAt - (a.kept ?? 0)) / 1440;
       s.sprite.alpha = Math.max(0, Math.min(1, left));
     } else s.sprite.alpha = 1;
     s.shadow.texture = shadowTexture(Math.round(art.shadow * (art.scale[kind] / art.scale['female'])));

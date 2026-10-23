@@ -121,7 +121,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     id: 2, key: 'wolf', size: 'medium',
     // Carne: presas y carroña; con mucha hambre, bayas
     diets: ['carnivore'], starvingDiets: ['frugivore'],
-    herd: { min: 3, max: 8, cohesion: 5 },
+    // Manada de 5 como mínimo (keepMin)
+    herd: { min: 5, max: 10, cohesion: 5 },
     spacing: { personal: 2, graze: 1.6, huddle: 0.4 },
     // Activo al anochecer y de noche; descansa de día
     activeHours: [[17, 23], [3, 7]], siestaHours: [12, 16],
@@ -150,12 +151,11 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
         // Un goblin despierto es escurridizo; dormido bajo un árbol de día, presa fácil (SLEEP_CATCH_BONUS)
         goblin: { adult: 0.1, young: 0.3, weak: 0.3 },
       },
-      // Cazar en manada compensa: cada compañero suma 0,1 (hasta 4); con hambre se apuntan casi todos (95 %), bien
-      // comidos menos (cuanto más llenos, menos)
-      packBonus: 0.1, packMax: 4, joinHunt: 0.95, snowBonus: 0.15,
-      // En manada: dos juntos al alcanzarla 75 %, tres o más 90 %. Solo cazan solos el 10 % de las veces que tienen
-      // compañeros a mano (si no, llaman al más cercano), y el que llega antes espera a los demás (hasta 40 min)
-      packCatch: [0.75, 0.9], soloHunt: 0.1, gather: { range: 6, wait: 40 },
+      // Cazar en manada compensa: cada compañero suma 0,1 (hasta 4) y se apuntan todos (la loba que amamanta, no)
+      packBonus: 0.1, packMax: 4, joinHunt: 1, packHunt: true, snowBonus: 0.15,
+      // Sale a cazar toda la manada (`packHunt`); de vez en cuando (9,5 %) uno se va solo a escondidas. En manada: dos
+      // juntos al alcanzarla 75 %, tres o más 90 %; el que llega antes espera a los demás (hasta 40 min)
+      packCatch: [0.75, 0.9], soloHunt: 0.095, gather: { range: 6, wait: 40 },
       giveUpAfter: 20, giveUp: 0.7,
       trip: { chance: 0.5, days: [2, 4], islands: 2 },
       carry: { tire: 2, relay: 0.5 },
@@ -200,7 +200,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       arrive: 0.3, groupsPerChunk: [0.25, 0.5], crowdLeave: 0.3, hungryLeave: 0.1, hungryDays: 3, returnAfter: [20, 30], onlyIfAbsent: true, carrionLure: 3,
       // La loba que llega en primavera (entre el celo de invierno y los partos) viene preñada a menudo
       pregnant: 0.6,
-      founders: [{ sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }], extraYoung: [1, 3],
+      // Llega una manada de 5 a 7: la pareja, un adulto más y de 2 a 4 jóvenes
+      founders: [{ sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }], extraAdults: [1, 1], extraYoung: [2, 4],
     },
     winterAppetite: 1.2,
     founders: [

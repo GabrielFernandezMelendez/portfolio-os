@@ -180,7 +180,7 @@ export interface Animal {
   leftHerd: number | null;
   /** Depredador: la presa que está cazando (acecho o persecución) y desde cuándo, o null */
   /** Caza: a quién, en qué fase y desde cuándo; `crouch`: acecha agachado y despacio (ya está a la vista de su presa) */
-  hunt: { target: number; phase: 'stalk' | 'chase'; since: number; crouch?: boolean } | null;
+  hunt: { target: number; phase: 'stalk' | 'chase'; since: number; crouch?: boolean; solo?: boolean } | null;
   /** Frío y calor acumulados (0 = a gusto; desde 1, hipotermia o golpe de calor: pierde vida) */
   cold: number;
   heat: number;

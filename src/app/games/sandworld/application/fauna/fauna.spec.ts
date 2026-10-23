@@ -1014,7 +1014,7 @@ describe('Fauna: topes y llegadas por especie', () => {
 });
 
 describe('Fauna: llegada natural del lobo', () => {
-  it('de fuera llega una pareja con 1 a 3 jóvenes, atraída por la carroña, no una manada entera', () => {
+  it('de fuera llega una manada mínima (la pareja, un adulto más y 2 a 4 jóvenes: 5 a 7), atraída por la carroña', () => {
     const sizes: number[] = [];
     for (let seed = 1; seed <= 6; seed++) {
       const { island, fauna } = setup(24, 0.8, seed);
@@ -1033,7 +1033,7 @@ describe('Fauna: llegada natural del lobo', () => {
       if (arrived) sizes.push(arrived);
     }
     expect(sizes.length).toBeGreaterThan(0);
-    expect(sizes.every(n => n >= 3 && n <= 5)).toBe(true);
+    expect(sizes.every(n => n >= 5 && n <= 7)).toBe(true);
   }, 60000);
 });
 
@@ -1383,10 +1383,11 @@ describe('Fauna: manada según las presas y ciervas que llegan preñadas', () =>
       fauna.spawnHerd('deer', 20, 20, t0, false, [{ sex: 'female', age: 'adult' }]);
       const pack = fauna.spawnHerd('wolf', 40, 40, t0, true, [
         { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' },
+        { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' },
       ]);
       for (const w of pack) w.satiety = 1;
       run(fauna, island, t0, 4 * DAY);
-      if (fauna.members(pack[0].herd).length < 5) shrank++;
+      if (fauna.members(pack[0].herd).length < 7) shrank++;
     }
     expect(shrank).toBeGreaterThanOrEqual(3);
   });
@@ -1409,8 +1410,8 @@ describe('Fauna: manada según las presas y ciervas que llegan preñadas', () =>
   });
 });
 
-describe('Fauna: la manada de lobos no baja de 3', () => {
-  it('con pocas presas la manada se recorta, pero nunca por debajo de 3', () => {
+describe('Fauna: la manada de lobos no baja de 5', () => {
+  it('con pocas presas la manada se recorta, pero nunca por debajo de 5', () => {
     for (let seed = 1; seed <= 4; seed++) {
       const { island, fauna } = setup(16, 0.8, seed);
       island.chunks = 4;
@@ -1419,16 +1420,17 @@ describe('Fauna: la manada de lobos no baja de 3', () => {
       fauna.spawnHerd('deer', 20, 20, t0, false, [{ sex: 'female', age: 'adult' }]);
       const pack = fauna.spawnHerd('wolf', 40, 40, t0, true, [
         { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' },
+        { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' },
       ]);
       for (const w of pack) w.satiety = 1;
       const herd = pack[0].herd;
-      // Cada día: los que siguen en la manada (sin contar a los muertos) no bajan de 3
+      // Cada día: los que siguen en la manada (sin contar a los muertos) no bajan de 5
       for (let d = 0; d < 6; d++) {
         run(fauna, island, t0 + d * DAY, DAY);
         const dead = pack.filter(w => w.diedAt !== null).length;
         const left = fauna.members(herd).filter(w => w.diedAt === null).length;
         // (o se va toda la manada junta, con hambre)
-        if (left > 0) expect(left + dead).toBeGreaterThanOrEqual(3);
+        if (left > 0) expect(left + dead).toBeGreaterThanOrEqual(5);
       }
     }
   });
@@ -1677,5 +1679,40 @@ describe('Fauna: reparto de la presa en la manada', () => {
     // Sin nadie con más hambre esperando, sigue comiendo
     hungry.satiety = 0.65;
     expect(f.yieldsShare(fed, wolf, deer, t0)).toBe(false);
+  });
+});
+
+describe('Fauna: cadáveres que se pudren y el lobo que caza a escondidas', () => {
+  it('pasados sus días el cadáver se pudre (solo queda carroña en los huesos) y luego desaparece', () => {
+    const { island, fauna } = setup(16, 0.8, 1);
+    const t0 = at(Season.SUMMER, 2);
+    const [deer] = fauna.spawnHerd('deer', 30, 30, t0, false, [{ sex: 'female', age: 'adult' }]);
+    (fauna as unknown as { die(a: unknown, c: string, n: number): void }).die(deer, 'oldAge', t0);
+    const full = deer.meat;
+    run(fauna, island, t0, 3.5 * DAY);
+    expect(fauna.corpses.includes(deer)).toBe(true);
+    expect(deer.meat).toBeLessThan(full * 0.2);
+    run(fauna, island, t0 + 3.5 * DAY, 2 * DAY);
+    expect(fauna.corpses.includes(deer)).toBe(false);
+  });
+
+  it('el que caza solo y la caza se la come él: la manada no se entera (no hay banquete)', () => {
+    let secret = 0;
+    for (let seed = 1; seed <= 30 && !secret; seed++) {
+      const { fauna } = setup(16, 0.8, seed);
+      const t0 = at(Season.SUMMER, 2);
+      const [deer] = fauna.spawnHerd('deer', 30, 30, t0, false, [{ sex: 'female', age: 'young' }]);
+      const pack = fauna.spawnHerd('wolf', 31, 30, t0, false, [{ sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'male', age: 'adult' }]);
+      const w = pack[2];
+      w.x = deer.x + 0.5; w.y = deer.y;
+      w.hunt = { target: deer.id, phase: 'chase', since: t0, solo: true };
+      (fauna as unknown as { strike(a: unknown, s: unknown, p: unknown, n: number, amb: boolean): void }).strike(w, SPECIES_BY_KEY['wolf'], deer, t0, false);
+      if (deer.diedAt !== null) {
+        secret++;
+        expect(fauna.herds.get(w.herd)?.feast ?? null).toBeNull();
+        expect(w.diary.some(e => e.key === 'secretMeal')).toBe(true);
+      } else expect(w.hunt).toBeNull();
+    }
+    expect(secret).toBe(1);
   });
 });

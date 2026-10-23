@@ -184,6 +184,12 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   75 %, 3 o más 90 % (como en Yellowstone: más de 4 no cazan mejor).
 - **Reparto en la presa**: la pareja dominante come hasta llenarse; los demás paran al nivel del que tiene más hambre
   y espera su parte. La manada recuerda su presa y vuelve a comer días después; con frío el cadáver se conserva.
+- **Manada de lobos de 5 como mínimo** y caza siempre en manada (toda, menos la loba que amamanta). Un 9,5 % de las
+  veces uno se va solo a escondidas: si la caza, se la come él y la manada no se entera; si falla, huye y vuelve.
+- **Fundar una manada o irse**: el joven que deja su manada solo se queda si la isla puede alimentar otra manada mínima
+  (5) además de los lobos que ya hay; entonces busca pareja (macho y hembra) o una manada pequeña. Si no, se va.
+- **Cadáveres que se pudren**: a sus días (goblin 1, conejo y cuervo 2, ciervo, lobo y humano 3; con frío hasta 4 veces
+  más) la carne se echa a perder y solo queda carroña en los huesos para el cuervo, 2 días más.
 - **El lobo no se va enseguida**: solo tras 3 días seguidos de hambre de verdad y con un 10 % al día; si desaparecen
   de la isla, pueden volver lobos de fuera a los 20-30 días (`migration.returnAfter`; el resto, 60-80).
 - **La sed va antes que cazar y que dormir** (común): con sed y agua a su alcance beben antes; la sed de verdad

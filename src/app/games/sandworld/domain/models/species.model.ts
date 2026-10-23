@@ -342,8 +342,13 @@ export interface PredatorDef {
   readonly packMax: number;
   /** Cazando en manada: probabilidad de cazarla [dos juntos, tres o más] (si sale menos, la tirada normal) */
   readonly packCatch?: readonly [number, number];
-  /** Si nadie se apunta a su cacería pero hay compañeros a mano: probabilidad de cazar solo (si no, llama al más cercano) */
+  /**
+   * Probabilidad de que uno salga a cazar solo, a escondidas de la manada: si la caza, se la come él (la manada no se
+   * entera); si falla, huye y vuelve con los suyos. Si no, caza con la manada
+   */
   readonly soloHunt?: number;
+  /** La manada sale entera a cada cacería (con `joinHunt`), coman lo que coman; sin esto, se apuntan según su hambre */
+  readonly packHunt?: boolean;
   /** Cazan juntos: el que llega antes a `range` celdas de la presa espera agachado a los demás, como mucho `wait` minutos */
   readonly gather?: { readonly range: number; readonly wait: number };
   readonly joinHunt: number;

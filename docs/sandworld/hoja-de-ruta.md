@@ -34,6 +34,7 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 - Ajuste del lobo (caza en manada, pesca tras fallar, camadas según la comida): 4O.
 - Manada que caza junta (90 %), lobos que no se van enseguida y vuelven antes, la sed antes que dormir, vista en Ajustes: 4P.
 - Caza en manada de verdad (llamar al compañero, esperar para saltar juntos), reparto en la presa, cadáveres que el frío conserva: 4Q.
+- Manada mínima de 5 que caza siempre junta, el que caza solo a escondidas, fundar manada o irse, cadáveres que se pudren: 4R.
 
 ## Después (fase 4)
 
