@@ -16,7 +16,7 @@ const id = (key: string) => PLANT_DEFS.find(p => p.key === key)!.id;
 
 /** Bosque llano y seco de verano: hierba y robles en todos los tiles */
 function forest(): { world: World; physics: TerrainPhysics; chunk: ChunkData } {
-  const world = new World(11);
+  const world = new World(11, 1);
   const chunk = world.chunk(0, 0);
   for (let k = 0; k < C * C; k++) {
     chunk.rock[k] = 2; chunk.sediment[k] = 1; chunk.material[k] = Material.SOIL;

@@ -19,6 +19,7 @@ import { World } from './application/world/world';
 import { WORLD } from './domain/models/world.model';
 import { BRUSH_CELLS } from './config/brush.config';
 import { CLOUD_CAMERA_MARGIN, REVEAL_ON_START } from './config/clouds.config';
+import { PLOT } from './config/island.config';
 import { REBAKE_INTERVAL_MS, REBAKE_VISIBLE_MARGIN, REBAKES_PER_FRAME } from './config/physics.config';
 import { POUR_EDGE_BAND, POUR_TAP_SECONDS } from './config/pour.config';
 import { ChunkCoord } from './domain/events/game-events';
@@ -96,6 +97,8 @@ export class SandworldRuntime {
   private brushPoint: { x: number; y: number } | null = null;
   private readonly terrains = new Map<string, TerrainLayer>();
   private readonly reveals: RevealEffect[] = [];
+  /** Chunks descubiertos que esperan a hornearse (uno por frame) */
+  private readonly pendingReveals: ChunkCoord[] = [];
   /** Chunks con el terreno cambiado pendientes de re-hornear, y cuándo se hornearon por última vez */
   private readonly dirty = new Set<string>();
   private readonly lastBake = new Map<string, number>();
@@ -216,11 +219,20 @@ export class SandworldRuntime {
   }
 
   /**
-   * Muestra un chunk recién descubierto: emerge de las nubes y la cámara se desliza hacia él.
+   * Muestra un chunk recién descubierto: emerge de las nubes y la cámara se desliza hacia su parcela.
    * Qué se descubre lo decide la lógica (SandworldService.revealNextChunk). La unión sin costuras
    * entre chunks llega en la fase 7.
    */
   showChunk(cx: number, cy: number): void {
+    // Se hornea en un frame próximo, uno por frame: una parcela son varios chunks y hornearlos juntos daría un tirón
+    if (!this.pendingReveals.some(c => c.cx === cx && c.cy === cy)) this.pendingReveals.push({ cx, cy });
+  }
+
+  /** Un chunk descubierto por frame (ver showChunk) */
+  private revealPending(): void {
+    const next = this.pendingReveals.shift();
+    if (!next) return;
+    const { cx, cy } = next;
     if (!this.clouds || this.terrains.has(chunkKey(cx, cy))) return;
     this.addChunk(cx, cy, true);
     // Los vecinos ya no tienen precipicio por ese lado: sus plantas pueden llegar hasta el borde compartido
@@ -228,8 +240,10 @@ export class SandworldRuntime {
       this.terrains.get(chunkKey(cx + dx, cy + dy))?.layoutPlants(this.engine.time, this.revealed);
     }
     this.camera.setBounds(this.discoveredBounds(CLOUD_CAMERA_MARGIN));
-    const N = WORLD.TILES;
-    const c = isoToWorld(cx * N + N / 2 - 0.5, cy * N + N / 2 - 0.5);
+    // Hacia el centro de su parcela (se descubren sus chunks a la vez)
+    const N = WORLD.TILES, P = PLOT * N;
+    const px = Math.floor(cx / PLOT) * P, py = Math.floor(cy / PLOT) * P;
+    const c = isoToWorld(px + P / 2 - 0.5, py + P / 2 - 0.5);
     this.camera.glideTo(c.x, c.y);
   }
 
@@ -300,6 +314,7 @@ export class SandworldRuntime {
     const dt = ticker.deltaMS;
     this.now += dt;
     // Primero se dibuja lo que cambió en el frame anterior (p. ej. arena recién caída) y después avanza la física
+    this.revealPending();
     this.rebakeDirty();
     this.engine.update(dt);
     // Borde de pantalla: ratón quieto en el borde, o dedo vertiendo en la banda del borde

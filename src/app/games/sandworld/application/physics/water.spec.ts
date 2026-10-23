@@ -14,7 +14,7 @@ const DAY = 1440;
  * `shape` puede modificar alturas: recibe (ci, cj) y devuelve la altura de esa celda.
  */
 function flatIsland(shape?: (ci: number, cj: number) => number): { world: World; chunk: ChunkData } {
-  const world = new World(11);
+  const world = new World(11, 1);
   const chunk = world.chunk(0, 0);
   for (let cj = 0; cj < C; cj++) {
     for (let ci = 0; ci < C; ci++) {
@@ -117,7 +117,7 @@ describe('Agua', () => {
   }, 20000);   // simula semanas de agua: en máquinas lentas pasa de los 5 s por defecto
 
   it('los lagos naturales (bajo el nivel freático) no se convierten en barro', () => {
-    const world = new World(11);
+    const world = new World(11, 1);
     const physics = new TerrainPhysics(world);
     const chunk = world.chunk(0, 0);
     const lakeBed = [...chunk.water].map((w, k) => (w > 0 ? k : -1)).filter(k => k >= 0);

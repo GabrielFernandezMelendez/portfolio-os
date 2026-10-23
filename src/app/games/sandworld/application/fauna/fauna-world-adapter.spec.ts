@@ -14,7 +14,7 @@ const id = (key: string) => PLANT_DEFS.find(p => p.key === key)!.id;
 const NONE = new Set<number>();
 
 function setup() {
-  const world = new World(42);
+  const world = new World(42, 1);
   const chunk = world.chunk(0, 0);
   const adapter = new FaunaWorldAdapter(world, new VegetationSystem(world, new SeededRandom(1)));
   return { world, chunk, adapter };

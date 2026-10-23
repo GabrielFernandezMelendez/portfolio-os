@@ -15,7 +15,7 @@ const at = (chunk: ChunkData, i: number, j: number, key: string): number => chun
 
 /** Isla templada de tierra fértil sin plantas, todo bosque */
 function emptyForest(): { world: World; chunk: ChunkData } {
-  const world = new World(11);
+  const world = new World(11, 1);
   const chunk = world.chunk(0, 0);
   for (let k = 0; k < chunk.water.length; k++) { chunk.water[k] = 0; chunk.material[k] = Material.SOIL; chunk.sediment[k] = 1; chunk.rock[k] = 2; chunk.moisture[k] = 0.5; chunk.cover[k] = 0; }
   chunk.temperature.fill(0.5); chunk.humidity.fill(0.5); chunk.fertility.fill(0.6); chunk.biome.fill(Biome.FOREST);

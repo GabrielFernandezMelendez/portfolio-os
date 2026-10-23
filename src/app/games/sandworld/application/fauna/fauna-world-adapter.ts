@@ -1,3 +1,4 @@
+import { CHUNKS_PER_PLOT } from '../../config/island.config';
 import { ChunkData, PLANT_SLOTS, cellIndex, groundAt, tileIndex } from '../../domain/models/chunk.model';
 import { Material, MaterialId } from '../../domain/models/material.model';
 import { Diet, PlantDef } from '../../domain/models/plant.model';
@@ -239,8 +240,9 @@ export class FaunaWorldAdapter implements FaunaWorld {
     return sum;
   }
 
-  islandChunks(): number {
-    return this.world.exploration.list().length;
+  /** Superficie en parcelas (PLOT × PLOT chunks): los topes de grupos se cuentan por parcela */
+  islandArea(): number {
+    return this.world.exploration.list().length / CHUNKS_PER_PLOT;
   }
 
   /**

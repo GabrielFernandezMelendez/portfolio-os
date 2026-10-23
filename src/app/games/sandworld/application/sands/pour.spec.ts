@@ -8,7 +8,7 @@ import { POUR_DAYS_MAX, POUR_DAYS_MIN, POUR_DWELL_SECONDS, POUR_MAX_DUNE, STROKE
 import { BRUSH_CELLS } from '../../config/brush.config';
 
 const setup = () => {
-  const world = new World(11);
+  const world = new World(11, 1);
   world.chunk(0, 0);
   const physics = new TerrainPhysics(world);
   const queue = new PourQueue(physics, new SeededRandom(5));

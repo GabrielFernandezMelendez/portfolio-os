@@ -10,7 +10,7 @@ import { Chronicle } from './application/chronicle/chronicle';
 import { IndicatorRegistry, IndicatorValue } from './application/indicators/indicator-registry';
 import { registerWorldIndicators } from './application/indicators/world-indicators';
 import { World } from './application/world/world';
-import { nextChunkToReveal } from './application/world/expansion';
+import { nextPlotToReveal } from './application/world/expansion';
 import { TerrainPhysics } from './application/physics/terrain-physics';
 import { Material } from './domain/models/material.model';
 import { WORLD } from './domain/models/world.model';
@@ -145,8 +145,8 @@ export class SandworldService implements OnDestroy {
     }
     if (stored.blood !== undefined) this.blood.set(stored.blood);
 
-    // Generar el chunk inicial antes de registrar indicadores que lo leen
-    this.world.chunk(0, 0);
+    // Generar la parcela inicial antes de registrar indicadores que la leen
+    for (const { cx, cy } of this.world.exploration.list()) this.world.chunk(cx, cy);
     registerWorldIndicators(this.indicators, this.world);
     this.refreshIndicators();
 
@@ -535,16 +535,21 @@ export class SandworldService implements OnDestroy {
   }
 
   /**
-   * Descubre el siguiente chunk bajo las nubes y sube el nivel de la isla.
+   * Descubre la siguiente parcela (PLOT × PLOT chunks) bajo las nubes y sube el nivel de la isla.
    * Hoy lo dispara el botón de prueba de Ajustes; en la fase 7, las reglas de expansión.
    */
   revealNextChunk(): void {
-    const next = nextChunkToReveal(this.world.exploration);
-    if (!next || !this.world.exploration.reveal(next.cx, next.cy)) return;
-    this.world.chunk(next.cx, next.cy);
-    this.physics.chunkRevealed(next.cx, next.cy);
+    // La isla crece de parcela en parcela (config/island.config.ts): se descubren sus chunks a la vez
+    const plot = nextPlotToReveal(this.world.exploration);
+    if (!plot) return;
+    const fresh = plot.filter(c => this.world.exploration.reveal(c.cx, c.cy));
+    if (!fresh.length) return;
+    for (const c of fresh) {
+      this.world.chunk(c.cx, c.cy);
+      this.physics.chunkRevealed(c.cx, c.cy);
+    }
     this.world.level++;
-    this.events.emit('chunkRevealed', next);
+    for (const c of fresh) this.events.emit('chunkRevealed', c);
     this.log({ type: 'world', key: 'chronicle.reveal', params: { level: this.world.level }, priority: 8 });
     this.refreshIndicators();
     this.showIslandLabel();

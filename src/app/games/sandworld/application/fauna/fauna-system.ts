@@ -1,5 +1,6 @@
 import { Animal, AnimalOrder, AnimalSignal, Burrow, DeathCause, Herd, Sex } from '../../domain/models/animal.model';
 import { SpeciesDef } from '../../domain/models/species.model';
+import { CHUNKS_PER_PLOT } from '../../config/island.config';
 import { GameTime, SeasonId, CALENDAR, toGameTime } from '../../domain/models/time.model';
 import { FaunaWorld } from '../../domain/ports/fauna-world.port';
 import { RandomSource } from '../../domain/ports/random-source.port';
@@ -2015,7 +2016,7 @@ export class FaunaSystem {
       }
       // Enfermedad: brota con superpoblación
       const largest = Math.max(0, ...this.groupsOf(s.id).map(h => this.members(h.id).length));
-      const crowd = crowding(s, density, largest, this.groupsOf(s.id).length, this.world.islandChunks());
+      const crowd = crowding(s, density, largest, this.groupsOf(s.id).length, this.world.islandArea());
       const zero = outbreak(all, s, crowd, this.random);
       if (zero) {
         infect(zero, s, now);
@@ -2053,7 +2054,7 @@ export class FaunaSystem {
       if (this.random.next() < leaveChance(s, satiety, health)) this.startLeaving(h, s, now);
     }
     if (t.day % MIGRATION_EVERY_DAYS !== 0) return;
-    const chunks = this.world.islandChunks();
+    const chunks = this.world.islandArea();
     // Especies de más (por encima de su tope): uno de sus grupos puede irse (premia al jugador que equilibra)
     for (const s of SPECIES_DEFS) {
       const own = this.groupsOf(s.id);
@@ -2344,7 +2345,7 @@ export class FaunaSystem {
   }
 
   private islandFull(s: SpeciesDef): boolean {
-    const chunks = this.world.islandChunks();
+    const chunks = this.world.islandArea();
     if (chunks <= 0) return false;
     return this.groupCount() >= groupsCap(chunks, this.random) || (!!s.migration && this.groupsOf(s.id).length >= speciesCap(s, chunks, this.random));
   }
@@ -2480,11 +2481,12 @@ export class FaunaSystem {
         // La carroña que hay ahora (para quien no pica los huesos, sin los restos)
         if (s.predator.carrion > 0.5) for (const c of this.corpses) meat += Math.max(0, c.meat - this.leftovers(c, s));
         // Y si come fruta casi siempre (cuervo), lo que da la vegetación
-        const plants = (s.predator.plantsBelow ?? 0) >= 0.5 ? this.world.totalFood(s.diets, now, season) : 0;
+        const plants = (s.predator.plantsBelow ?? 0) >= 0.5 ? this.world.totalFood(s.diets, now, season) / CHUNKS_PER_PLOT : 0;
         this.capacity.set(s.id, (meat + plants) / (daily * CAPACITY_DAYS));
         continue;
       }
-      this.capacity.set(s.id, this.world.totalFood(s.diets, now, season) / (daily * CAPACITY_DAYS));
+      // La comida de la isla se cuenta por parcela: en una isla más grande caben los mismos animales, más separados
+      this.capacity.set(s.id, this.world.totalFood(s.diets, now, season) / CHUNKS_PER_PLOT / (daily * CAPACITY_DAYS));
     }
   }
 

@@ -12,7 +12,7 @@ const C = WORLD.CELLS;
 
 /** Meseta llana de tierra a altura 3, templada, sin agua ni manantiales */
 function setup(): { physics: TerrainPhysics; queue: PourQueue; chunk: ChunkData } {
-  const world = new World(11);
+  const world = new World(11, 1);
   const chunk = world.chunk(0, 0);
   for (let k = 0; k < C * C; k++) {
     chunk.rock[k] = 2; chunk.sediment[k] = 1; chunk.material[k] = Material.SOIL;

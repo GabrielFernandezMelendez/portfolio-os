@@ -11,7 +11,7 @@ const always = (v: number): RandomSource => ({ next: () => v });
 
 /** Isla templada de tierra sana, sin agua */
 function healthyWorld(): { world: World; chunk: ChunkData } {
-  const world = new World(11);
+  const world = new World(11, 1);
   const chunk = world.chunk(0, 0);
   for (let k = 0; k < chunk.water.length; k++) {
     chunk.water[k] = 0; chunk.sediment[k] = 1; chunk.material[k] = Material.SOIL; chunk.moisture[k] = 0.5; chunk.spring[k] = 0;
@@ -27,7 +27,7 @@ function paintTile(chunk: ChunkData, i: number, j: number, material: number): vo
 
 describe('Biomas', () => {
   it('el mundo nuevo empieza solo con biomas de clima (sin pantano, roquedal, quemada ni claro)', () => {
-    const chunk = new World(11).chunk(0, 0);
+    const chunk = new World(11, 1).chunk(0, 0);
     const allowed: number[] = [Biome.FOREST, Biome.DESERT, Biome.TUNDRA, Biome.WETLAND];
     expect([...chunk.biome].every(b => allowed.includes(b))).toBe(true);
   });

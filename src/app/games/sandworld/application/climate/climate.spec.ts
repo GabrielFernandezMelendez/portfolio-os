@@ -68,7 +68,7 @@ describe('Clima', () => {
   });
 
   it('en invierno nieva en lo alto y llueve en lo bajo; la nieve no convierte el bosque en tundra', () => {
-    const world = new World(11);
+    const world = new World(11, 1);
     const chunk = world.chunk(0, 0);
     const physics = new TerrainPhysics(world);
     const biomes = new BiomeSystem(world, new SeededRandom(1));

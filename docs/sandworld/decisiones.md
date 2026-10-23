@@ -153,6 +153,11 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   calor). Los demás animales evitan el calor de la Tierra Quemada.
 - **Los goblins hibernan en invierno** en su nido: duermen, no salen aunque tengan hambre y apenas gastan (10 %).
   Ir a matarlos mientras hibernan (mandar humanos) será una decisión del jugador (fase 5).
+- **Isla el doble de grande** (config/island.config.ts): crece por parcelas de 2×2 chunks (cada nivel descubre 4
+  chunks; se empieza con 2×2). El chunk sigue siendo de 32 celdas, así que lo que se mide en "islas" (olfato del
+  lobo, lo que recorre) no cambia. Los topes de grupos y la comida que mantiene la isla se cuentan por parcela:
+  caben los mismos animales que antes, con cuatro veces más espacio entre ellos.
+  Los chunks de una parcela nueva se hornean de uno en uno (un frame cada uno) para que no haya tirón.
 - Nidos de goblin en el corazón de su zona de Tierra Quemada (la zona puede estar en cualquier parte de la isla).
 - Grupos de tamaño aleatorio en todas las especies (pareja más 1 a 3 crías en lobos y cuervos, por ejemplo).
 - Los olfatos, el miedo, la alarma y las señales "!" "?" son comunes a todas las especies.

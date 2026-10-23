@@ -49,8 +49,11 @@ export interface FaunaWorld {
   flooded(gx: number, gy: number): boolean;
   /** Comida de toda la isla para estas dietas (para la capacidad de cada especie) */
   totalFood(diets: readonly Diet[], now: number, season: SeasonId): number;
-  /** Chunks descubiertos de la isla (para saber cuántos grupos caben) */
-  islandChunks(): number;
+  /**
+   * Superficie descubierta de la isla, en parcelas (config/island.config.ts), para saber cuántos grupos caben: los
+   * topes "por chunk" de las especies se cuentan por parcela
+   */
+  islandArea(): number;
   /** Una celda pisable junto a la orilla de la isla (por donde llegan y se van los animales), o null */
   shore(random: RandomSource): { readonly x: number; readonly y: number } | null;
   /** ¿Está helado el tile? (la Escarcha) */

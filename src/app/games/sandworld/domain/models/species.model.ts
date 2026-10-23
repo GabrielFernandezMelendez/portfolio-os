@@ -140,7 +140,7 @@ export interface SpeciesDef {
    * Llegadas y marchas naturales [PROPUESTA]. Sin este campo, la especie no llega sola.
    * - `arrive`: cada pocos días, si la isla puede alimentar a más de su especie, puede llegar un grupo por la
    *   orilla (más cuanto más sitio hay).
-   * - `groupsPerChunk`: su tope de grupos en la isla, tirado cada vez entre los dos valores (por chunk). Así
+   * - `groupsPerChunk`: su tope de grupos en la isla, tirado cada vez entre los dos valores (por parcela de PLOT × PLOT chunks, config/island.config.ts). Así
    *   nunca la llena una sola especie: si se pasa, alguno de sus grupos puede irse (`crowdLeave`, más cuanto más
    *   se pase).
    * - `hungryLeave`: cada día, una manada con hambre de verdad puede irse de la isla (más cuanto más hambre).

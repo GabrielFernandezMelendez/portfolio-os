@@ -177,7 +177,8 @@ export const BIRTH_SPREAD_DAYS = 10;
 /** Cada cuántos días se mira si llega un grupo nuevo a la isla (con margen para que haya épocas tensas) */
 export const MIGRATION_EVERY_DAYS = 3;
 /**
- * Grupos que caben por chunk: el tope se tira cada vez entre estos dos valores (en un 2×2, de 4 a 8 grupos).
+ * Grupos que caben por parcela (PLOT × PLOT chunks, config/island.config.ts): el tope se tira cada vez entre estos
+ * dos valores (en una isla de 4 parcelas, de 4 a 8 grupos).
  * Así unas veces la isla está más llena y otras más vacía: el tope también es una probabilidad.
  */
 export const GROUPS_PER_CHUNK: readonly [number, number] = [1, 2];

@@ -27,7 +27,10 @@ export interface ArrivalContext {
   readonly carrion: boolean;
 }
 
-/** Tope tirado entre dos valores por chunk (al menos 1 si el máximo lo permite) */
+/**
+ * Tope tirado entre dos valores por parcela (al menos 1 si el máximo lo permite). En este archivo `chunks` es la
+ * superficie de la isla en parcelas (FaunaWorld.islandArea)
+ */
 function cap(chunks: number, [lo, hi]: readonly [number, number], random: RandomSource): number {
   return Math.max(Math.min(1, Math.round(chunks * hi)), Math.round(chunks * (lo + random.next() * (hi - lo))));
 }

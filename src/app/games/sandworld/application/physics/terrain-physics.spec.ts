@@ -28,7 +28,7 @@ function settle(physics: TerrainPhysics, maxMinutes = 2000): number {
 
 describe('TerrainPhysics · desprendimientos', () => {
   it('un montón de arena se desmorona hasta respetar el talud de la arena', () => {
-    const world = new World(11);
+    const world = new World(11, 1);
     world.chunk(0, 0).plants.fill(0);         // sin raíces que sujeten (eso tiene su propia prueba)
     const physics = new TerrainPhysics(world);
     physics.deposit(16, 16, Material.SAND, 4);
@@ -49,7 +49,7 @@ describe('TerrainPhysics · desprendimientos', () => {
   });
 
   it('la masa se conserva: no se crea ni se pierde sedimento', () => {
-    const world = new World(11);
+    const world = new World(11, 1);
     const physics = new TerrainPhysics(world);
     const before = totalSediment(world);
     const added = physics.deposit(10, 20, Material.SAND, 3) + physics.deposit(22, 8, Material.HUMUS, 2);
@@ -58,7 +58,7 @@ describe('TerrainPhysics · desprendimientos', () => {
   });
 
   it('la roca no se desliza y el borde de lo descubierto hace de muro', () => {
-    const world = new World(11);
+    const world = new World(11, 1);
     const physics = new TerrainPhysics(world);
     const chunk = world.chunk(0, 0);
     const rockBefore = Float32Array.from(chunk.rock);
@@ -71,7 +71,7 @@ describe('TerrainPhysics · desprendimientos', () => {
   });
 
   it('el terreno generado no se mueve hasta que algo lo despierta', () => {
-    const world = new World(11);
+    const world = new World(11, 1);
     const physics = new TerrainPhysics(world);
     const chunk = world.chunk(0, 0);
     const before = Float32Array.from(chunk.sediment);
@@ -80,7 +80,7 @@ describe('TerrainPhysics · desprendimientos', () => {
   });
 
   it('los desprendimientos cruzan de un chunk descubierto a su vecino', () => {
-    const world = new World(11);
+    const world = new World(11, 1);
     world.exploration.reveal(1, 0);
     const physics = new TerrainPhysics(world);
     const right = world.chunk(1, 0);
@@ -91,7 +91,7 @@ describe('TerrainPhysics · desprendimientos', () => {
   });
 
   it('el depósito respeta el techo de altura y avisa de los chunks cambiados', () => {
-    const world = new World(11);
+    const world = new World(11, 1);
     const physics = new TerrainPhysics(world);
     const cell = physics.grid.cell(5, 5)!;
     const added = physics.deposit(5, 5, Material.SAND, 50);

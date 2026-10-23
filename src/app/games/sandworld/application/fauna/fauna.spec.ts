@@ -1,3 +1,4 @@
+import { CHUNKS_PER_PLOT } from '../../config/island.config';
 import { FaunaSystem } from './fauna-system';
 import { FaunaWorld, Meal } from '../../domain/ports/fauna-world.port';
 import { Diet } from '../../domain/models/plant.model';
@@ -109,7 +110,7 @@ class FakeIsland implements FaunaWorld {
   /** Sin orilla (por defecto) no llega ni se va nadie: las pruebas de llegadas la activan */
   chunks = 0;
   coast: { x: number; y: number } | null = null;
-  islandChunks(): number { return this.chunks; }
+  islandArea(): number { return this.chunks; }
   frozen = new Set<string>();
   frozenAt(gx: number, gy: number): boolean { return this.frozen.has(`${Math.floor(gx / G)},${Math.floor(gy / G)}`); }
   fed = 0;
@@ -118,10 +119,11 @@ class FakeIsland implements FaunaWorld {
   temperature(): number { return this.temp; }
   feedBurnt(_gx: number, _gy: number, amount: number): void { this.fed += amount; }
   shore() { return this.coast; }
+  // La isla de mentira cuenta como una parcela entera: la lógica reparte la comida por parcela (CHUNKS_PER_PLOT)
   totalFood(diets: readonly Diet[]): number {
     let s = 0;
     for (let t = 0; t < this.grass.length; t++) s += this.foodAt((t % this.tiles) * G, Math.floor(t / this.tiles) * G, diets, new Set());
-    return s;
+    return s * CHUNKS_PER_PLOT;
   }
   regrow(season: SeasonId, hours: number): void {
     for (let t = 0; t < this.grass.length; t++) this.grass[t] = Math.min(1, this.grass[t] + (REGROW[season] * hours) / 24 * (this.grass[t] > 0.005 ? 1 : 0));

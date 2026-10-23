@@ -18,7 +18,7 @@ describe('IndicatorRegistry', () => {
   });
 
   it('los indicadores del mundo leen valores razonables del chunk inicial', () => {
-    const world = new World(11);
+    const world = new World(11, 1);
     world.chunk(0, 0);
     expect(waterLevel(world)).toBeGreaterThan(0);
     expect(vegetationLevel(world)).toBeGreaterThan(0);
