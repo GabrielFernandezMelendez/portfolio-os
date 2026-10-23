@@ -1236,6 +1236,7 @@ export class FaunaSystem {
     }
     const nursing = herd ? members.some(m => this.nursling(m, s, now) && m.inside !== null) : false;
     const hungry = a.satiety < pred.huntBelow;
+    if (!hungry && a.search?.kind === 'prey') a.search = null;
     // Carroña: si huele un cadáver con carne (y tiene algo de hambre o hay crías esperando), va a por él. Antes de
     // tener hambre de cazar ya vuelve a rematar lo que hay (`carrionBelow`): así no caza otra presa con la anterior a medias
     const peckish = a.satiety < (pred.carrionBelow ?? pred.huntBelow);
@@ -1271,7 +1272,8 @@ export class FaunaSystem {
     // Hambre: sale a cazar (tirada por hora); los compañeros cercanos se le unen (tirada)
     if (hungry && a.rest > RUN_MIN && this.random.next() < perThink(pred.huntChance)) {
       const prey = choosePrey(a, s, this.animals, SPECIES_DEFS, x => this.alone(x), now, this.random);
-      if (!prey) return false;
+      if (!prey) return this.searchPrey(a, s, members, now);
+      if (a.search?.kind === 'prey') a.search = null;
       a.hunt = { target: prey.id, phase: 'stalk', since: now };
       a.roam = null;
       write(a, 'hunting', now, { prey: `@species.${SPECIES_DEFS[prey.species].key}` });
@@ -1282,7 +1284,24 @@ export class FaunaSystem {
       this.walkTo(a, prey.x, prey.y, now);
       return true;
     }
+    // Buscando presa: sigue su rumbo (entre tirada y tirada de caza)
+    if (hungry && a.search?.kind === 'prey') return this.searchPrey(a, s, members, now);
     return false;
+  }
+
+  /**
+   * Con hambre y sin oler ninguna presa (su olfato no llega: la isla es grande): se va a buscar con rumbo, como los
+   * herbívoros buscan comida, y sigue oliendo por el camino. La guía marca el rumbo y la manada la sigue.
+   */
+  private searchPrey(a: Animal, s: SpeciesDef, members: Animal[], now: number): boolean {
+    const leader = leaderOf(members, s, now);
+    if (leader && leader !== a) return false;
+    if (a.search?.kind !== 'prey') {
+      a.search = { kind: 'prey', r: 0, at: now, dir: this.random.next() * Math.PI * 2 };
+      write(a, 'searchPrey', now);
+    }
+    this.searchWalk(a, now);
+    return true;
   }
 
   /** El cadáver con carne que huele (el más cercano de los que huele, por tirada de distancia) */

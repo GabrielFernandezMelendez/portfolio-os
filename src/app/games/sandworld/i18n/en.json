@@ -597,6 +597,7 @@
       "alone": "I'm lost. I'm alone and I talk to the trees.",
       "joinedGood": "I joined another herd. They welcomed me.",
       "seekPack": "I can smell others like me, far away. Going to find them: alone, you don't make it.",
+      "searchPrey": "Nothing to hunt around here. Off to look further away.",
       "joinedBad": "Another herd chased me off with their antlers.",
       "rut": "Autumn is here and {name} keeps looking at me funny.",
       "birth": "My calf was born. Its name is {name}.",

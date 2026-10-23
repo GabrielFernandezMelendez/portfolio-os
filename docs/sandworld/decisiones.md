@@ -158,6 +158,11 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   lobo, lo que recorre) no cambia. Los topes de grupos y la comida que mantiene la isla se cuentan por parcela:
   caben los mismos animales que antes, con cuatro veces más espacio entre ellos.
   Los chunks de una parcela nueva se hornean de uno en uno (un frame cada uno) para que no haya tirón.
+- **Zoom lejano**: niveles ×0,5 y ×0,33 para ver la isla entera; la partida empieza a ×1. Por debajo de ×1 las
+  monedas de las manadas no encogen (mismo tamaño en pantalla que a ×1).
+- **El depredador que no huele presas sale a buscarlas** (común): con hambre y sin presa a su olfato, la guía
+  camina con rumbo (como los herbívoros cuando buscan comida) y la manada la sigue; sigue oliendo por el camino. El
+  olfato no cambia (2 islas en el lobo).
 - Nidos de goblin en el corazón de su zona de Tierra Quemada (la zona puede estar en cualquier parte de la isla).
 - Grupos de tamaño aleatorio en todas las especies (pareja más 1 a 3 crías en lobos y cuervos, por ejemplo).
 - Los olfatos, el miedo, la alarma y las señales "!" "?" son comunes a todas las especies.

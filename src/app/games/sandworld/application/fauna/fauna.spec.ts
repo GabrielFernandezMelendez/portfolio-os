@@ -1465,3 +1465,21 @@ describe('Fauna: la manada de lobos no baja de 3', () => {
     expect(pregnant).toBeLessThanOrEqual(7);
   });
 });
+
+describe('Fauna: el depredador que no huele presas sale a buscarlas', () => {
+  it('un lobo con hambre y los ciervos fuera de su olfato se va a buscar y acaba dando con ellos', () => {
+    let found = 0;
+    for (let seed = 1; seed <= 4; seed++) {
+      const { island, fauna } = setup(40, 0.8, seed);
+      const t0 = at(Season.SUMMER, 2);
+      fauna.spawnHerd('deer', 140, 140, t0, false);
+      const [wolf] = fauna.spawnHerd('wolf', 15, 15, t0, false, [{ sex: 'male', age: 'adult' }]);
+      wolf.satiety = 0.2;
+      run(fauna, island, t0, 4 * DAY);
+      const keys = wolf.diary.map(e => e.key);
+      expect(keys).toContain('searchPrey');
+      if (keys.includes('hunting') || keys.includes('killed')) found++;
+    }
+    expect(found).toBeGreaterThanOrEqual(2);
+  }, 60000);
+});

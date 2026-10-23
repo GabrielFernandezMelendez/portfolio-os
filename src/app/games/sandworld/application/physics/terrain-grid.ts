@@ -21,12 +21,25 @@ export class TerrainGrid {
   /** Talud extra de una celda (raíces de las plantas); lo pone quien conoce la vegetación */
   reposeBonus: ((ref: CellRef) => number) | null = null;
 
+  /**
+   * Chunks descubiertos por clave numérica: `cell()` se llama millones de veces por minuto de juego (el agua) y
+   * buscar el chunk por su clave de texto era lo más caro. Solo se guardan los descubiertos (un chunk no se
+   * vuelve a tapar), así que no hace falta invalidar nada.
+   */
+  private readonly chunks = new Map<number, ChunkData>();
+
   constructor(private readonly world: World) {}
 
   cell(gx: number, gy: number): CellRef | null {
     const cx = Math.floor(gx / C), cy = Math.floor(gy / C);
-    if (!this.world.exploration.isRevealed(cx, cy)) return null;
-    return { chunk: this.world.chunk(cx, cy), k: cellIndex(gx - cx * C, gy - cy * C) };
+    const id = (cx + 1024) * 2048 + (cy + 1024);
+    let chunk = this.chunks.get(id);
+    if (!chunk) {
+      if (!this.world.exploration.isRevealed(cx, cy)) return null;
+      chunk = this.world.chunk(cx, cy);
+      this.chunks.set(id, chunk);
+    }
+    return { chunk, k: cellIndex(gx - cx * C, gy - cy * C) };
   }
 
   ground(ref: CellRef): number {

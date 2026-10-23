@@ -29,6 +29,7 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 
 - Probar el equilibrio con las 6 especies (producto mínimo viable) y pasar a la fase 5.
 - **Isla el doble de grande** (parcelas de 2×2 chunks, mismos animales): hecho en 4L.
+- Rendimiento del agua (rejilla de chunks por clave numérica), zoom lejano y búsqueda de presas: 4M.
 - **Sentidos comunes (vista y oído)**: distancias de alerta y de huida, acecho con sigilo y estampida al ver o oír
   cazar a uno de los suyos. En propuesta, con mockup antes del código.
 

@@ -147,7 +147,7 @@ export class FaunaLayer {
     this.updateHoles(view, groundAt);
     if (far) {
       this.marker.visible = false;
-      this.updateCoins(dtMs, view, groundAt);
+      this.updateCoins(dtMs, view, groundAt, zoom);
       return;
     }
     const seen = new Set<number>();
@@ -292,8 +292,9 @@ export class FaunaLayer {
   animalAt(wx: number, wy: number): number | null {
     let best: number | null = null, bestY = -Infinity;
     if (this.far) {
-      const r = COIN.size / 2 + 2;
       for (const c of this.coins.values()) {
+        // La moneda puede estar agrandada (zoom por debajo de ×1): el toque, igual
+        const r = (COIN.size / 2 + 2) * c.view.scale.x;
         if (!c.view.visible || Math.hypot(wx - c.x, wy - (c.y - r)) > r) continue;
         if (c.y > bestY) {
           bestY = c.y;
@@ -333,7 +334,9 @@ export class FaunaLayer {
   }
 
   /** Una moneda por manada, donde está su guía (en la capa de encima, ordenadas entre ellas de atrás adelante) */
-  private updateCoins(dtMs: number, view: FaunaView, groundAt: GroundAt): void {
+  private updateCoins(dtMs: number, view: FaunaView, groundAt: GroundAt, zoom: number): void {
+    // Con zoom por debajo de ×1 (la isla entera) las monedas no encogen: se quedan del tamaño de ×1 en pantalla
+    const grow = zoom < 1 ? 1 / zoom : 1;
     const seen = new Set<number>();
     for (const h of view.herds()) {
       const ground = groundAt(Math.floor(h.x), Math.floor(h.y));
@@ -364,6 +367,7 @@ export class FaunaLayer {
       }
       c.view.position.set(Math.round(c.x), Math.round(c.y));
       c.view.zIndex = c.y + 0.05;
+      c.view.scale.set(grow);
     }
     for (const [id, c] of this.coins) {
       if (seen.has(id)) continue;

@@ -378,23 +378,28 @@ export class WaterSystem {
 
   /** Chunks con algún cambio de agua visible desde el último dibujo */
   private collectVisualChanges(changed: Set<string>): void {
-    for (const key of new Set([...this.wet, ...this.shownDrain])) {
-      const [gx, gy] = TerrainGrid.fromKey(key);
-      const cell = this.grid.cell(gx, gy);
-      if (!cell) continue;
-      const w = cell.chunk.water[cell.k];
-      const last = this.shown.get(key) ?? 0;
-      if (Math.abs(w - last) >= WATER_VISUAL_STEP || (w > WATER_MIN) !== (last > WATER_MIN)) {
-        this.shown.set(key, w);
-        changed.add(`${cell.chunk.cx},${cell.chunk.cy}`);
-      }
-      // Una cascada de borde solo se vuelve a dibujar cuando empieza o se acaba
-      const draining = cell.chunk.drain[cell.k] > WATER_MIN;
-      if (draining !== this.shownDrain.has(key)) {
-        if (draining) this.shownDrain.add(key);
-        else this.shownDrain.delete(key);
-        changed.add(`${cell.chunk.cx},${cell.chunk.cy}`);
-      }
+    // Las de agua y, aparte, las cascadas que se estaban dibujando (sin crear un conjunto nuevo cada minuto: mirar
+    // dos veces la misma celda no cambia nada)
+    for (const key of this.wet) this.visualChange(key, changed);
+    for (const key of this.shownDrain) if (!this.wet.has(key)) this.visualChange(key, changed);
+  }
+
+  private visualChange(key: number, changed: Set<string>): void {
+    const [gx, gy] = TerrainGrid.fromKey(key);
+    const cell = this.grid.cell(gx, gy);
+    if (!cell) return;
+    const w = cell.chunk.water[cell.k];
+    const last = this.shown.get(key) ?? 0;
+    if (Math.abs(w - last) >= WATER_VISUAL_STEP || (w > WATER_MIN) !== (last > WATER_MIN)) {
+      this.shown.set(key, w);
+      changed.add(`${cell.chunk.cx},${cell.chunk.cy}`);
+    }
+    // Una cascada de borde solo se vuelve a dibujar cuando empieza o se acaba
+    const draining = cell.chunk.drain[cell.k] > WATER_MIN;
+    if (draining !== this.shownDrain.has(key)) {
+      if (draining) this.shownDrain.add(key);
+      else this.shownDrain.delete(key);
+      changed.add(`${cell.chunk.cx},${cell.chunk.cy}`);
     }
   }
 }

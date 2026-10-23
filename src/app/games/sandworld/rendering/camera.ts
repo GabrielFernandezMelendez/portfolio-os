@@ -14,8 +14,13 @@ export interface Rect {
   h: number;
 }
 
-/** Niveles de zoom. Desde ×3 se mostrarán todos los animales (LOD de la fase 4). */
-export const ZOOM_LEVELS = [1, 1.5, 2, 3, 4, 6] as const;
+/**
+ * Niveles de zoom. Desde ×2 se ven los animales (por debajo, monedas). ×0,5 y ×0,33 son para ver la isla entera
+ * (crece por parcelas: un 6×6 a ×1 son unas cinco pantallas de ancho).
+ */
+export const ZOOM_LEVELS = [1 / 3, 0.5, 1, 1.5, 2, 3, 4, 6] as const;
+/** Zoom al empezar y el más lejano al que encaja `fit()` (alejarse más es cosa del jugador) */
+const FIT_FROM = ZOOM_LEVELS.indexOf(1);
 
 /** Margen lateral al encajar el mundo en pantalla */
 const FIT_MARGIN = 24;
@@ -29,10 +34,10 @@ const GLIDE_TAU = 380;
 export class Camera {
   cx = 0;
   cy = 0;
-  scale: number = ZOOM_LEVELS[0];
+  scale: number = ZOOM_LEVELS[FIT_FROM];
 
-  private zoomIndex = 0;
-  private targetScale: number = ZOOM_LEVELS[0];
+  private zoomIndex = FIT_FROM;
+  private targetScale: number = ZOOM_LEVELS[FIT_FROM];
   private anchor: { sx: number; sy: number; wx: number; wy: number } | null = null;
   private vx = 0;   // inercia, en unidades de mundo por ms
   private vy = 0;
@@ -65,10 +70,10 @@ export class Camera {
     this.clamp();
   }
 
-  /** Mayor nivel de zoom con el que el mundo entra a lo ancho, centrado */
+  /** Mayor nivel de zoom con el que el mundo entra a lo ancho, centrado (desde ×1: si no entra, ×1) */
   fit(): void {
-    let index = 0;
-    for (let i = 0; i < ZOOM_LEVELS.length; i++) {
+    let index = FIT_FROM;
+    for (let i = FIT_FROM; i < ZOOM_LEVELS.length; i++) {
       if (ZOOM_LEVELS[i] * this.bounds.w <= this.vw - FIT_MARGIN) index = i;
     }
     this.zoomIndex = index;

@@ -202,7 +202,7 @@ export interface Animal {
    * Buscando agua o comida sin encontrarla cerca: hasta dónde busca (celdas, crece cada hora), cuándo lo amplió por
    * última vez y hacia dónde camina mientras tanto (ángulo). null si no busca.
    */
-  search: { kind: 'water' | 'food'; r: number; at: number; dir: number } | null;
+  search: { kind: 'water' | 'food' | 'prey'; r: number; at: number; dir: number } | null;
   /**
    * El agua a la que va: dónde, lo más cerca que ha llegado y cuándo. Si en un rato no se acerca más (un barranco,
    * un lago en el fondo de una terraza), la da por imposible un tiempo (`badWater`) y busca otra.
