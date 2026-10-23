@@ -176,6 +176,14 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   a la tirada, hasta 4) y se apuntan casi siempre (90 %) los de la manada a 24 celdas, aunque no tengan mucha hambre
   (la loba que amamanta, no: se queda en la guarida). Tras una caza fallida, con hambre, prueba a pescar (6 h). Con
   poca presa para tantos lobos (más del 60 % de lo que la isla alimenta), camadas de 2 a 4.
+- **Manada que caza junta**: con hambre se apunta casi toda la manada (95 %); bien comidos, menos cuanto más llenos.
+  La loba que amamanta no. Si llegan 3 o más juntos a la presa, 90 % de éxito (`packCatch`).
+- **El lobo no se va enseguida**: solo tras 3 días seguidos de hambre de verdad y con un 10 % al día; si desaparecen
+  de la isla, pueden volver lobos de fuera a los 20-30 días (`migration.returnAfter`; el resto, 60-80).
+- **La sed va antes que cazar y que dormir** (común): con sed y agua a su alcance beben antes; la sed de verdad
+  despierta aunque no hayan descansado. Antes muchos pasaban la noche con sed y el agua al lado.
+- Herramienta de desarrollo "Ver la vista de los animales": anillos con la vista de cada animal (y alerta y huida
+  de las presas); de lejos, uno por manada.
 - **Botón X para soltar la arena** junto a la velocidad, solo con una arena cogida y el menú de arenas cerrado.
 - **El depredador que no huele presas sale a buscarlas** (común): con hambre y sin presa a su olfato, la guía
   camina con rumbo (como los herbívoros cuando buscan comida) y la manada la sigue; sigue oliendo por el camino. El

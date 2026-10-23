@@ -12,7 +12,7 @@ import {
   FOOD_HERE, FORAGE_RADIUS, FORAGE_SAMPLES, FULL, GATHER_MARGIN, JOIN_RANGE, LOST_NIGHT, MAX_STEP, PATH_FROM, PATH_NODES,
   REJECT_HEALTH, RETURN_CHANCE, ROAM_CHANCE, ROAM_HOURS, RUN_MIN, RUN_STOP, RUN_TIRE_PER_MINUTE, SEED_GUT_HOURS,
   SLEEP_BELOW, SOIL_DAMAGE, SOIL_DAMAGE_FROM, STUCK_MINUTES, THINK_MINUTES, THIRST_BELOW, TOXIC_HEALTH, TRAMPLE,
-  WELCOME_CHANCE, DEN_MOTHER_STARVING, ALERT_REPEAT, KEEP_AWAY_MINUTES, FISH_AFTER_FAIL, JOIN_HUNT_RANGE, SOUND, STALK_FROM, STALK_SPEED, FISH_PER_TILE, FISH_REGROW_PER_DAY, FISH_MINUTES, SCAVENGE_SHARE, REFUGE_WARMTH, HUDDLE_WARMTH, SHADE_COOL, EXPOSURE_RATE, EXPOSURE_RECOVER, EXPOSURE_SEEK, EXPOSURE_DAMAGE, FEED_YOUNG_ABOVE, REGURGITATE, SHARE_RANGE, FIGHT_MINUTES, FIGHT_WOUND, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
+  WELCOME_CHANCE, DEN_MOTHER_STARVING, ALERT_REPEAT, LEAVE_HUNGRY_BELOW, KEEP_AWAY_MINUTES, FISH_AFTER_FAIL, JOIN_HUNT_RANGE, SOUND, STALK_FROM, STALK_SPEED, FISH_PER_TILE, FISH_REGROW_PER_DAY, FISH_MINUTES, SCAVENGE_SHARE, REFUGE_WARMTH, HUDDLE_WARMTH, SHADE_COOL, EXPOSURE_RATE, EXPOSURE_RECOVER, EXPOSURE_SEEK, EXPOSURE_DAMAGE, FEED_YOUNG_ABOVE, REGURGITATE, SHARE_RANGE, FIGHT_MINUTES, FIGHT_WOUND, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
 } from '../../config/fauna.config';
 import { bonesLeft, CLEAN_BONES } from './carcass';
 import { NeedMods, ageDays, appetite, lifeStage, passTime, updateHappiness } from './needs';
@@ -148,6 +148,20 @@ export class FaunaSystem {
   private hungerToldDay = -1;
   /** Desde cuándo está solo cada animal de especie que no vive sola (`keepMin`), para irse si no encuentra grupo */
   private readonly loneSince = new Map<number, number>();
+  /** Días seguidos que lleva cada manada con hambre de verdad (para irse de la isla) */
+  private readonly hungryDays = new Map<number, number>();
+  /**
+   * Cuentas de la caza por especie de cazador (para medir el equilibrio): cacerías empezadas (y en manada de 3 o más), acechos descubiertos,
+   * tiradas al alcanzarla que fallan, persecuciones perdidas o abandonadas, y presas cazadas (y en manada)
+   */
+  readonly huntStats = new Map<string, { hunts: number; packHunts: number; spotted: number; missed: number; lost: number; caught: number; packCaught: number }>();
+
+  private huntStat(a: Animal) {
+    const key = SPECIES_DEFS[a.species].key;
+    let st = this.huntStats.get(key);
+    if (!st) this.huntStats.set(key, (st = { hunts: 0, packHunts: 0, spotted: 0, missed: 0, lost: 0, caught: 0, packCaught: 0 }));
+    return st;
+  }
   /** Peces que quedan en los tiles donde se ha pescado (y desde cuándo, para reponerlos) */
   private readonly fishStock = new Map<string, { n: number; at: number }>();
   /** Plantas que cada especie ya ha comido alguna vez ("especie:planta") */
@@ -487,6 +501,9 @@ export class FaunaSystem {
     // Mucha sed: beber va antes que cazar, volver a casa o dormir (si está bebiendo, sigue hasta llenarse)
     if (a.action === 'drink' && a.hydration < FULL) return;
     if (a.hydration < THIRST_URGENT) return this.goDrink(a, s, now);
+    // Con sed y agua a su alcance, bebe antes de ponerse a cazar o a dormir (si no, pasa la noche o la cacería con sed
+    // teniendo el agua al lado). Si está persiguiendo o luchando, eso lo lleva act y no llega aquí
+    if (a.hydration < THIRST_BELOW && !a.hunt && this.waterNear(a, s)) return this.goDrink(a, s, now);
     // Se acerca el día y el sol le quema, o es su estación de hibernar: a cubierto (a su refugio)
     if (this.takeCover(a, s, herd, t.hour, now)) return;
     // Pasa frío o calor: busca abrigo (su refugio o los suyos) o sombra
@@ -503,7 +520,8 @@ export class FaunaSystem {
     }
     if (a.action === 'sleep') {
       // De día se despierta en cuanto ha descansado algo (salvo la siesta); de noche sigue dormido salvo que el hambre o la sed aprieten
-      if (a.rest > 0.5 && (!night || a.satiety < 0.3 || a.hydration < 0.2) && !siesta) this.setAction(a, 'idle', now);
+      // (la sed de verdad le despierta aunque no haya descansado mucho)
+      if ((a.rest > 0.5 && (!night || a.satiety < 0.3) && !siesta) || (a.hydration < THIRST_URGENT && a.rest > COLLAPSE)) this.setAction(a, 'idle', now);
       else return;
     }
     const leader = leaderOf(members, s, now);
@@ -1308,10 +1326,15 @@ export class FaunaSystem {
       for (const m of members) {
         // Cazan juntos: se apuntan los de la manada a su alcance (JOIN_HUNT_RANGE) aunque no tengan mucha hambre; la
         // madre que amamanta no (se queda en la guarida)
-        if (m === a || m.hunt || ageDays(m, now) < s.youngDays / 2 || m.satiety > 0.9 || dist(m, a) > JOIN_HUNT_RANGE || m.rest <= RUN_MIN) continue;
+        if (m === a || m.hunt || ageDays(m, now) < s.youngDays / 2 || dist(m, a) > JOIN_HUNT_RANGE || m.rest <= RUN_MIN) continue;
         if (this.denMother(m, s, members, now)) continue;
-        if (this.random.next() < pred.joinHunt) m.hunt = { target: prey.id, phase: 'stalk', since: now };
+        // Con hambre se apunta casi siempre (`joinHunt`); bien comido, menos cuanto más lleno: si la manada ha pasado
+        // hambre van todos juntos (y la manada entera junta caza casi siempre: `packCatch`)
+        const join = m.satiety < pred.huntBelow ? pred.joinHunt : pred.joinHunt * Math.max(0, (1 - m.satiety) / (1 - pred.huntBelow));
+        if (this.random.next() < join) m.hunt = { target: prey.id, phase: 'stalk', since: now };
       }
+      this.huntStat(a).hunts++;
+      if (members.filter(m => m.hunt?.target === prey.id).length >= 3) this.huntStat(a).packHunts++;
       this.walkTo(a, prey.x, prey.y, now);
       return true;
     }
@@ -1335,6 +1358,11 @@ export class FaunaSystem {
     }
     this.searchWalk(a, now);
     return true;
+  }
+
+  /** ¿Tiene agua para beber a su alcance de siempre (`waterRange`)? */
+  private waterNear(a: Animal, s: SpeciesDef): boolean {
+    return !!this.world.nearestWater(Math.floor(a.x), Math.floor(a.y), s.waterRange);
   }
 
   /** Peces que quedan en un tile (se reponen con los días, hasta FISH_PER_TILE) */
@@ -1531,6 +1559,7 @@ export class FaunaSystem {
 
   /** Han descubierto al que acechaba: miedo alrededor y los que acechaban esa presa pasan a perseguir */
   private discovered(w: Animal, now: number): void {
+    this.huntStat(w).spotted++;
     this.sense({ type: 'predator', gx: w.x, gy: w.y, strength: 1 }, now);
     for (const h of this.stalkers) {
       if (!h.hunt || h.hunt.target !== w.hunt?.target) continue;
@@ -1586,6 +1615,7 @@ export class FaunaSystem {
       a.hunt = null;
       // Caza fallida: con hambre, el plan B es el agua (peces)
       a.huntFailedAt = now;
+      this.huntStat(a).lost++;
       if (prey && long) write(a, 'gaveUp', now);
       this.endRun(a, s, now);
       return true;
@@ -1706,6 +1736,7 @@ export class FaunaSystem {
     const snow = this.conditions.snow || this.world.snowAt(Math.floor(prey.x), Math.floor(prey.y));
     const chance = catchChance(s, prey, ps, helpers, snow, now) + (ambush ? 0.15 : 0);
     if (this.random.next() >= chance) {
+      this.huntStat(a).missed++;
       // Se le escapa: si acechaba, ahora persigue (la presa ya huye)
       if (ambush) {
         this.sense({ type: 'predator', gx: a.x, gy: a.y, strength: 1 }, now);
@@ -1716,6 +1747,8 @@ export class FaunaSystem {
       }
       return;
     }
+    this.huntStat(a).caught++;
+    if (helpers >= 2) this.huntStat(a).packCaught++;
     // Cazada: los cazadores comen de ella (la pareja dominante, la primera: los demás esperan su turno comiendo después)
     this.die(prey, 'predation', now);
     write(a, 'killed', now, { name: prey.name }, true);
@@ -2283,6 +2316,10 @@ export class FaunaSystem {
       if (!adults.length) continue;
       const satiety = adults.reduce((sum, a) => sum + a.satiety, 0) / adults.length;
       const health = adults.reduce((sum, a) => sum + a.health, 0) / adults.length;
+      // Días seguidos con hambre de verdad: solo pasados `hungryDays` puede irse
+      const days = satiety < LEAVE_HUNGRY_BELOW ? (this.hungryDays.get(h.id) ?? 0) + 1 : 0;
+      this.hungryDays.set(h.id, days);
+      if (days < (s.migration.hungryDays ?? 1)) continue;
       if (this.random.next() < leaveChance(s, satiety, health)) this.startLeaving(h, s, now);
     }
     if (t.day % MIGRATION_EVERY_DAYS !== 0) return;

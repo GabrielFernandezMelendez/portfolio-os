@@ -150,8 +150,11 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
         // Un goblin despierto es escurridizo; dormido bajo un árbol de día, presa fácil (SLEEP_CATCH_BONUS)
         goblin: { adult: 0.1, young: 0.3, weak: 0.3 },
       },
-      // Cazar en manada compensa: cada compañero suma 0,1 (hasta 4) y casi siempre se apuntan
-      packBonus: 0.1, packMax: 4, joinHunt: 0.9, snowBonus: 0.15,
+      // Cazar en manada compensa: cada compañero suma 0,1 (hasta 4); con hambre se apuntan casi todos (95 %), bien
+      // comidos menos (cuanto más llenos, menos)
+      packBonus: 0.1, packMax: 4, joinHunt: 0.95, snowBonus: 0.15,
+      // La manada entera junta (3 o más alcanzando a la presa): 90 % de éxito
+      packCatch: 0.9,
       giveUpAfter: 20, giveUp: 0.7,
       trip: { chance: 0.5, days: [2, 4], islands: 2 },
       carry: { tire: 2, relay: 0.5 },
@@ -192,7 +195,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     // (la segunda manada nace aquí: jóvenes que fundan la suya). Con hambre de verdad, se van antes de morir
     // De fuera llega una pareja (a veces con un joven): una manada de 5 no se sostiene en una isla pequeña
     migration: {
-      arrive: 0.3, groupsPerChunk: [0.25, 0.5], crowdLeave: 0.3, hungryLeave: 0.5, onlyIfAbsent: true, carrionLure: 3,
+      // Solo se va una manada que lleva 3 días con hambre de verdad (10 % al día); si desaparecen, vuelven a los 20-30 días
+      arrive: 0.3, groupsPerChunk: [0.25, 0.5], crowdLeave: 0.3, hungryLeave: 0.1, hungryDays: 3, returnAfter: [20, 30], onlyIfAbsent: true, carrionLure: 3,
       // La loba que llega en primavera (entre el celo de invierno y los partos) viene preñada a menudo
       pregnant: 0.6,
       founders: [{ sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }], extraYoung: [1, 3],

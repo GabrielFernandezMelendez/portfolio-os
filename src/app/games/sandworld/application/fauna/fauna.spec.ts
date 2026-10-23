@@ -809,7 +809,10 @@ describe('Fauna: lobos', () => {
     expect(alone).toBeLessThan(0.2);
     expect(catchChance(wolf, calf, deer, 0, false, t0)).toBeGreaterThan(alone * 2);
     expect(catchChance(wolf, adult, deer, 3, false, t0)).toBeGreaterThan(alone);
-    expect(catchChance(wolf, adult, deer, 3, true, t0)).toBeGreaterThan(catchChance(wolf, adult, deer, 3, false, t0));
+    // Con nieve, más fácil (de uno o dos)
+    expect(catchChance(wolf, adult, deer, 1, true, t0)).toBeGreaterThan(catchChance(wolf, adult, deer, 1, false, t0));
+    // La manada entera junta (3 o más): 90 %
+    expect(catchChance(wolf, adult, deer, 2, false, t0)).toBeCloseTo(0.9, 5);
   });
 
   it('con hambre cazan ciervos y conejos (más los débiles), se los comen y el resto lo cuenta la crónica', () => {
@@ -953,8 +956,9 @@ describe('Fauna: crías, agua y llegadas (comunes a todas las especies)', () => 
       if (fauna.news.some(n => n.type === 'left')) left++;
       if (pack.some(w => w.cause === 'starvation')) starved++;
     }
-    // La mitad o más (además, sin presas los jóvenes se van antes por su cuenta: la manada que queda es más pequeña)
-    expect(left).toBeGreaterThanOrEqual(10);
+    // Solo tras varios días de hambre y con poca probabilidad (lobo: 3 días y 10 %): algunas, no todas
+    expect(left).toBeGreaterThanOrEqual(1);
+    expect(left).toBeLessThan(15);
     expect(starved).toBeGreaterThan(0);
   }, 30000);
 
