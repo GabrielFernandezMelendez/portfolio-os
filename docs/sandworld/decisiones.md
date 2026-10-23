@@ -172,6 +172,10 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   Cada tile tiene como mucho 4 peces y se repone 1 al día.
 - **La loba con crías que maman se queda en la guarida** (sale a beber y, con hambre de verdad, a comer); la manada
   le regurgita comida como a los jóvenes. Así los lobeznos no mueren huérfanos ni de sed.
+- **Ajuste del lobo frente a presas que vigilan**: sigilo 0,75; cazar en manada compensa (cada compañero suma 0,1
+  a la tirada, hasta 4) y se apuntan casi siempre (90 %) los de la manada a 24 celdas, aunque no tengan mucha hambre
+  (la loba que amamanta, no: se queda en la guarida). Tras una caza fallida, con hambre, prueba a pescar (6 h). Con
+  poca presa para tantos lobos (más del 60 % de lo que la isla alimenta), camadas de 2 a 4.
 - **Botón X para soltar la arena** junto a la velocidad, solo con una arena cogida y el menú de arenas cerrado.
 - **El depredador que no huele presas sale a buscarlas** (común): con hambre y sin presa a su olfato, la guía
   camina con rumbo (como los herbívoros cuando buscan comida) y la manada la sigue; sigue oliendo por el camino. El
