@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy, inject, signal } from '@angular/core';
+import { Injectable, OnDestroy, computed, inject, signal } from '@angular/core';
 import { SandworldLang, SimSpeed, SIM_SPEEDS } from './domain/models/settings.model';
 import { GameTime } from './domain/models/time.model';
 import { GameEvents } from './domain/events/game-events';
@@ -118,6 +118,14 @@ export class SandworldService implements OnDestroy {
   readonly devView = signal<DevTileView | null>(null);
   /** Modo desarrollo: ver hasta dónde ve cada animal */
   readonly devSenses = signal(false);
+  /** Botones de prueba que ahora están activados (las vistas), para marcarlos en Ajustes */
+  readonly devOn = computed<DevAction[]>(() => {
+    const on: DevAction[] = [];
+    if (this.devSenses()) on.push('viewSenses');
+    if (this.devView() === 'values') on.push('viewValues');
+    if (this.devView() === 'biomes') on.push('viewBiomes');
+    return on;
+  });
   /** El tiempo que hace (la placa de la hora muestra su icono) */
   readonly weather = signal<WeatherState>(CLEAR_WEATHER);
   /**

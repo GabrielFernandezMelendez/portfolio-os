@@ -3,7 +3,7 @@ import { SANDWORLD_LANGS, SandworldLang } from '../../../domain/models/settings.
 import { ModalComponent } from '../../molecules/modal/modal';
 import { WoodButtonComponent } from '../../atoms/wood-button/wood-button';
 import { TPipe } from '../../../i18n/t.pipe';
-import { DEV_ACTIONS, DEV_TOOLS, DevAction } from '../../../config/dev.config';
+import { DEV_ACTIONS, DEV_HIGHLIGHT, DEV_TOOLS, DevAction } from '../../../config/dev.config';
 
 /** Ajustes: idioma, sangre en los combates y salir. El juego queda en pausa mientras está abierto. */
 @Component({
@@ -37,7 +37,10 @@ import { DEV_ACTIONS, DEV_TOOLS, DevAction } from '../../../config/dev.config';
         <!-- TEMPORAL: botones de prueba (config/dev.config.ts) -->
         <div class="dev-grid">
           @for (a of devActions; track a) {
-            <button swWood class="dev" (click)="devAction.emit(a)">{{ 'settings.dev.' + a | t }}</button>
+            <button swWood class="dev" [class.highlight]="highlight.includes(a)" [active]="devOn().includes(a)"
+                    (click)="devAction.emit(a)">
+              {{ 'settings.dev.' + a | t }}@if (devOn().includes(a)) { {{ 'settings.dev.on' | t }} }
+            </button>
           }
         </div>
       }
@@ -50,6 +53,9 @@ import { DEV_ACTIONS, DEV_TOOLS, DevAction } from '../../../config/dev.config';
     .exit { --sw-wood: #9c4a35; }
     .dev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 14px; }
     .dev { width: 100%; min-height: 34px; padding: 2px 4px; --sw-wood: #5b6f8f; font-size: 9px; line-height: 1.1; }
+    /* Los destacados, en verde y ocupando las dos columnas */
+    .dev.highlight { --sw-wood: #3f8a3a; --sw-wood-dk-soft: #2f6a2b; grid-column: 1 / -1; min-height: 40px; font-size: 10px; }
+    .dev.active { color: var(--sw-accent); }
   `,
 })
 export class SettingsMenuComponent {
@@ -62,6 +68,9 @@ export class SettingsMenuComponent {
   readonly close = output<void>();
   readonly exit = output<void>();
   readonly devAction = output<DevAction>();
+  /** Botones de prueba que ahora están activados (las vistas): se ven hundidos y con "activado" */
+  readonly devOn = input<readonly DevAction[]>([]);
+  protected readonly highlight = DEV_HIGHLIGHT;
   protected readonly langs = SANDWORLD_LANGS;
   protected readonly devTools = DEV_TOOLS;
   protected readonly devActions = DEV_ACTIONS;

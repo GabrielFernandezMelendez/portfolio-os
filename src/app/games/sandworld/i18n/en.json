@@ -27,6 +27,7 @@
     "exit": "Exit Sandworld",
     "resume": "Back to the island",
     "dev": {
+      "on": "· on",
       "reveal": "Test: reveal land",
       "sandPile": "Test: sand pile (random)",
       "spring": "Test: spring (random)",

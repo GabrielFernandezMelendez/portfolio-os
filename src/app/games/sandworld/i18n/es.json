@@ -27,6 +27,7 @@
     "exit": "Salir de Sandworld",
     "resume": "Volver a la isla",
     "dev": {
+      "on": "· activado",
       "reveal": "Probar: descubrir terreno",
       "sandPile": "Probar: montón de arena (al azar)",
       "spring": "Probar: manantial (al azar)",

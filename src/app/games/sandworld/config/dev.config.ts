@@ -8,6 +8,7 @@ export const DEV_TOOLS = true;
  * y su caso en SandworldService.runDevAction.
  */
 export const DEV_ACTIONS = [
+  'viewSenses',    // ver hasta dónde ve cada animal (de lejos, cada manada) y sus distancias de alerta y huida
   'reveal',        // descubrir el siguiente chunk (fase 7: expansión real)
   'sandPile',      // montón de arena en un sitio al azar (desprendimientos)
   'spring',        // manantial en una cumbre o ladera al azar
@@ -16,7 +17,6 @@ export const DEV_ACTIONS = [
   'glade',         // despertar un Claro sin sorteo
   'viewValues',    // ver esencia y afinidad de cada tile
   'viewBiomes',    // ver el bioma de cada tile
-  'viewSenses',    // ver hasta dónde ve cada animal (de lejos, cada manada) y sus distancias de alerta y huida
   'discoverPlants', // conocer todas las plantas (sus nombres al tocarlas)
   'garden',        // sembrar un huerto en un sitio llano al azar (como lo hará una especie evolucionada)
   'fruitAllYear',  // ver el fruto todo el año (sin esperar a su temporada)
@@ -41,3 +41,6 @@ export const DEV_ACTIONS = [
 ] as const;
 
 export type DevAction = (typeof DEV_ACTIONS)[number];
+
+/** Botones de prueba destacados en verde (los que se usan a menudo, para encontrarlos a la primera) */
+export const DEV_HIGHLIGHT: readonly DevAction[] = ['viewSenses'];

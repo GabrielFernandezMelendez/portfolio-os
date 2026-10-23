@@ -79,6 +79,7 @@ import { AnimalSheetComponent } from '../animal-sheet/animal-sheet';
           (bloodChange)="game.setBlood($event)"
           (close)="game.closeMenu()"
           (exit)="exit.emit()"
+          [devOn]="game.devOn()"
           (devAction)="game.closeMenu(); game.runDevAction($event)"
         />
       }

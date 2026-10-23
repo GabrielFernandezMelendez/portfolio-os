@@ -55,31 +55,36 @@ export class SensesOverlay {
     if (far) {
       for (const h of fauna.herds()) {
         const s = SPECIES_DEFS[h.species];
-        this.ring(g, h.x, h.y, s.senses.sight * (night ? s.senses.night : 1), COLORS[s.key] ?? 0xffffff, 2.5 / zoom, 0.95);
+        this.ring(g, h.x, h.y, s.senses.sight * (night ? s.senses.night : 1), COLORS[s.key] ?? 0xffffff, 4 / zoom, 1, 0.12);
       }
       return;
     }
     for (const a of fauna.animals) {
       if (a.diedAt !== null || a.inside !== null) continue;
       const s = SPECIES_DEFS[a.species];
-      this.ring(g, a.x, a.y, s.senses.sight * (night ? s.senses.night : 1), COLORS[s.key] ?? 0xffffff, 1.5 / zoom, 0.8);
+      this.ring(g, a.x, a.y, s.senses.sight * (night ? s.senses.night : 1), COLORS[s.key] ?? 0xffffff, 3 / zoom, 1, 0.1);
       if (s.senses.wary) {
-        this.ring(g, a.x, a.y, s.senses.wary.alert, ALERT, 1 / zoom, 0.5);
-        this.ring(g, a.x, a.y, s.senses.wary.flee, FLEE, 1 / zoom, 0.5);
+        this.ring(g, a.x, a.y, s.senses.wary.alert, ALERT, 2 / zoom, 0.8);
+        this.ring(g, a.x, a.y, s.senses.wary.flee, FLEE, 2 / zoom, 0.8);
       }
     }
   }
 
   /**
    * Anillo de `r` celdas alrededor de la celda (x, y), en el suelo: un círculo en el plano de la isla es un rombo
-   * redondeado (elipse 2:1) en pantalla
+   * redondeado (elipse 2:1) en pantalla. Con `fill`, un relleno suave del mismo color (la vista se ve como una zona,
+   * no solo como una raya fina que se pierde sobre la hierba)
    */
-  private ring(g: Graphics, x: number, y: number, r: number, color: number, width: number, alpha: number): void {
+  private ring(g: Graphics, x: number, y: number, r: number, color: number, width: number, alpha: number, fill = 0): void {
     const c = this.cellWorld(Math.floor(x), Math.floor(y));
     if (!c) return;
     const G = WORLD.CELLS_PER_TILE;
     // Una celda mide 1/G de tile: en el mundo, (TILE_W/2, TILE_H/2) por tile en cada eje
     const rx = (r / G) * WORLD.TILE_W / Math.SQRT2, ry = (r / G) * WORLD.TILE_H / Math.SQRT2;
+    // Contorno oscuro debajo: se ve sobre cualquier suelo (hierba, nieve, agua)
+    g.ellipse(c.x, c.y, rx, ry);
+    if (fill > 0) g.fill({ color, alpha: fill });
+    g.stroke({ color: 0x2e1a0d, width: width * 1.8, alpha: alpha * 0.6 });
     g.ellipse(c.x, c.y, rx, ry).stroke({ color, width, alpha });
   }
 }
