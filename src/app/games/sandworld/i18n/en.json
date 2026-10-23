@@ -35,6 +35,7 @@
       "glade": "Test: Awakened Glade",
       "viewValues": "Show essence and affinity",
       "viewBiomes": "Show biomes",
+      "viewSenses": "Show animal sight",
       "discoverPlants": "Test: know all plants",
       "garden": "Test: sow a garden (random)",
       "fruitAllYear": "Test: fruit all year (on/off)",
