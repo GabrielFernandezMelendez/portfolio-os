@@ -133,7 +133,7 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     range: { roam: 2, flee: 1 },
     flight: { mode: 'away', freeze: 0.05, alarm: 0.9, zigzag: 0 },
     // Huele hasta 2 islas; vigila poco (nadie le caza)
-    senses: { smell: 2, vigilance: 0.05, sight: 12, night: 0.8, hearing: 22, stealth: 0.75, wary: { alert: 8, flee: 5 } },
+    senses: { smell: 2, vigilance: 0.05, sight: 12, night: 0.8, hearing: 22, stealth: 0.6, wary: { alert: 8, flee: 5 } },
     predator: {
       // Al humano lo evita: solo se atreve con un niño (y no siempre)
       prey: { deer: 1, rabbit: 0.6, human: 0.15, crow: 0.1, goblin: 0.3 },
@@ -150,8 +150,7 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
         // Un goblin despierto es escurridizo; dormido bajo un árbol de día, presa fácil (SLEEP_CATCH_BONUS)
         goblin: { adult: 0.1, young: 0.3, weak: 0.3 },
       },
-      // Cazar en manada compensa: cada compañero suma 0,1 (hasta 4) y casi siempre se apuntan
-      packBonus: 0.1, packMax: 4, joinHunt: 0.9, snowBonus: 0.15,
+      packBonus: 0.05, packMax: 4, joinHunt: 0.7, snowBonus: 0.15,
       giveUpAfter: 20, giveUp: 0.7,
       trip: { chance: 0.5, days: [2, 4], islands: 2 },
       carry: { tire: 2, relay: 0.5 },
@@ -169,8 +168,6 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       mode: 'rut', rutSeason: Season.WINTER, birthSeason: Season.SPRING, dominantOnly: true,
       conceivePerDay: 0.3, minSatiety: 0.4, twinsChance: 0, twinsSatiety: 1,
       litter: { sizes: [2, 3, 4, 5, 6, 7], weights: [10, 22, 28, 22, 12, 6] },
-      // Con poca presa para tantos lobos (por encima del 60 % de lo que la isla alimenta), camadas de 2 a 4
-      scarceAbove: 0.6, scarceShift: 3,
       nurseDays: 10, orphanDeath: 0.4,
     },
     // Atracón y ayuno: llena el estómago con 0,15 de carne y pierde poca saciedad al día (aguanta días)

@@ -261,12 +261,6 @@ export interface RutBreeding {
   readonly dominantOnly?: boolean;
   /** Camada por tirada (si no, una cría o, bien comida, gemelos) */
   readonly litter?: { readonly sizes: readonly number[]; readonly weights: readonly number[] };
-  /**
-   * Camadas según la comida: si su especie está por encima de `scarceAbove` de lo que la isla puede alimentar, la
-   * tirada de la camada baja `scarceShift` puestos (lobo: de 2 a 4 en vez de hasta 7)
-   */
-  readonly scarceAbove?: number;
-  readonly scarceShift?: number;
   /** Días que las crías pasan dentro del refugio y probabilidad al día de no salir adelante sin su madre */
   readonly nurseDays?: number;
   readonly orphanDeath?: number;

@@ -261,7 +261,3 @@ export const STALK_FROM = 1.2;
 export const STALK_SPEED = 0.5;
 /** Al apartarse de un depredador, como mucho este rato andando (luego vuelve a lo suyo y, si sigue cerca, otra vez) */
 export const KEEP_AWAY_MINUTES = 40;
-/** Tras una caza fallida, durante este rato (minutos) el depredador con hambre prueba a pescar si tiene agua honda cerca */
-export const FISH_AFTER_FAIL = 360;
-/** Hasta dónde (celdas) se apuntan los de la manada a una cacería */
-export const JOIN_HUNT_RANGE = 24;
