@@ -192,6 +192,8 @@ export interface Animal {
   fishing: { x: number; y: number; until: number } | null;
   /** Apartándose de un depredador que ha visto: adónde va y hasta qué minuto (la vista) */
   keepAway: { x: number; y: number; until: number } | null;
+  /** Minuto de su última caza fallida (con hambre, después prueba a pescar) */
+  huntFailedAt: number;
   /** Cadáver (id) del que está comiendo, o null */
   feeding: number | null;
   /** Cadáver: carne que le queda (se la comen los carnívoros) */
