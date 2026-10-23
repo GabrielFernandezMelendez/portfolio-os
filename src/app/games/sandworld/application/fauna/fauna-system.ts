@@ -12,7 +12,7 @@ import {
   FOOD_HERE, FORAGE_RADIUS, FORAGE_SAMPLES, FULL, GATHER_MARGIN, JOIN_RANGE, LOST_NIGHT, MAX_STEP, PATH_FROM, PATH_NODES,
   REJECT_HEALTH, RETURN_CHANCE, ROAM_CHANCE, ROAM_HOURS, RUN_MIN, RUN_STOP, RUN_TIRE_PER_MINUTE, SEED_GUT_HOURS,
   SLEEP_BELOW, SOIL_DAMAGE, SOIL_DAMAGE_FROM, STUCK_MINUTES, THINK_MINUTES, THIRST_BELOW, TOXIC_HEALTH, TRAMPLE,
-  WELCOME_CHANCE, DEN_MOTHER_STARVING, ALERT_REPEAT, LEAVE_HUNGRY_BELOW, KEEP_AWAY_MINUTES, FISH_AFTER_FAIL, JOIN_HUNT_RANGE, SOUND, STALK_FROM, STALK_SPEED, FISH_PER_TILE, FISH_REGROW_PER_DAY, FISH_MINUTES, SCAVENGE_SHARE, REFUGE_WARMTH, HUDDLE_WARMTH, SHADE_COOL, EXPOSURE_RATE, EXPOSURE_RECOVER, EXPOSURE_SEEK, EXPOSURE_DAMAGE, FEED_YOUNG_ABOVE, REGURGITATE, SHARE_RANGE, FIGHT_MINUTES, FIGHT_WOUND, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
+  WELCOME_CHANCE, DEN_MOTHER_STARVING, ALERT_REPEAT, CORPSE_COLD, CORPSE_COLD_KEEP, STARVING_HUNTER, SHARE_MARGIN, LEAVE_HUNGRY_BELOW, KEEP_AWAY_MINUTES, FISH_AFTER_FAIL, JOIN_HUNT_RANGE, SOUND, STALK_FROM, STALK_SPEED, FISH_PER_TILE, FISH_REGROW_PER_DAY, FISH_MINUTES, SCAVENGE_SHARE, REFUGE_WARMTH, HUDDLE_WARMTH, SHADE_COOL, EXPOSURE_RATE, EXPOSURE_RECOVER, EXPOSURE_SEEK, EXPOSURE_DAMAGE, FEED_YOUNG_ABOVE, REGURGITATE, SHARE_RANGE, FIGHT_MINUTES, FIGHT_WOUND, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
 } from '../../config/fauna.config';
 import { bonesLeft, CLEAN_BONES } from './carcass';
 import { NeedMods, ageDays, appetite, lifeStage, passTime, updateHappiness } from './needs';
@@ -1244,6 +1244,16 @@ export class FaunaSystem {
         const crouch = dist(a, prey) <= SPECIES_DEFS[prey.species].senses.sight * STALK_FROM;
         if (crouch && !a.hunt.crouch) write(a, 'stalking', now, { prey: `@species.${SPECIES_DEFS[prey.species].key}` });
         a.hunt.crouch = crouch;
+        // Cazan juntos: el que llega antes espera agachado a sus compañeros (hasta `gather.wait` minutos) para saltar a la vez
+        const g = pred.gather;
+        if (g && dist(a, prey) <= g.range && now - a.hunt.since < g.wait) {
+          const behind = this.animals.some(m => m !== a && m.hunt?.target === prey.id && m.hunt.phase === 'stalk' && dist(m, prey) > g.range);
+          if (behind) {
+            if (a.action !== 'idle') this.setAction(a, 'idle', now);
+            this.face(a, prey.x - a.x, prey.y - a.y);
+            return true;
+          }
+        }
         if (dist(a, prey) <= CONTACT) {
           // Llega sin que le vea: le salta encima por sorpresa (cuerpo a cuerpo y, al acabar, la tirada)
           this.startFight(a, prey, now, true);
@@ -1330,11 +1340,25 @@ export class FaunaSystem {
         if (this.denMother(m, s, members, now)) continue;
         // Con hambre se apunta casi siempre (`joinHunt`); bien comido, menos cuanto más lleno: si la manada ha pasado
         // hambre van todos juntos (y la manada entera junta caza casi siempre: `packCatch`)
-        const join = m.satiety < pred.huntBelow ? pred.joinHunt : pred.joinHunt * Math.max(0, (1 - m.satiety) / (1 - pred.huntBelow));
+        // Si el que sale a cazar pasa hambre de verdad (STARVING_HUNTER de su umbral), le acompañan aunque estén comidos
+        const urgent = a.satiety < pred.huntBelow * STARVING_HUNTER;
+        const join = urgent || m.satiety < pred.huntBelow ? pred.joinHunt : pred.joinHunt * Math.max(0, (1 - m.satiety) / (1 - pred.huntBelow));
         if (this.random.next() < join) m.hunt = { target: prey.id, phase: 'stalk', since: now };
       }
+      // Nadie se ha apuntado pero hay compañeros a mano: casi siempre (salvo `soloHunt`) llama a la manada y el más
+      // cercano le acompaña (un lobo con hambre no caza solo si puede evitarlo)
+      const together = () => members.filter(m => m.hunt?.target === prey.id).length;
+      if (together() < 2 && pred.soloHunt !== undefined && this.random.next() >= pred.soloHunt) {
+        const mate = members
+          .filter(m => m !== a && !m.hunt && ageDays(m, now) >= s.youngDays / 2 && dist(m, a) <= JOIN_HUNT_RANGE && m.rest > RUN_MIN && !this.denMother(m, s, members, now))
+          .sort((x, y) => dist(x, a) - dist(y, a))[0];
+        if (mate) {
+          mate.hunt = { target: prey.id, phase: 'stalk', since: now };
+          write(a, 'callPack', now, { name: mate.name });
+        }
+      }
       this.huntStat(a).hunts++;
-      if (members.filter(m => m.hunt?.target === prey.id).length >= 3) this.huntStat(a).packHunts++;
+      if (together() >= 2) this.huntStat(a).packHunts++;
       this.walkTo(a, prey.x, prey.y, now);
       return true;
     }
@@ -1748,7 +1772,7 @@ export class FaunaSystem {
       return;
     }
     this.huntStat(a).caught++;
-    if (helpers >= 2) this.huntStat(a).packCaught++;
+    if (helpers >= 1) this.huntStat(a).packCaught++;
     // Cazada: los cazadores comen de ella (la pareja dominante, la primera: los demás esperan su turno comiendo después)
     this.die(prey, 'predation', now);
     write(a, 'killed', now, { name: prey.name }, true);
@@ -1767,6 +1791,26 @@ export class FaunaSystem {
     if (herd && s.predator?.shareKill) herd.feast = prey.id;
   }
 
+  /** ¿La pareja dominante de su manada? (la guía y, si cría solo la pareja dominante, el macho adulto más viejo) */
+  private dominant(a: Animal, s: SpeciesDef, members: Animal[], now: number): boolean {
+    if (leaderOf(members, s, now) === a) return true;
+    if (!(s.breeding as { dominantOnly?: boolean }).dominantOnly || a.sex !== 'male') return false;
+    const males = members.filter(m => m.sex === 'male' && ageDays(m, now) >= s.adultDays).sort((x, y) => x.bornAt - y.bornAt);
+    return males[0] === a;
+  }
+
+  /**
+   * ¿Deja de comer para dejar sitio? Si no es de la pareja dominante y hay alguien de su manada con más hambre que
+   * va a por esta presa (o espera en el banquete) por debajo de su nivel (SHARE_MARGIN), sí.
+   */
+  private yieldsShare(a: Animal, s: SpeciesDef, c: Animal, now: number): boolean {
+    const members = this.members(a.herd);
+    if (this.dominant(a, s, members, now)) return false;
+    const herd = this.herds.get(a.herd);
+    return members.some(m => m !== a && m.inside === null && m.satiety < a.satiety - SHARE_MARGIN
+      && (m.feeding === c.id || herd?.feast === c.id) && Math.hypot(m.x - c.x, m.y - c.y) <= SHARE_RANGE * ISLAND);
+  }
+
   /** Come del cadáver: bocados de carne hasta llenarse o acabarlo */
   private feedOn(a: Animal, s: SpeciesDef, now: number): void {
     const c = this.corpses.find(x => x.id === a.feeding);
@@ -1774,6 +1818,14 @@ export class FaunaSystem {
       a.feeding = null;
       this.setAction(a, 'idle', now);
       if (c && a.satiety >= FULL) write(a, 'gorged', now);
+      return;
+    }
+    // Reparto en la manada (los que comparten la presa): la pareja dominante come hasta llenarse; los demás paran al
+    // llegar al nivel del más hambriento que aún espera su parte y le dejan sitio (sin nadie esperando, siguen)
+    if (s.predator?.shareKill && (now + a.id) % THINK_MINUTES === 0 && this.yieldsShare(a, s, c, now)) {
+      a.feeding = null;
+      this.setAction(a, 'idle', now);
+      write(a, 'shareKill', now);
       return;
     }
     const bite = Math.min(MEAT_BITE, c.meat);
@@ -2108,10 +2160,11 @@ export class FaunaSystem {
       this.world.trample(i * G + 1, j * G + 1, Math.min(0.5, TRAMPLE * n * n));
       if (n >= SOIL_DAMAGE_FROM) this.world.fertilize(i * G + 1, j * G + 1, -SOIL_DAMAGE * n * n);
     }
-    // Cadáveres que se deshacen y abonan
+    // Cadáveres que se deshacen y abonan. Con frío se conservan (la manada vuelve a comer de su presa días después)
     for (let n = this.corpses.length - 1; n >= 0; n--) {
       const c = this.corpses[n];
-      if ((now - (c.diedAt ?? now)) / DAY < SPECIES_DEFS[c.species].corpseDays) continue;
+      if (this.world.temperature(Math.floor(c.x), Math.floor(c.y)) < CORPSE_COLD) c.kept += 60 * CORPSE_COLD_KEEP;
+      if ((now - (c.diedAt ?? now) - c.kept) / DAY < SPECIES_DEFS[c.species].corpseDays) continue;
       this.world.fertilize(Math.floor(c.x), Math.floor(c.y), CORPSE_FERTILITY);
       this.corpses.splice(n, 1);
     }
@@ -2654,7 +2707,7 @@ export class FaunaSystem {
       health: 1, rest: 0.8, satiety: 0.8, hydration: 0.8, happiness: 0.6, factors: [], action: 'idle', actionSince: now, order: null,
       fear: 0, fearX: x, fearY: y, curious: null, fleeing: false, signal: null, pantUntil: 0, awakeUntil: 0, roam: null, path: null, stuckUntil: 0, strayed: 0,
       inside: null, outUntil: 0, frozenUntil: 0, runTo: null, sickUntil: null, immune: false, leftHerd: null, lateBy: 0, lateFor: -1, nursedAt: now, search: null, waterGoal: null, badWater: [],
-      hunt: null, fight: null, cold: 0, heat: 0, carrying: 0, fishing: null, keepAway: null, huntFailedAt: -Infinity, feeding: null, meat: 0, meatFull: 0,
+      hunt: null, fight: null, cold: 0, heat: 0, carrying: 0, fishing: null, keepAway: null, huntFailedAt: -Infinity, kept: 0, feeding: null, meat: 0, meatFull: 0,
       runDx: 0, runDy: 0, runX: x, runY: y, dueAt: null, litter: 0, lastRutYear: -1, seeds: [], diary: [], diaryDay: -1,
       diaryToday: 0, diedAt: null, cause: null,
     };

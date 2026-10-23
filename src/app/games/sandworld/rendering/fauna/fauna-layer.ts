@@ -483,7 +483,7 @@ export class FaunaLayer {
     s.sprite.zIndex = s.y + 0.05;
     // Los cadáveres se desvanecen el último día
     if (a.diedAt !== null) {
-      const left = species.corpseDays - (now - a.diedAt) / 1440;
+      const left = species.corpseDays - (now - a.diedAt - (a.kept ?? 0)) / 1440;
       s.sprite.alpha = Math.max(0, Math.min(1, left));
     } else s.sprite.alpha = 1;
     s.shadow.texture = shadowTexture(Math.round(art.shadow * (art.scale[kind] / art.scale['female'])));

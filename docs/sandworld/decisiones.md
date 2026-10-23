@@ -178,6 +178,12 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   poca presa para tantos lobos (más del 60 % de lo que la isla alimenta), camadas de 2 a 4.
 - **Manada que caza junta**: con hambre se apunta casi toda la manada (95 %); bien comidos, menos cuanto más llenos.
   La loba que amamanta no. Si llegan 3 o más juntos a la presa, 90 % de éxito (`packCatch`).
+- **Caza en manada (90 % de las cacerías)**: si nadie se apunta y hay compañeros a mano, el lobo con hambre llama al
+  más cercano (solo caza solo el 10 % de esas veces). Si pasa hambre de verdad, le acompañan aunque estén comidos. El
+  que llega antes espera agachado a los demás (hasta 40 min) para saltar a la vez. Éxito al alcanzarla: 2 juntos
+  75 %, 3 o más 90 % (como en Yellowstone: más de 4 no cazan mejor).
+- **Reparto en la presa**: la pareja dominante come hasta llenarse; los demás paran al nivel del que tiene más hambre
+  y espera su parte. La manada recuerda su presa y vuelve a comer días después; con frío el cadáver se conserva.
 - **El lobo no se va enseguida**: solo tras 3 días seguidos de hambre de verdad y con un 10 % al día; si desaparecen
   de la isla, pueden volver lobos de fuera a los 20-30 días (`migration.returnAfter`; el resto, 60-80).
 - **La sed va antes que cazar y que dormir** (común): con sed y agua a su alcance beben antes; la sed de verdad

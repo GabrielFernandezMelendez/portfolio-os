@@ -77,7 +77,8 @@ export function catchChance(s: SpeciesDef, prey: Animal, preyS: SpeciesDef, help
   // Dormida fuera de su refugio: mucho más fácil (común a todas; así un goblin de día bajo un árbol es vulnerable)
   const asleep = prey.action === 'sleep' && prey.inside === null ? SLEEP_CATCH_BONUS : 0;
   const chance = Math.min(0.95, base + pack + asleep + (snow ? pred.snowBonus : 0));
-  // Toda la manada junta (3 o más alcanzándola a la vez): casi siempre la cazan (`packCatch`), si es presa posible
-  if (pred.packCatch && base > 0 && helpers >= 2) return Math.max(chance, pred.packCatch);
+  // En manada (dos o más alcanzándola a la vez), si es presa posible: `packCatch` [pareja, tres o más]. El éxito sube
+  // con el grupo hasta unos 3-4 y luego ya no (los lobos de Yellowstone: más de 4 no cazan mejor)
+  if (pred.packCatch && base > 0 && helpers >= 1) return Math.max(chance, pred.packCatch[helpers >= 2 ? 1 : 0]);
   return chance;
 }

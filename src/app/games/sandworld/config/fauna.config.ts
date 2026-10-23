@@ -265,3 +265,13 @@ export const KEEP_AWAY_MINUTES = 40;
 export const FISH_AFTER_FAIL = 360;
 /** Hasta dónde (celdas) se apuntan los de la manada a una cacería */
 export const JOIN_HUNT_RANGE = 24;
+/** Si el que sale a cazar tiene la saciedad por debajo de esta parte de su umbral de caza, la manada le acompaña aunque esté comida */
+export const STARVING_HUNTER = 0.6;
+/** Reparto en la presa: un lobo (no dominante) deja de comer si alguien de su manada que espera tiene esta saciedad menos que él */
+export const SHARE_MARGIN = 0.1;
+/**
+ * Cadáveres con frío [PROPUESTA]: por debajo de esta temperatura (escala del mundo; ~0,3 es fresco de invierno) cada
+ * hora cuenta solo como (1 - CORPSE_COLD_KEEP) para deshacerse: se conservan y la manada vuelve a comer días después
+ */
+export const CORPSE_COLD = 0.3;
+export const CORPSE_COLD_KEEP = 0.75;

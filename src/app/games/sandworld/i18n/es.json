@@ -607,6 +607,8 @@
       "watching": "Hay un {predator} por ahí. Dejo de comer y lo vigilo.",
       "heardSomething": "He oído algo. Me quedo quieto escuchando.",
       "sawKill": "Han cazado a {name} delante de nosotros. Hemos corrido sin mirar atrás.",
+      "callPack": "Tengo hambre. He llamado a {name} y vamos juntos a por ella.",
+      "shareKill": "Ya he comido bastante. Dejo sitio a los que tienen más hambre.",
       "joinedBad": "Otra manada me ha echado a cornadas.",
       "rut": "Ha llegado el otoño y {name} me mira raro.",
       "birth": "Ha nacido mi cría. Se llama {name}.",

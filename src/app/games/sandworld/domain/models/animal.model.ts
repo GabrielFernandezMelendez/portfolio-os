@@ -194,6 +194,8 @@ export interface Animal {
   keepAway: { x: number; y: number; until: number } | null;
   /** Minuto de su última caza fallida (con hambre, después prueba a pescar) */
   huntFailedAt: number;
+  /** Cadáver: minutos que el frío lo ha conservado (se deshace más tarde) */
+  kept: number;
   /** Cadáver (id) del que está comiendo, o null */
   feeding: number | null;
   /** Cadáver: carne que le queda (se la comen los carnívoros) */

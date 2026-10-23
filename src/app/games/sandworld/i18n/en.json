@@ -607,6 +607,8 @@
       "watching": "There's a {predator} around. I stop eating and keep an eye on it.",
       "heardSomething": "Heard something. Standing still, listening.",
       "sawKill": "They caught {name} right in front of us. We ran without looking back.",
+      "callPack": "I'm hungry. I called {name} and we're going after it together.",
+      "shareKill": "I've had enough. Making room for the hungrier ones.",
       "joinedBad": "Another herd chased me off with their antlers.",
       "rut": "Autumn is here and {name} keeps looking at me funny.",
       "birth": "My calf was born. Its name is {name}.",

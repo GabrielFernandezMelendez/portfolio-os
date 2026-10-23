@@ -809,9 +809,10 @@ describe('Fauna: lobos', () => {
     expect(alone).toBeLessThan(0.2);
     expect(catchChance(wolf, calf, deer, 0, false, t0)).toBeGreaterThan(alone * 2);
     expect(catchChance(wolf, adult, deer, 3, false, t0)).toBeGreaterThan(alone);
-    // Con nieve, más fácil (de uno o dos)
-    expect(catchChance(wolf, adult, deer, 1, true, t0)).toBeGreaterThan(catchChance(wolf, adult, deer, 1, false, t0));
-    // La manada entera junta (3 o más): 90 %
+    // Con nieve, más fácil (solo)
+    expect(catchChance(wolf, adult, deer, 0, true, t0)).toBeGreaterThan(catchChance(wolf, adult, deer, 0, false, t0));
+    // En manada: dos juntos 75 %, tres o más 90 %
+    expect(catchChance(wolf, adult, deer, 1, false, t0)).toBeCloseTo(0.75, 5);
     expect(catchChance(wolf, adult, deer, 2, false, t0)).toBeCloseTo(0.9, 5);
   });
 
@@ -1625,5 +1626,56 @@ describe('Fauna: ajuste del lobo (camadas según la comida)', () => {
     expect(poor.length).toBeGreaterThan(10);
     expect(Math.max(...poor)).toBeLessThanOrEqual(4);
     expect(Math.max(...rich)).toBeGreaterThan(4);
+  });
+});
+
+describe('Fauna: la manada caza junta', () => {
+  it('con compañeros a mano, casi nunca caza solo: llama al más cercano (el 90 % de las cacerías, en manada)', () => {
+    let hunts = 0, pack = 0;
+    for (let seed = 1; seed <= 12; seed++) {
+      const { island, fauna } = setup(16, 0.8, seed);
+      const t0 = at(Season.SUMMER, 2);
+      fauna.spawnHerd('deer', 20, 20, t0, false);
+      const wolves = fauna.spawnHerd('wolf', 34, 34, t0, false, [{ sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'male', age: 'adult' }]);
+      // Solo uno con hambre: los demás, comidos (no se apuntarían por su cuenta)
+      wolves[0].satiety = 0.2;
+      wolves[1].satiety = wolves[2].satiety = 1;
+      run(fauna, island, t0, 6 * 60);
+      const st = fauna.huntStats.get('wolf');
+      if (st) {
+        hunts += st.hunts;
+        pack += st.packHunts;
+      }
+    }
+    expect(hunts).toBeGreaterThan(5);
+    expect(pack / hunts).toBeGreaterThanOrEqual(0.7);
+  });
+});
+
+describe('Fauna: reparto de la presa en la manada', () => {
+  it('la pareja dominante come hasta llenarse; los demás dejan sitio al que tiene más hambre', () => {
+    const { fauna } = setup(16, 0.8, 4);
+    const t0 = at(Season.SUMMER, 2);
+    const [deer] = fauna.spawnHerd('deer', 30, 30, t0, false, [{ sex: 'female', age: 'adult' }]);
+    const pack = fauna.spawnHerd('wolf', 31, 30, t0, false, [
+      { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'female', age: 'adult' },
+    ]);
+    const f = fauna as unknown as { die(a: unknown, c: string, n: number): void; yieldsShare(a: unknown, s: unknown, c: unknown, n: number): boolean; dominant(a: unknown, s: unknown, m: unknown, n: number): boolean };
+    f.die(deer, 'predation', t0);
+    const wolf = SPECIES_BY_KEY['wolf'];
+    for (const w of pack) { w.feeding = deer.id; w.x = 30.5; w.y = 30; }
+    const others = pack.filter(w => !f.dominant(w, wolf, pack, t0));
+    expect(others.length).toBe(2);
+    const [fed, hungry] = others;
+    fed.satiety = 0.6;
+    hungry.satiety = 0.1;
+    expect(f.yieldsShare(fed, wolf, deer, t0)).toBe(true);
+    // El dominante no deja sitio aunque haya otro con más hambre
+    const alpha = pack.find(w => f.dominant(w, wolf, pack, t0))!;
+    alpha.satiety = 0.6;
+    expect(f.yieldsShare(alpha, wolf, deer, t0)).toBe(false);
+    // Sin nadie con más hambre esperando, sigue comiendo
+    hungry.satiety = 0.65;
+    expect(f.yieldsShare(fed, wolf, deer, t0)).toBe(false);
   });
 });

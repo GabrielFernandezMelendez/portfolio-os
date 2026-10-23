@@ -153,8 +153,9 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       // Cazar en manada compensa: cada compañero suma 0,1 (hasta 4); con hambre se apuntan casi todos (95 %), bien
       // comidos menos (cuanto más llenos, menos)
       packBonus: 0.1, packMax: 4, joinHunt: 0.95, snowBonus: 0.15,
-      // La manada entera junta (3 o más alcanzando a la presa): 90 % de éxito
-      packCatch: 0.9,
+      // En manada: dos juntos al alcanzarla 75 %, tres o más 90 %. Solo cazan solos el 10 % de las veces que tienen
+      // compañeros a mano (si no, llaman al más cercano), y el que llega antes espera a los demás (hasta 40 min)
+      packCatch: [0.75, 0.9], soloHunt: 0.1, gather: { range: 6, wait: 40 },
       giveUpAfter: 20, giveUp: 0.7,
       trip: { chance: 0.5, days: [2, 4], islands: 2 },
       carry: { tire: 2, relay: 0.5 },
