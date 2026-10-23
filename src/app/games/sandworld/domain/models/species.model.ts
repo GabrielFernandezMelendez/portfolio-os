@@ -173,10 +173,6 @@ export interface SpeciesDef {
     readonly groupsPerChunk: readonly [number, number];
     readonly crowdLeave: number;
     readonly hungryLeave?: number;
-    /** Días seguidos con hambre de verdad antes de poder irse (sin esto, desde el primero) */
-    readonly hungryDays?: number;
-    /** Si desaparece de la isla, días hasta que pueden volver (y hasta cuándo sube la tirada); sin esto, RETURN_AFTER_DAYS */
-    readonly returnAfter?: readonly [number, number];
     readonly onlyIfAbsent?: boolean;
     readonly carrionLure?: number;
     /** Especies de celo: probabilidad de que cada hembra adulta que llega entre el celo y los partos venga preñada */
@@ -265,12 +261,6 @@ export interface RutBreeding {
   readonly dominantOnly?: boolean;
   /** Camada por tirada (si no, una cría o, bien comida, gemelos) */
   readonly litter?: { readonly sizes: readonly number[]; readonly weights: readonly number[] };
-  /**
-   * Camadas según la comida: si su especie está por encima de `scarceAbove` de lo que la isla puede alimentar, la
-   * tirada de la camada baja `scarceShift` puestos (lobo: de 2 a 4 en vez de hasta 7)
-   */
-  readonly scarceAbove?: number;
-  readonly scarceShift?: number;
   /** Días que las crías pasan dentro del refugio y probabilidad al día de no salir adelante sin su madre */
   readonly nurseDays?: number;
   readonly orphanDeath?: number;
@@ -340,8 +330,6 @@ export interface PredatorDef {
   readonly catch: Readonly<Record<string, { readonly adult: number; readonly young: number; readonly weak: number }>>;
   readonly packBonus: number;
   readonly packMax: number;
-  /** Cazando 3 o más juntos (la manada entera): probabilidad de cazarla (si no, la tirada normal) */
-  readonly packCatch?: number;
   readonly joinHunt: number;
   readonly snowBonus: number;
   readonly giveUpAfter: number;
