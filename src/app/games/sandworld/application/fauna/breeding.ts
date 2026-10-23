@@ -24,6 +24,7 @@ export function nextSeasonStart(now: number, season: SeasonId): number {
  */
 export function tryConceive(
   female: Animal, herd: readonly Animal[], s: SpeciesDef, now: number, year: number, days: number, random: RandomSource,
+  scarce = false,
 ): Animal | null {
   const b = s.breeding as RutBreeding;
   if (female.sex !== 'female' || female.diedAt !== null || female.dueAt !== null) return null;
@@ -35,7 +36,7 @@ export function tryConceive(
   if (random.next() >= b.conceivePerDay * days) return null;
   female.lastRutYear = year;
   female.litter = b.litter
-    ? litterSize({ litter: b.litter, crowdShift: 0, hungryShift: 1 }, female.satiety, false, random)
+    ? litterSize({ litter: b.litter, crowdShift: b.scarceShift ?? 0, hungryShift: 1 }, female.satiety, scarce, random)
     : female.satiety > b.twinsSatiety && random.next() < b.twinsChance ? 2 : 1;
   female.dueAt = nextSeasonStart(now, b.birthSeason) + Math.floor(random.next() * BIRTH_SPREAD_DAYS * DAY);
   const males = herd.filter(m => m.sex === 'male' && m.diedAt === null && ageDays(m, now) >= s.adultDays);

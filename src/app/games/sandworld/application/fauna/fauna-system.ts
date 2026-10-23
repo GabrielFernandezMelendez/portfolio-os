@@ -12,7 +12,7 @@ import {
   FOOD_HERE, FORAGE_RADIUS, FORAGE_SAMPLES, FULL, GATHER_MARGIN, JOIN_RANGE, LOST_NIGHT, MAX_STEP, PATH_FROM, PATH_NODES,
   REJECT_HEALTH, RETURN_CHANCE, ROAM_CHANCE, ROAM_HOURS, RUN_MIN, RUN_STOP, RUN_TIRE_PER_MINUTE, SEED_GUT_HOURS,
   SLEEP_BELOW, SOIL_DAMAGE, SOIL_DAMAGE_FROM, STUCK_MINUTES, THINK_MINUTES, THIRST_BELOW, TOXIC_HEALTH, TRAMPLE,
-  WELCOME_CHANCE, DEN_MOTHER_STARVING, ALERT_REPEAT, KEEP_AWAY_MINUTES, SOUND, STALK_FROM, STALK_SPEED, FISH_PER_TILE, FISH_REGROW_PER_DAY, FISH_MINUTES, SCAVENGE_SHARE, REFUGE_WARMTH, HUDDLE_WARMTH, SHADE_COOL, EXPOSURE_RATE, EXPOSURE_RECOVER, EXPOSURE_SEEK, EXPOSURE_DAMAGE, FEED_YOUNG_ABOVE, REGURGITATE, SHARE_RANGE, FIGHT_MINUTES, FIGHT_WOUND, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
+  WELCOME_CHANCE, DEN_MOTHER_STARVING, ALERT_REPEAT, KEEP_AWAY_MINUTES, FISH_AFTER_FAIL, JOIN_HUNT_RANGE, SOUND, STALK_FROM, STALK_SPEED, FISH_PER_TILE, FISH_REGROW_PER_DAY, FISH_MINUTES, SCAVENGE_SHARE, REFUGE_WARMTH, HUDDLE_WARMTH, SHADE_COOL, EXPOSURE_RATE, EXPOSURE_RECOVER, EXPOSURE_SEEK, EXPOSURE_DAMAGE, FEED_YOUNG_ABOVE, REGURGITATE, SHARE_RANGE, FIGHT_MINUTES, FIGHT_WOUND, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
 } from '../../config/fauna.config';
 import { bonesLeft, CLEAN_BONES } from './carcass';
 import { NeedMods, ageDays, appetite, lifeStage, passTime, updateHappiness } from './needs';
@@ -1296,6 +1296,8 @@ export class FaunaSystem {
       }
     }
     // Hambre: sale a cazar (tirada por hora); los compañeros cercanos se le unen (tirada)
+    // Después de una caza fallida, con hambre y agua honda cerca: a pescar (el plan B)
+    if (hungry && now - a.huntFailedAt < FISH_AFTER_FAIL && this.startFishing(a, s, now)) return true;
     if (hungry && a.rest > RUN_MIN && this.random.next() < perThink(pred.huntChance)) {
       const prey = choosePrey(a, s, this.animals, SPECIES_DEFS, x => this.alone(x), now, this.random);
       if (!prey) return this.searchPrey(a, s, members, now);
@@ -1304,7 +1306,10 @@ export class FaunaSystem {
       a.roam = null;
       write(a, 'hunting', now, { prey: `@species.${SPECIES_DEFS[prey.species].key}` });
       for (const m of members) {
-        if (m === a || m.hunt || ageDays(m, now) < s.youngDays / 2 || m.satiety > 0.8 || dist(m, a) > 12 || m.rest <= RUN_MIN) continue;
+        // Cazan juntos: se apuntan los de la manada a su alcance (JOIN_HUNT_RANGE) aunque no tengan mucha hambre; la
+        // madre que amamanta no (se queda en la guarida)
+        if (m === a || m.hunt || ageDays(m, now) < s.youngDays / 2 || m.satiety > 0.9 || dist(m, a) > JOIN_HUNT_RANGE || m.rest <= RUN_MIN) continue;
+        if (this.denMother(m, s, members, now)) continue;
         if (this.random.next() < pred.joinHunt) m.hunt = { target: prey.id, phase: 'stalk', since: now };
       }
       this.walkTo(a, prey.x, prey.y, now);
@@ -1579,6 +1584,8 @@ export class FaunaSystem {
     const long = now - hunt.since > pred.giveUpAfter && (now - hunt.since) % 5 === 0 && this.random.next() < pred.giveUp;
     if (!prey || prey.inside !== null || a.rest < RUN_STOP || long) {
       a.hunt = null;
+      // Caza fallida: con hambre, el plan B es el agua (peces)
+      a.huntFailedAt = now;
       if (prey && long) write(a, 'gaveUp', now);
       this.endRun(a, s, now);
       return true;
@@ -2199,7 +2206,9 @@ export class FaunaSystem {
       const density = capacity > 0 ? all.length / capacity : all.length > 1 ? 9 : 0;
       if (b.mode === 'rut' && t.season === b.rutSeason) {
         for (const f of all) {
-          const male = tryConceive(f, this.members(f.herd), s, now, t.year, 1, this.random);
+          // Con poca presa para tantos (lobo: densidad por encima de `scarceAbove`), camadas más pequeñas
+          const scarce = density > (b.scarceAbove ?? Infinity);
+          const male = tryConceive(f, this.members(f.herd), s, now, t.year, 1, this.random, scarce);
           if (male) write(f, 'rut', now, { name: male.name });
         }
       }
@@ -2608,7 +2617,7 @@ export class FaunaSystem {
       health: 1, rest: 0.8, satiety: 0.8, hydration: 0.8, happiness: 0.6, factors: [], action: 'idle', actionSince: now, order: null,
       fear: 0, fearX: x, fearY: y, curious: null, fleeing: false, signal: null, pantUntil: 0, awakeUntil: 0, roam: null, path: null, stuckUntil: 0, strayed: 0,
       inside: null, outUntil: 0, frozenUntil: 0, runTo: null, sickUntil: null, immune: false, leftHerd: null, lateBy: 0, lateFor: -1, nursedAt: now, search: null, waterGoal: null, badWater: [],
-      hunt: null, fight: null, cold: 0, heat: 0, carrying: 0, fishing: null, keepAway: null, feeding: null, meat: 0, meatFull: 0,
+      hunt: null, fight: null, cold: 0, heat: 0, carrying: 0, fishing: null, keepAway: null, huntFailedAt: -Infinity, feeding: null, meat: 0, meatFull: 0,
       runDx: 0, runDy: 0, runX: x, runY: y, dueAt: null, litter: 0, lastRutYear: -1, seeds: [], diary: [], diaryDay: -1,
       diaryToday: 0, diedAt: null, cause: null,
     };
