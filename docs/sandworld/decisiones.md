@@ -160,6 +160,19 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   Los chunks de una parcela nueva se hornean de uno en uno (un frame cada uno) para que no haya tirón.
 - **Zoom lejano**: niveles ×0,5 y ×0,33 para ver la isla entera; la partida empieza a ×1. Por debajo de ×1 las
   monedas de las manadas no encogen (mismo tamaño en pantalla que a ×1).
+- **Vista y oído** (comunes; cada especie pone sus alcances en `senses`): vista en celdas (ciervo 14, conejo 8, lobo
+  12, cuervo 20, humano 12, goblin 10), menos de noche y entre árboles; oído (ciervo 22, conejo 18, lobo 22…). Una
+  presa que ve a quien la caza deja de comer y lo mira ('!') a su distancia de alerta y se aparta a la de huida (ciervo
+  9 y 5); de un depredador saciado, la mitad. El que acecha se agacha y va despacio a la vista de su presa (más difícil
+  de ver: sigilo); si lo ven, persecución; si no, salto por sorpresa. Las alarmas (pisotón, golpe, graznido) las oyen
+  también otras especies que temen al mismo ('?': mira hacia el ruido). Ver u oír cazar a uno de la manada: estampida
+  (juntos con `herdRun.together`, alguno se separa). Así los lobos evitan a los goblins y los humanos a los lobos.
+- **Peces** (común, `fishing` por especie): en el agua honda (lagos y ríos, no charcos) sin helar. Lobo, humano y
+  goblin pescan con hambre y sin presa a mano: poco nutritivo (0,08 a 0,1 de saciedad por pez), pero quita el hambre.
+  Cada tile tiene como mucho 4 peces y se repone 1 al día.
+- **La loba con crías que maman se queda en la guarida** (sale a beber y, con hambre de verdad, a comer); la manada
+  le regurgita comida como a los jóvenes. Así los lobeznos no mueren huérfanos ni de sed.
+- **Botón X para soltar la arena** junto a la velocidad, solo con una arena cogida y el menú de arenas cerrado.
 - **El depredador que no huele presas sale a buscarlas** (común): con hambre y sin presa a su olfato, la guía
   camina con rumbo (como los herbívoros cuando buscan comida) y la manada la sigue; sigue oliendo por el camino. El
   olfato no cambia (2 islas en el lobo).

@@ -62,6 +62,8 @@ import { AnimalSheetComponent } from '../animal-sheet/animal-sheet';
             [paused]="game.isPaused()"
             (cycle)="game.cycleSpeed()"
             (togglePause)="game.togglePause()"
+            [sand]="game.selectedSand() !== null"
+            (drop)="game.selectSand(null)"
           />
         }
       </div>

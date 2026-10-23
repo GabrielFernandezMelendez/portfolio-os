@@ -30,8 +30,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     range: { roam: 1.5, flee: 1 },
     // Huye lejos; a veces se queda clavado un momento antes de salir; casi siempre coge el miedo de los suyos
     flight: { mode: 'away', freeze: 0.2, alarm: 0.9, zigzag: 0 },
-    // Huele media isla; ve a un depredador que se acerca con un 15 % cada minuto
-    senses: { smell: 0.5, vigilance: 0.15 },
+    // Huele media isla; ve lejos (14) y oye mejor (22): mantiene la distancia con quien la caza
+    senses: { smell: 0.5, vigilance: 0.15, sight: 14, night: 0.6, hearing: 22, wary: { alert: 9, flee: 5 } },
     // Un adulto se planta a veces: el lobo se va la mitad de esas veces y puede llevarse una coz
     defend: { stand: 0.2, repel: 0.5, injure: 0.05 },
     // Después de correr jadea 20 minutos y en 2 horas no pega ojo
@@ -78,7 +78,7 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     // Ante un susto: 55 % se queda quieto, si no corre a la madriguera; 80 % coge la alarma; zigzag al huir
     flight: { mode: 'refuge', freeze: 0.55, alarm: 0.8, zigzag: 0.3 },
     // Huele poco pero vigila mucho (25 % cada minuto)
-    senses: { smell: 0.3, vigilance: 0.25 },
+    senses: { smell: 0.3, vigilance: 0.25, sight: 8, night: 0.6, hearing: 18, wary: { alert: 6, flee: 3 } },
     afterRun: { pant: 10, awake: 60 },
     gatherHours: 1,
     // 15 de cada 100 amaneceres se entretiene y vuelve tarde (de media hora a 4 horas); la guía, si se ha alejado
@@ -133,7 +133,7 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     range: { roam: 2, flee: 1 },
     flight: { mode: 'away', freeze: 0.05, alarm: 0.9, zigzag: 0 },
     // Huele hasta 2 islas; vigila poco (nadie le caza)
-    senses: { smell: 2, vigilance: 0.05 },
+    senses: { smell: 2, vigilance: 0.05, sight: 12, night: 0.8, hearing: 22, stealth: 0.6, wary: { alert: 8, flee: 5 } },
     predator: {
       // Al humano lo evita: solo se atreve con un niño (y no siempre)
       prey: { deer: 1, rabbit: 0.6, human: 0.15, crow: 0.1, goblin: 0.3 },
@@ -156,6 +156,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       carry: { tire: 2, relay: 0.5 },
       howl: 0.6,
     },
+    // Sin presas a mano, pesca en ríos y lagos (los lobos de verdad pescan salmones): poco, pero quita el hambre
+    fishing: { below: 0.3, catch: 0.25, gain: 0.08 },
     afterRun: { pant: 15, awake: 90 },
     gatherHours: 2,
     homing: { late: 0.1, lateMinutes: [60, 240] },
@@ -214,7 +216,7 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     range: { roam: 2.5, flee: 1 },
     flight: { mode: 'away', freeze: 0, alarm: 0.95, zigzag: 0 },
     // Huele (y ve) la carroña hasta 3 islas; muy atento a todo
-    senses: { smell: 3, vigilance: 0.3 },
+    senses: { smell: 3, vigilance: 0.3, sight: 20, night: 0.2, hearing: 14, wary: { alert: 6, flee: 3 } },
     predator: {
       prey: { rabbit: 1 },
       huntBelow: 0.6, huntChance: 0.15, carrion: 0.95,
@@ -276,7 +278,7 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     range: { roam: 1.5, roamFemale: 1, flee: 1 },
     // Ante un peligro, a la choza
     flight: { mode: 'refuge', freeze: 0.1, alarm: 0.7, zigzag: 0 },
-    senses: { smell: 0.6, vigilance: 0.2 },
+    senses: { smell: 0.6, vigilance: 0.2, sight: 12, night: 0.3, hearing: 14, stealth: 0.3, wary: { alert: 10, flee: 6 } },
     predator: {
       // También goblins: dormidos de día bajo un árbol son vulnerables (SLEEP_CATCH_BONUS)
       prey: { deer: 1, rabbit: 0.7, goblin: 0.5 },
@@ -295,6 +297,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     },
     // Se defienden en grupo: si le atacan, se planta casi siempre y, con ayuda, puede matar al atacante
     defend: { stand: 0.7, repel: 0.7, injure: 0.3, kill: 0.15 },
+    // Pescan bien: con hambre y sin caza cerca, a la orilla (poco alimento, pero seguro)
+    fishing: { below: 0.5, catch: 0.4, gain: 0.1 },
     afterRun: { pant: 10, awake: 60 },
     gatherHours: 2,
     homing: { late: 0.05, lateMinutes: [30, 120], leaderReturn: 0.8 },
@@ -343,7 +347,7 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     // De noche recorren toda la isla (hasta 4 islas: un 4×4 de punta a punta)
     range: { roam: 4, flee: 0.5 },
     flight: { mode: 'refuge', freeze: 0, alarm: 0.5, zigzag: 0.1 },
-    senses: { smell: 1.5, vigilance: 0.05 },
+    senses: { smell: 1.5, vigilance: 0.05, sight: 10, night: 1, hearing: 16, stealth: 0.7, wary: { alert: 6, flee: 3 } },
     predator: {
       // Lo que pillen, de cualquier especie: mejor si duerme, está solo o es una cría
       prey: { rabbit: 1, deer: 0.6, human: 0.7, crow: 0.2, wolf: 0.2 },
@@ -363,6 +367,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       howl: 0.7,
       plantsBelow: 0.1,
     },
+    // Pesca de noche en el agua de su zona si le falta presa (poco)
+    fishing: { below: 0.3, catch: 0.2, gain: 0.08 },
     afterRun: { pant: 10, awake: 60 },
     gatherHours: 1,
     homing: { late: 0.05, lateMinutes: [20, 90], leaderReturn: 0.8 },

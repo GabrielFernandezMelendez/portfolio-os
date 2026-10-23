@@ -8,11 +8,11 @@ import { WORLD } from '../../domain/models/world.model';
 import { PLANT_DEFS } from '../../config/plants.config';
 import { SPECIES_BY_KEY, SPECIES_DEFS } from '../../config/species.config';
 import {
-  BURROW_ENTER, BONES_LEFT, CARRY_PIECE, CONTACT, MEAT_BITE, MEAT_BY_SIZE, VIGIL_RANGE, CAPACITY_DAYS, COLLAPSE, CORPSE_FERTILITY, FREEZE_MINUTES, INSIDE_HUNGRY, CROWDED, DRINK_RANGE, EAT_BELOW, FIRE_HEALTH_PER_MINUTE,
+  BURROW_ENTER, BONES_LEFT, CARRY_PIECE, CONTACT, MEAT_BITE, MEAT_BY_SIZE, CAPACITY_DAYS, COLLAPSE, CORPSE_FERTILITY, FREEZE_MINUTES, INSIDE_HUNGRY, CROWDED, DRINK_RANGE, EAT_BELOW, FIRE_HEALTH_PER_MINUTE,
   FOOD_HERE, FORAGE_RADIUS, FORAGE_SAMPLES, FULL, GATHER_MARGIN, JOIN_RANGE, LOST_NIGHT, MAX_STEP, PATH_FROM, PATH_NODES,
   REJECT_HEALTH, RETURN_CHANCE, ROAM_CHANCE, ROAM_HOURS, RUN_MIN, RUN_STOP, RUN_TIRE_PER_MINUTE, SEED_GUT_HOURS,
   SLEEP_BELOW, SOIL_DAMAGE, SOIL_DAMAGE_FROM, STUCK_MINUTES, THINK_MINUTES, THIRST_BELOW, TOXIC_HEALTH, TRAMPLE,
-  WELCOME_CHANCE, SCAVENGE_SHARE, REFUGE_WARMTH, HUDDLE_WARMTH, SHADE_COOL, EXPOSURE_RATE, EXPOSURE_RECOVER, EXPOSURE_SEEK, EXPOSURE_DAMAGE, FEED_YOUNG_ABOVE, REGURGITATE, SHARE_RANGE, FIGHT_MINUTES, FIGHT_WOUND, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
+  WELCOME_CHANCE, DEN_MOTHER_STARVING, ALERT_REPEAT, KEEP_AWAY_MINUTES, SOUND, STALK_FROM, STALK_SPEED, FISH_PER_TILE, FISH_REGROW_PER_DAY, FISH_MINUTES, SCAVENGE_SHARE, REFUGE_WARMTH, HUDDLE_WARMTH, SHADE_COOL, EXPOSURE_RATE, EXPOSURE_RECOVER, EXPOSURE_SEEK, EXPOSURE_DAMAGE, FEED_YOUNG_ABOVE, REGURGITATE, SHARE_RANGE, FIGHT_MINUTES, FIGHT_WOUND, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
 } from '../../config/fauna.config';
 import { bonesLeft, CLEAN_BONES } from './carcass';
 import { NeedMods, ageDays, appetite, lifeStage, passTime, updateHappiness } from './needs';
@@ -27,6 +27,7 @@ import { Burrows, BurrowHit } from './burrows';
 import { infect, outbreak, recover, spread } from './disease';
 import { catchChance, choosePrey, preyClass, smellChance } from './predation';
 import { nameFor, write } from './diary';
+import { Neighbours, sightRange, spotChance, waryOf } from './senses';
 import { findPath } from './pathfinding';
 import { arrivalChance, crowdLeaveChance, crowding, groupsCap, leaveChance, speciesCap } from './migration';
 
@@ -147,6 +148,8 @@ export class FaunaSystem {
   private hungerToldDay = -1;
   /** Desde cuándo está solo cada animal de especie que no vive sola (`keepMin`), para irse si no encuentra grupo */
   private readonly loneSince = new Map<number, number>();
+  /** Peces que quedan en los tiles donde se ha pescado (y desde cuándo, para reponerlos) */
+  private readonly fishStock = new Map<string, { n: number; at: number }>();
   /** Plantas que cada especie ya ha comido alguna vez ("especie:planta") */
   private readonly eaten = new Set<string>();
 
@@ -156,6 +159,8 @@ export class FaunaSystem {
   private readonly stampeded = new Set<number>();
   /** Depredadores acechando (se recalcula cada minuto) */
   private stalkers: Animal[] = [];
+  /** Rejilla de vecinos para la vista y el oído (se rehace cada minuto) */
+  private readonly neighbours = new Neighbours();
 
   /** Madrigueras de las especies con refugio */
   readonly burrows: Burrows;
@@ -384,9 +389,9 @@ export class FaunaSystem {
   minute(t: GameTime): void {
     const now = t.totalMinutes;
     this.stampeded.clear();
-    // Depredadores al acecho este minuto: las presas cercanas pueden verlos (vigilancia de cada especie)
+    // Vista y oído: cada uno mira a su alrededor cuando le toca (presas que ven depredadores, acechos descubiertos)
     this.stalkers = this.animals.filter(a => a.hunt?.phase === 'stalk');
-    if (this.stalkers.length) this.watch(now);
+    this.perceive(t);
     for (const a of [...this.animals]) {
       if (a.diedAt !== null) continue;
       const s = SPECIES_DEFS[a.species];
@@ -450,6 +455,15 @@ export class FaunaSystem {
       if (a.action !== 'idle') this.setAction(a, 'idle', now);
       this.face(a, a.fearX - a.x, a.fearY - a.y);
       return;
+    }
+    // Apartándose de un depredador que ha visto: sigue hasta su sitio (o hasta que se le pasa)
+    if (a.keepAway) {
+      const k = a.keepAway;
+      if (now > k.until || Math.hypot(a.x - k.x, a.y - k.y) < 1) a.keepAway = null;
+      else {
+        if (a.action !== 'walk' || Math.hypot(a.tx - k.x, a.ty - k.y) > 0.5) this.walkTo(a, k.x, k.y, now);
+        return;
+      }
     }
     // Recién parado de correr: jadea un rato, quieto (nada de tumbarse ni de echar a andar)
     if (now < a.pantUntil) {
@@ -941,7 +955,9 @@ export class FaunaSystem {
       case 'walk': {
         // Las aves vuelan si van lejos (más deprisa); cerca, andan a saltitos
         const far = s.speed.fly && Math.hypot(a.tx - a.x, a.ty - a.y) > FLY_FROM;
-        if (!this.step(a, far ? s.speed.fly! : s.speed.walk, now)) this.setAction(a, 'idle', now);
+        // Agachado acechando: despacio
+        const speed = far ? s.speed.fly! : s.speed.walk * (a.hunt?.crouch ? STALK_SPEED : 1);
+        if (!this.step(a, speed, now)) this.setAction(a, 'idle', now);
         break;
       }
       case 'run': this.runStep(a, s, now); break;
@@ -1175,6 +1191,10 @@ export class FaunaSystem {
   private thinkPredator(a: Animal, s: SpeciesDef, t: GameTime, members: Animal[], herd: Herd | undefined): boolean {
     const now = t.totalMinutes, pred = s.predator!;
     const age = ageDays(a, now);
+    // Madre con crías de guarida que aún maman: se queda junto a la guarida (la manada le trae comida)
+    if (this.guardDen(a, s, members, herd, now)) return true;
+    // Pescando: sigue hasta sacar algo o cansarse
+    if (a.fishing && this.fish(a, s, now)) return true;
     // Banquete de la manada: si han cazado y le queda hambre, va a comer (también los jóvenes)
     if (herd?.feast != null && a.feeding === null && a.satiety < FULL - 0.05 && !this.nursling(a, s, now)) {
       const c = this.corpses.find(x => x.id === herd.feast);
@@ -1202,6 +1222,10 @@ export class FaunaSystem {
         return false;
       }
       if (a.hunt.phase === 'stalk') {
+        // Ya a la vista de su presa: se agacha y va despacio (así es más difícil que le vean)
+        const crouch = dist(a, prey) <= SPECIES_DEFS[prey.species].senses.sight * STALK_FROM;
+        if (crouch && !a.hunt.crouch) write(a, 'stalking', now, { prey: `@species.${SPECIES_DEFS[prey.species].key}` });
+        a.hunt.crouch = crouch;
         if (dist(a, prey) <= CONTACT) {
           // Llega sin que le vea: le salta encima por sorpresa (cuerpo a cuerpo y, al acabar, la tirada)
           this.startFight(a, prey, now, true);
@@ -1220,7 +1244,9 @@ export class FaunaSystem {
     if (pred.feedYoung && a.satiety >= FEED_YOUNG_ABOVE && this.random.next() < pred.feedYoung) {
       let best: Animal | null = null;
       for (const m of members) {
-        if (m === a || m.inside !== null || this.nursling(m, s, now) || ageDays(m, now) >= s.youngDays || m.satiety >= 0.5) continue;
+        // Los jóvenes que aún no cazan y la madre que no se mueve de la guarida
+        const mum = this.denMother(m, s, members, now);
+        if (m === a || m.inside !== null || this.nursling(m, s, now) || (ageDays(m, now) >= s.youngDays && !mum) || m.satiety >= 0.5) continue;
         if (Math.hypot(m.x - a.x, m.y - a.y) > SHARE_RANGE * ISLAND) continue;
         if (!best || m.satiety < best.satiety) best = m;
       }
@@ -1294,6 +1320,8 @@ export class FaunaSystem {
    * herbívoros buscan comida, y sigue oliendo por el camino. La guía marca el rumbo y la manada la sigue.
    */
   private searchPrey(a: Animal, s: SpeciesDef, members: Animal[], now: number): boolean {
+    // Con agua honda cerca, antes que andar sin rumbo: a pescar (cada uno por su cuenta)
+    if (this.startFishing(a, s, now)) return true;
     const leader = leaderOf(members, s, now);
     if (leader && leader !== a) return false;
     if (a.search?.kind !== 'prey') {
@@ -1301,6 +1329,80 @@ export class FaunaSystem {
       write(a, 'searchPrey', now);
     }
     this.searchWalk(a, now);
+    return true;
+  }
+
+  /** Peces que quedan en un tile (se reponen con los días, hasta FISH_PER_TILE) */
+  private fishLeft(gx: number, gy: number, now: number): number {
+    const key = `${Math.floor(gx / G)},${Math.floor(gy / G)}`;
+    const f = this.fishStock.get(key);
+    if (!f) return FISH_PER_TILE;
+    return Math.min(FISH_PER_TILE, f.n + ((now - f.at) / DAY) * FISH_REGROW_PER_DAY);
+  }
+
+  /** Con hambre y agua honda con peces a su alcance (`waterRange`): va a pescar. Devuelve si lo hace */
+  private startFishing(a: Animal, s: SpeciesDef, now: number): boolean {
+    const f = s.fishing;
+    if (!f || a.satiety >= f.below || a.inside !== null) return false;
+    const spot = this.world.fishWater(Math.floor(a.x), Math.floor(a.y), s.waterRange, (x, y) => this.fishLeft(x, y, now) < 1);
+    if (!spot) return false;
+    a.fishing = { x: spot.x, y: spot.y, until: now + FISH_MINUTES };
+    a.search = null;
+    write(a, 'fishing', now);
+    this.walkTo(a, spot.x, spot.y, now);
+    return true;
+  }
+
+  /**
+   * Pescando: va a la orilla (junto a su celda de agua) y, cada vez que piensa, tirada de `catch`; un pez da `gain`
+   * de saciedad (poco) y quita uno del tile. Lo deja al quitarse el hambre, si se acaba el rato o si no quedan peces.
+   */
+  private fish(a: Animal, s: SpeciesDef, now: number): boolean {
+    const f = s.fishing, spot = a.fishing!;
+    if (!f || now > spot.until || a.satiety >= Math.min(1, f.below + 0.25) || this.fishLeft(spot.x, spot.y, now) < 1) {
+      a.fishing = null;
+      return false;
+    }
+    if (Math.hypot(a.x - spot.x, a.y - spot.y) > 1.6) {
+      if (a.action !== 'walk') this.walkTo(a, spot.x, spot.y, now);
+      // Si no llega (el agua no se pisa), se queda en la orilla más cercana a la que llega
+      if (a.action === 'walk' && reached(a)) this.setAction(a, 'idle', now);
+      else return true;
+    }
+    this.setAction(a, 'idle', now);
+    if (this.random.next() < f.catch) {
+      const key = `${Math.floor(spot.x / G)},${Math.floor(spot.y / G)}`;
+      this.fishStock.set(key, { n: this.fishLeft(spot.x, spot.y, now) - 1, at: now });
+      a.satiety = Math.min(1, a.satiety + f.gain);
+      write(a, 'fished', now);
+    }
+    return true;
+  }
+
+  /** ¿Es madre de crías de guarida que aún maman? (la loba que se queda con sus lobeznos) */
+  private denMother(a: Animal, s: SpeciesDef, members: Animal[], now: number): boolean {
+    if (!s.breeding.nurseDays || a.sex !== 'female') return false;
+    return members.some(k => k.mother === a.id && this.nursling(k, s, now));
+  }
+
+  /**
+   * La madre de crías de guarida se queda cerca de la guarida mientras maman: no caza ni se va de viaje (si no, las
+   * crías se quedan sin mamar y mueren). Sale a beber (lo lleva la sed) y, si pasa hambre de verdad, a comer lo que
+   * haya cerca. La manada le regurgita comida, como a los jóvenes. Devuelve si se ha ocupado de ella.
+   */
+  private guardDen(a: Animal, s: SpeciesDef, members: Animal[], herd: Herd | undefined, now: number): boolean {
+    if (!this.denMother(a, s, members, now)) return false;
+    a.hunt = null;
+    if (a.search?.kind === 'prey') a.search = null;
+    if (a.hydration < THIRST_BELOW || a.satiety < DEN_MOTHER_STARVING) return false;
+    const den = this.burrows.usable(herd, now);
+    if (!den) return false;
+    if (a.feeding !== null && a.action === 'eat') return true;
+    const d = Math.hypot(a.x - den.x, a.y - den.y);
+    if (d > s.herd.cohesion * 0.8) {
+      if (a.action !== 'walk' || Math.hypot(a.tx - den.x, a.ty - den.y) > 1.5) this.walkTo(a, den.x + 1, den.y + 1, now);
+    } else if (a.action === 'walk' && reached(a)) this.setAction(a, a.rest < 0.9 ? 'sleep' : 'idle', now);
+    else if (a.action !== 'sleep' && a.action !== 'idle' && a.action !== 'walk') this.setAction(a, 'idle', now);
     return true;
   }
 
@@ -1336,33 +1438,133 @@ export class FaunaSystem {
   }
 
   /**
-   * Presas vigilando: cada minuto, cada presa con un depredador acechando a menos de VIGIL_RANGE puede verlo
-   * (su vigilancia). Si lo ve, es un estímulo 'predator' (miedo y huida para las de alrededor, con su '!') y los
-   * que acechaban a cualquiera de esa zona pasan a perseguir.
+   * Vista (cada animal, cuando le toca pensar). Una presa mira a su alcance (`sight`, menos de noche y entre árboles):
+   * - Un depredador que acecha agachado: tirada para verlo (más cerca, más fácil; sigilo y comer lo hacen difícil).
+   *   Si lo ve, lo descubre: miedo y huida para los de alrededor, y los que acechaban pasan a perseguir.
+   * - Uno que se ve (no se esconde): según la distancia, deja de comer y lo mira ('!'), o se aparta.
+   * Así una presa mantiene la distancia con quien la caza, y el depredador tiene que acercarse con sigilo.
    */
-  private watch(now: number): void {
-    const seen = new Set<Animal>();
-    for (const p of this.animals) {
-      const ps = SPECIES_DEFS[p.species];
-      if (p.inside !== null || p.action === 'sleep' && this.random.next() < 0.7) continue;
-      for (const w of this.stalkers) {
-        // Solo vigila a quien le caza a él (un humano vigila al goblin; al lobo no le vigila nadie)
-        if (seen.has(w) || !SPECIES_DEFS[w.species].predator?.prey[ps.key] || Math.hypot(w.x - p.x, w.y - p.y) > VIGIL_RANGE) continue;
-        if (this.random.next() >= ps.senses.vigilance) continue;
-        seen.add(w);
-        this.sense({ type: 'predator', gx: w.x, gy: w.y, strength: 1 }, now);
-        write(p, 'sawPredator', now, { predator: `@species.${SPECIES_DEFS[w.species].key}` });
+  private perceive(t: GameTime): void {
+    const now = t.totalMinutes, night = !isSunHour(t.hour);
+    this.neighbours.build(this.animals);
+    const found = new Set<Animal>();
+    for (const a of this.animals) {
+      if ((now + a.id) % THINK_MINUTES !== 0) continue;
+      const s = SPECIES_DEFS[a.species];
+      if (!s.senses.wary || a.diedAt !== null || a.inside !== null || a.action === 'run' || a.action === 'fight' || a.fleeing) continue;
+      // Primero, si hay algún depredador suyo a la vista posible (sin nadie, ni tiradas)
+      const covered = !!this.world.shelterNear(Math.floor(a.x), Math.floor(a.y), 1);
+      const range = sightRange(s, night, covered);
+      const around: [Animal, number][] = [];
+      this.neighbours.each(a.x, a.y, range, (b, d) => {
+        if (b !== a && SPECIES_DEFS[b.species].predator?.prey[s.key]) around.push([b, d]);
+      });
+      if (!around.length) continue;
+      // Dormido casi no se entera (le despierta un ruido)
+      if (a.action === 'sleep' && this.random.next() < 0.7) continue;
+      let near: Animal | null = null, nearD = Infinity;
+      for (const [b, d] of around) {
+        const bs = SPECIES_DEFS[b.species];
+        // El que acecha agachado: tirada para verlo
+        if (b.hunt?.phase === 'stalk' && b.hunt.crouch) {
+          if (this.random.next() >= spotChance(s, bs, d, range, a.action === 'eat')) continue;
+          if (!found.has(b)) write(a, 'sawPredator', now, { predator: `@species.${bs.key}` });
+          found.add(b);
+        }
+        if (d < nearD) {
+          near = b;
+          nearD = d;
+        }
       }
+      if (near) this.wary(a, s, near, nearD, now);
     }
-    // Descubiertos: persiguen a su presa
-    for (const w of seen) {
-      for (const h of this.stalkers) {
-        if (!h.hunt || h.hunt.target !== w.hunt?.target) continue;
-        h.hunt.phase = 'chase';
-        h.hunt.since = now;
-        h.order = null;
-        this.startRun(h, 1, 0, now);
+    for (const w of found) this.discovered(w, now);
+  }
+
+  /** Ve a un depredador a `d` celdas: lo mira o se aparta (según su `wary` y si el otro caza) */
+  private wary(a: Animal, s: SpeciesDef, b: Animal, d: number, now: number): void {
+    const bs = SPECIES_DEFS[b.species];
+    const w = waryOf(s, b, bs);
+    if (!w || d > w.alert) return;
+    const fresh = !a.signal || now - a.signal.at >= ALERT_REPEAT;
+    this.face(a, b.x - a.x, b.y - a.y);
+    if (fresh) {
+      this.signal(a, 'alarm', now);
+      write(a, d <= w.flee ? 'keepAway' : 'watching', now, { predator: `@species.${bs.key}` });
+      // Avisa a los demás (pisotón, golpe, graznido): lo oyen también los de otras especies que temen al mismo
+      if (this.random.next() < s.flight.alarm * 0.5) this.sound(a.x, a.y, SOUND.alarm, b.species, a, now);
+    }
+    if (d <= w.flee) {
+      // Se aparta andando, lejos del depredador
+      const dx = a.x - b.x, dy = a.y - b.y, n = Math.hypot(dx, dy) || 1;
+      const x = a.x + (dx / n) * w.flee * 1.5, y = a.y + (dy / n) * w.flee * 1.5;
+      if (this.walkable(Math.floor(x), Math.floor(y))) {
+        a.roam = null;
+        a.keepAway = { x, y, until: now + KEEP_AWAY_MINUTES };
+        this.walkTo(a, x, y, now);
       }
+    } else if (a.action === 'eat' || a.action === 'walk') this.setAction(a, 'idle', now);
+  }
+
+  /**
+   * Un ruido en (x, y) de `volume` (SOUND): lo oye quien esté a su `hearing × volume`. Si es de un depredador (`of`),
+   * solo le importa a quien teme a esa especie: se para y mira hacia allí ('?'). Oír no es ver: no sabe dónde está.
+   */
+  private sound(x: number, y: number, volume: number, of: number, from: Animal | null, now: number): void {
+    const hs = SPECIES_DEFS[of];
+    this.neighbours.each(x, y, 30 * volume, (b, d) => {
+      if (b === from || b.action === 'run' || b.action === 'fight' || b.fleeing) return;
+      const bs = SPECIES_DEFS[b.species];
+      if (d > bs.senses.hearing * volume || !hs.predator?.prey[bs.key]) return;
+      if (b.signal && now - b.signal.at < ALERT_REPEAT) return;
+      this.signal(b, 'curious', now);
+      this.face(b, x - b.x, y - b.y);
+      if (b.action === 'eat' || b.action === 'walk' || b.action === 'sleep') this.setAction(b, 'idle', now);
+      write(b, 'heardSomething', now);
+    });
+  }
+
+  /** Han descubierto al que acechaba: miedo alrededor y los que acechaban esa presa pasan a perseguir */
+  private discovered(w: Animal, now: number): void {
+    this.sense({ type: 'predator', gx: w.x, gy: w.y, strength: 1 }, now);
+    for (const h of this.stalkers) {
+      if (!h.hunt || h.hunt.target !== w.hunt?.target) continue;
+      h.hunt.phase = 'chase';
+      h.hunt.crouch = false;
+      h.hunt.since = now;
+      h.order = null;
+      this.startRun(h, 1, 0, now);
+    }
+    this.sound(w.x, w.y, SOUND.chase, w.species, w, now);
+  }
+
+  /**
+   * Han cazado a uno de la manada: los suyos que lo ven (a su vista) o lo oyen (la caza se oye lejos) salen en
+   * estampida, lejos de allí: cada adulto, con `herdRun.together`, con el grupo; si no, por su cuenta (y quizá no
+   * encuentre después a los suyos). Las crías van con su madre.
+   */
+  private witnessKill(prey: Animal, hunter: Animal, now: number): void {
+    const s = SPECIES_DEFS[prey.species];
+    const night = !isSunHour(toGameTime(now).hour);
+    const witnesses = this.members(prey.herd).filter(m => {
+      if (m === prey || m.diedAt !== null || m.inside !== null || m.action === 'fight') return false;
+      const d = dist(m, prey);
+      return d <= sightRange(s, night, false) || d <= s.senses.hearing * SOUND.kill;
+    });
+    if (!witnesses.length) return;
+    const base = Math.atan2(witnesses[0].y - hunter.y, witnesses[0].x - hunter.x);
+    for (const m of witnesses) {
+      const young = ageDays(m, now) < s.youngDays;
+      const together = young || this.random.next() < s.herdRun.together;
+      const side = this.random.next() < 0.5 ? 1 : -1;
+      const angle = together ? base + (this.random.next() - 0.5) * 0.5 : base + side * Math.PI * (0.25 + this.random.next() * 0.4);
+      write(m, 'sawKill', now, { name: prey.name }, true);
+      this.frighten(m, 1, hunter.x, hunter.y, now, true, false);
+      this.signal(m, 'flee', now);
+      if (m.rest < RUN_MIN) continue;
+      m.roam = null;
+      m.strayed = together ? 0 : 1;
+      this.startRun(m, Math.cos(angle), Math.sin(angle), now);
     }
   }
 
@@ -1518,6 +1720,8 @@ export class FaunaSystem {
       h.feeding = prey.id;
       this.setAction(h, 'eat', now);
     }
+    // Se oye (y se ve): los de su manada que lo ven o lo oyen salen en estampida
+    this.witnessKill(prey, a, now);
     // Llamada a la presa: la manada que caza en grupo (y comparte) acude a comer
     const herd = this.herds.get(a.herd);
     if (herd && s.predator?.shareKill) herd.feast = prey.id;
@@ -2404,7 +2608,7 @@ export class FaunaSystem {
       health: 1, rest: 0.8, satiety: 0.8, hydration: 0.8, happiness: 0.6, factors: [], action: 'idle', actionSince: now, order: null,
       fear: 0, fearX: x, fearY: y, curious: null, fleeing: false, signal: null, pantUntil: 0, awakeUntil: 0, roam: null, path: null, stuckUntil: 0, strayed: 0,
       inside: null, outUntil: 0, frozenUntil: 0, runTo: null, sickUntil: null, immune: false, leftHerd: null, lateBy: 0, lateFor: -1, nursedAt: now, search: null, waterGoal: null, badWater: [],
-      hunt: null, fight: null, cold: 0, heat: 0, carrying: 0, feeding: null, meat: 0, meatFull: 0,
+      hunt: null, fight: null, cold: 0, heat: 0, carrying: 0, fishing: null, keepAway: null, feeding: null, meat: 0, meatFull: 0,
       runDx: 0, runDy: 0, runX: x, runY: y, dueAt: null, litter: 0, lastRutYear: -1, seeds: [], diary: [], diaryDay: -1,
       diaryToday: 0, diedAt: null, cause: null,
     };

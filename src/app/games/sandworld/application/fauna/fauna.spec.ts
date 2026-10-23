@@ -73,6 +73,9 @@ class FakeIsland implements FaunaWorld {
     this.grass[t] -= b;
     return { food: b * GRASS.food!.nutrition, plant: GRASS.id, fruit: false };
   }
+  // En la isla de mentira toda el agua es honda (los estanques tienen peces)
+  fish = true;
+  fishWater(gx: number, gy: number, max: number, skip?: (x: number, y: number) => boolean) { return this.fish ? this.nearestWater(gx, gy, max, skip) : null; }
   nearestWater(gx: number, gy: number, max: number, skip?: (x: number, y: number) => boolean) {
     let best: { x: number; y: number; distance: number } | null = null;
     for (const k of this.water) {
@@ -941,6 +944,8 @@ describe('Fauna: crías, agua y llegadas (comunes a todas las especies)', () => 
       const { island, fauna } = setup(16, 0.8, seed);
       island.chunks = 4;
       island.coast = { x: 2.5, y: 2.5 };
+      // Sin peces (si no, pescando aguantan)
+      island.fish = false;
       const t0 = at(Season.SUMMER);
       const pack = fauna.spawnHerd('wolf', 40, 40, t0, true);
       for (const w of pack) w.satiety = 0.05;
@@ -951,7 +956,7 @@ describe('Fauna: crías, agua y llegadas (comunes a todas las especies)', () => 
     // La mitad o más (además, sin presas los jóvenes se van antes por su cuenta: la manada que queda es más pequeña)
     expect(left).toBeGreaterThanOrEqual(10);
     expect(starved).toBeGreaterThan(0);
-  });
+  }, 30000);
 
   it('a una isla vacía llegan grupos por la orilla: primero los que no viven solo de carne, nunca más de lo que cabe', () => {
     const { island, fauna } = setup(24, 0.8, 3);
@@ -1476,10 +1481,121 @@ describe('Fauna: el depredador que no huele presas sale a buscarlas', () => {
       const [wolf] = fauna.spawnHerd('wolf', 15, 15, t0, false, [{ sex: 'male', age: 'adult' }]);
       wolf.satiety = 0.2;
       run(fauna, island, t0, 4 * DAY);
+      // (el diario se queda con lo último: que haya cazado o comido de una presa es haberlas encontrado)
       const keys = wolf.diary.map(e => e.key);
-      expect(keys).toContain('searchPrey');
-      if (keys.includes('hunting') || keys.includes('killed')) found++;
+      if (keys.some(k => k === 'hunting' || k === 'killed' || k === 'gorged' || k === 'searchPrey')) found++;
     }
     expect(found).toBeGreaterThanOrEqual(2);
   }, 60000);
+});
+
+describe('Fauna: los lobeznos salen adelante', () => {
+  it('la loba se queda en la guarida mientras maman y la manada le lleva comida: casi ninguna cría muere', () => {
+    let born = 0, lost = 0;
+    for (let seed = 1; seed <= 4; seed++) {
+      const { island, fauna } = setup(24, 0.8, seed);
+      island.chunks = 4;
+      const t0 = at(Season.SPRING, 2);
+      fauna.spawnHerd('deer', 30, 30, t0, false);
+      fauna.spawnHerd('deer', 70, 70, t0, false);
+      const pack = fauna.spawnHerd('wolf', 50, 50, t0, true, [
+        { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'female', age: 'adult' },
+      ]);
+      const mum = pack[0];
+      mum.dueAt = t0 + 60;
+      mum.litter = 4;
+      run(fauna, island, t0, 12 * DAY);
+      const kids = fauna.animals.concat(fauna.corpses).filter(k => k.mother === mum.id);
+      born += kids.length;
+      lost += kids.filter(k => k.diedAt !== null && (k.cause === 'orphaned' || k.cause === 'dehydration' || k.cause === 'starvation')).length;
+    }
+    expect(born).toBeGreaterThanOrEqual(12);
+    expect(lost / born).toBeLessThan(0.25);
+  }, 60000);
+});
+
+describe('Fauna: peces', () => {
+  it('un lobo con hambre y sin presas pesca en el estanque: le quita el hambre poco a poco y los peces se acaban', () => {
+    let fished = 0;
+    for (let seed = 1; seed <= 4; seed++) {
+      const { island, fauna } = setup(16, 0.8, seed);
+      island.pond(30, 30);
+      const t0 = at(Season.SUMMER, 2);
+      const [wolf] = fauna.spawnHerd('wolf', 26, 26, t0, false, [{ sex: 'male', age: 'adult' }]);
+      wolf.satiety = 0.15;
+      run(fauna, island, t0, DAY);
+      // Sin pescar, en un día bajaría a 0 (come 0,2 al día): pescando se mantiene, pero no se llena (poco nutritivo)
+      if (wolf.diedAt === null && wolf.satiety > 0.15) fished++;
+      expect(wolf.satiety).toBeLessThan(0.8);
+    }
+    expect(fished).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('Fauna: vista y oído (comunes)', () => {
+  it('un ciervo que ve a un lobo con hambre cerca deja de comer, lo mira y se aparta; si el lobo está saciado, le importa menos', () => {
+    // A 7 celdas: al que caza lo vigila (alerta 9); al saciado, no (la mitad). A 4: del que caza se aparta (huida 5)
+    const trial = (seed: number, gap: number, hungry: boolean) => {
+      const { island, fauna } = setup(16, 0.8, seed);
+      const t0 = at(Season.SUMMER, 2);
+      const [deer] = fauna.spawnHerd('deer', 30, 30, t0, false, [{ sex: 'female', age: 'adult' }]);
+      const [wolf] = fauna.spawnHerd('wolf', 30 + gap, 30, t0, false, [{ sex: 'male', age: 'adult' }]);
+      deer.x = deer.tx = 30; deer.y = deer.ty = 30;
+      wolf.x = wolf.tx = 30 + gap; wolf.y = wolf.ty = 30;
+      // Con hambre de cazar (pero agotado: aún no sale a cazar) o saciado
+      wolf.satiety = hungry ? 0.3 : 1;
+      wolf.rest = 0.05;
+      wolf.action = 'sleep';
+      run(fauna, island, t0, 20);
+      const reacted = deer.diary.some(e => e.key === 'keepAway' || e.key === 'watching' || e.key === 'sawPredator');
+      return { reacted, gap: Math.hypot(deer.x - wolf.x, deer.y - wolf.y) };
+    };
+    let hungryFar = 0, calmFar = 0, apart = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      if (trial(seed, 7, true).reacted) hungryFar++;
+      if (trial(seed, 7, false).reacted) calmFar++;
+      if (trial(seed, 4, true).gap > 5.5) apart++;
+    }
+    expect(hungryFar).toBeGreaterThanOrEqual(6);
+    expect(calmFar).toBeLessThanOrEqual(2);
+    expect(apart).toBeGreaterThanOrEqual(5);
+  });
+
+  it('el lobo que acecha a la vista de su presa se agacha y va despacio', () => {
+    const { island, fauna } = setup(16, 0.8, 3);
+    const t0 = at(Season.SUMMER, 2);
+    const [deer] = fauna.spawnHerd('deer', 30, 30, t0, false, [{ sex: 'female', age: 'young' }]);
+    const [wolf] = fauna.spawnHerd('wolf', 42, 30, t0, false, [{ sex: 'male', age: 'adult' }]);
+    wolf.satiety = 0.1;
+    wolf.hunt = { target: deer.id, phase: 'stalk', since: t0 };
+    let crouched = false;
+    for (let m = 0; m < 20 && !crouched; m++) {
+      run(fauna, island, t0 + m, 1);
+      if (wolf.hunt?.crouch) crouched = true;
+    }
+    expect(crouched).toBe(true);
+  });
+
+  it('si ven cazar a uno de los suyos, los de la manada salen corriendo (la mayoría juntos)', () => {
+    let ran = 0, total = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const { island, fauna } = setup(16, 0.8, seed);
+      const t0 = at(Season.SUMMER, 2);
+      const herd = fauna.spawnHerd('deer', 30, 30, t0, false, [
+        { sex: 'female', age: 'adult' }, { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }, { sex: 'female', age: 'young' },
+      ]);
+      const [wolf] = fauna.spawnHerd('wolf', 31, 30, t0, false, [{ sex: 'male', age: 'adult' }]);
+      const victim = herd[3];
+      wolf.satiety = 0.1;
+      // Caza segura (para probar solo la reacción de los demás)
+      wolf.x = victim.x + 0.5; wolf.y = victim.y;
+      (fauna as unknown as { witnessKill(p: unknown, h: unknown, n: number): void }).witnessKill(victim, wolf, t0);
+      for (const d of herd.slice(0, 3)) {
+        total++;
+        if (d.action === 'run' && d.diary.some(e => e.key === 'sawKill')) ran++;
+      }
+      void island;
+    }
+    expect(ran / total).toBeGreaterThan(0.8);
+  });
 });

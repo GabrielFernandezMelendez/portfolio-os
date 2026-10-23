@@ -1,4 +1,5 @@
 import { CHUNKS_PER_PLOT } from '../../config/island.config';
+import { FISH_DEPTH } from '../../config/fauna.config';
 import { ChunkData, PLANT_SLOTS, cellIndex, groundAt, tileIndex } from '../../domain/models/chunk.model';
 import { Material, MaterialId } from '../../domain/models/material.model';
 import { Diet, PlantDef } from '../../domain/models/plant.model';
@@ -165,6 +166,24 @@ export class FaunaWorldAdapter implements FaunaWorld {
     c.chunk.plants[slot] = before - biomass;
     this.touched(c.chunk, before, c.chunk.plants[slot]);
     return { food: biomass * p.food!.nutrition, plant: p.id, fruit: false };
+  }
+
+  fishWater(gx: number, gy: number, max: number, skip?: (x: number, y: number) => boolean): { x: number; y: number; distance: number } | null {
+    for (let r = 0; r <= max; r++) {
+      let best: { x: number; y: number; distance: number } | null = null;
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const c = this.cell(gx + dx, gy + dy);
+          if (!c || c.chunk.water[c.k] < FISH_DEPTH || c.chunk.cover[c.k] > SNOWY) continue;
+          if (skip?.(gx + dx, gy + dy)) continue;
+          const d = Math.hypot(dx, dy);
+          if (!best || d < best.distance) best = { x: gx + dx, y: gy + dy, distance: d };
+        }
+      }
+      if (best) return best;
+    }
+    return null;
   }
 
   nearestWater(gx: number, gy: number, max: number, skip?: (x: number, y: number) => boolean): { x: number; y: number; distance: number } | null {

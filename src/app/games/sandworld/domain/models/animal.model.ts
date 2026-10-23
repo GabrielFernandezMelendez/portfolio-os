@@ -179,7 +179,8 @@ export interface Animal {
   /** Manada de la que se fue al hacerse adulto (no vuelve a unirse a ella) o null */
   leftHerd: number | null;
   /** Depredador: la presa que está cazando (acecho o persecución) y desde cuándo, o null */
-  hunt: { target: number; phase: 'stalk' | 'chase'; since: number } | null;
+  /** Caza: a quién, en qué fase y desde cuándo; `crouch`: acecha agachado y despacio (ya está a la vista de su presa) */
+  hunt: { target: number; phase: 'stalk' | 'chase'; since: number; crouch?: boolean } | null;
   /** Frío y calor acumulados (0 = a gusto; desde 1, hipotermia o golpe de calor: pierde vida) */
   cold: number;
   heat: number;
@@ -187,6 +188,10 @@ export interface Animal {
   fight: Fight | null;
   /** Carne que lleva a la guarida para las crías (0 = nada) */
   carrying: number;
+  /** Pescando: en qué celda de agua y hasta qué minuto lo intenta */
+  fishing: { x: number; y: number; until: number } | null;
+  /** Apartándose de un depredador que ha visto: adónde va y hasta qué minuto (la vista) */
+  keepAway: { x: number; y: number; until: number } | null;
   /** Cadáver (id) del que está comiendo, o null */
   feeding: number | null;
   /** Cadáver: carne que le queda (se la comen los carnívoros) */

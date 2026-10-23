@@ -30,6 +30,8 @@ export interface FaunaWorld {
   eat(gx: number, gy: number, diets: readonly Diet[], avoid: ReadonlySet<number>, want: number, favourite: number, now: number, season: SeasonId): Meal | null;
   /** Celda pisable junto al agua más cercana, a `max` celdas como mucho (null si no hay) */
   /** El agua más cercana (hasta `max` celdas), saltándose las celdas que `skip` descarte (p. ej. agua a la que no llega) */
+  /** Agua honda (lago o río, no un charco) sin helar donde puede haber peces, a `max` celdas como mucho, o null */
+  fishWater(gx: number, gy: number, max: number, skip?: (x: number, y: number) => boolean): { readonly x: number; readonly y: number; readonly distance: number } | null;
   nearestWater(gx: number, gy: number, max: number, skip?: (x: number, y: number) => boolean): { readonly x: number; readonly y: number; readonly distance: number } | null;
   /** Peligro aquí (0..1): fuego en el tile o al lado. `from` dice de dónde viene (para huir al otro lado). */
   danger(gx: number, gy: number): { readonly level: number; readonly fromX: number; readonly fromY: number };

@@ -77,8 +77,6 @@ export const REFUGE_KINDS = {
 export const COVER_LEVELS = 0.6;
 
 // ── Depredación ──
-/** Celdas a las que una presa puede ver a un depredador que se le acerca (cada minuto, con su vigilancia) */
-export const VIGIL_RANGE = 8;
 /** Distancia (celdas) a la que el depredador alcanza a la presa o llega a la carroña */
 export const CONTACT = 1.2;
 /** Carne de un cadáver según su tamaño (comida; un lobo llena el estómago con 0,15) */
@@ -225,3 +223,41 @@ export const EXPOSURE_RECOVER = 0.25;
 /** A partir de esta exposición busca abrigo o sombra; desde 1, pierde vida cada hora */
 export const EXPOSURE_SEEK = 0.4;
 export const EXPOSURE_DAMAGE = 0.05;
+
+/**
+ * La madre de crías de guarida (loba) no se mueve de la guarida mientras maman, salvo para beber o si su saciedad
+ * baja de aquí (hambre de verdad: sale a comer). La manada le regurgita comida [PROPUESTA]
+ */
+export const DEN_MOTHER_STARVING = 0.15;
+
+/**
+ * Peces [PROPUESTA]: viven en el agua honda (lagos y ríos, no en charcos: desde FISH_DEPTH de agua) y no en el hielo.
+ * Cada tile con agua tiene como mucho FISH_PER_TILE y se repone FISH_REGROW_PER_DAY al día: si se pesca mucho en el
+ * mismo sitio, se acaban. Quien pesca lo intenta FISH_MINUTES como mucho.
+ */
+export const FISH_DEPTH = 0.3;
+export const FISH_PER_TILE = 4;
+export const FISH_REGROW_PER_DAY = 1;
+export const FISH_MINUTES = 90;
+
+/*
+  Vista y oído [PROPUESTA] (los alcances de cada especie, en su registro: `senses`).
+*/
+/** Entre árboles se ve menos: el alcance se multiplica por esto si el que mira o el mirado están bajo árboles */
+export const SIGHT_COVER = 0.6;
+/** Un depredador saciado (que no caza) asusta menos: las distancias de alerta y de huida se multiplican por esto */
+export const CALM_PREDATOR = 0.5;
+/** Ver a uno que acecha agachado: (1 - distancia/alcance) × (1 - sigilo) × vigilancia × esto, cada vez que mira */
+export const SPOT_FACTOR = 8;
+/** Comiendo mira menos (la cabeza en el pasto) */
+export const SPOT_EATING = 0.6;
+/** Minutos entre dos avisos del mismo animal (el '!' y la alarma no se repiten a cada vistazo) */
+export const ALERT_REPEAT = 45;
+/** Ruidos (volumen: se oyen a `hearing × volumen` celdas) */
+export const SOUND = { alarm: 1, chase: 0.8, kill: 1.6 } as const;
+/** El depredador se agacha y va despacio cuando está a esta parte de la vista de su presa (o más cerca) */
+export const STALK_FROM = 1.2;
+/** Velocidad agachado (parte de la de andar) */
+export const STALK_SPEED = 0.5;
+/** Al apartarse de un depredador, como mucho este rato andando (luego vuelve a lo suyo y, si sigue cerca, otra vez) */
+export const KEEP_AWAY_MINUTES = 40;

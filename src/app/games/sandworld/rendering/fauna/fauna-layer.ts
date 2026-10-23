@@ -2,7 +2,8 @@ import { Container, Graphics, Sprite } from 'pixi.js';
 import { Animal, Burrow } from '../../domain/models/animal.model';
 import { SPECIES_DEFS } from '../../config/species.config';
 import {
-  COIN, COMBAT_FX, FAUNA_ANIM, FAUNA_COMBAT, FAUNA_LOD, FAUNA_SMOOTH_MS, SELECT_COLOR, SELECT_HALF_W, SIGNAL_ANIM, SPECIES_ART,
+  COIN, COMBAT_FX, FAUNA_ANIM, FAUNA_COMBAT, FAUNA_CROUCH, FAUNA_LOD, FAUNA_SMOOTH_MS, SELECT_COLOR, SELECT_HALF_W, SIGNAL_ANIM,
+  SPECIES_ART,
 } from '../../config/fauna-art.config';
 import { signalTexture } from './signal-art';
 import { CombatFx } from './combat-fx';
@@ -458,7 +459,9 @@ export class FaunaLayer {
       s.frameMs = 0;
     }
     const anim = FAUNA_ANIM[pose];
-    s.frameMs += dtMs;
+    // Agachado acechando: los pasos van más despacio
+    const crouch = !!a.hunt?.crouch && a.action === 'walk';
+    s.frameMs += dtMs * (crouch ? FAUNA_CROUCH.steps : 1);
     const dur = anim.ms[s.frame % anim.ms.length];
     if (anim.frames > 1 && s.frameMs >= dur) {
       s.frameMs -= dur;
@@ -470,7 +473,8 @@ export class FaunaLayer {
     // densidad se encogen a su tamaño de mundo
     const flip = a.back ? a.facing === -1 : a.facing === 1;
     const d = 1 / (art.density ?? 1);
-    s.sprite.scale.set(flip ? -d : d, d);
+    s.sprite.scale.set(flip ? -d : d, d * (crouch ? FAUNA_CROUCH.squash : 1));
+    s.sprite.tint = crouch ? FAUNA_CROUCH.tint : 0xffffff;
     // En vuelo, el sprite sube (la sombra se queda en el suelo); al posarse, baja
     const goal = pose === 'fly' ? art.flyLift ?? 0 : 0;
     s.lift += (goal - s.lift) * (1 - Math.exp(-dtMs / 260));

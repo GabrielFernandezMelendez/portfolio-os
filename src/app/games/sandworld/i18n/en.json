@@ -7,6 +7,7 @@
     "play": "Resume",
     "paused": "Paused",
     "settings": "Settings",
+    "dropSand": "Drop the sand",
     "island": "Living island · Level {level}"
   },
   "season": {
@@ -598,6 +599,13 @@
       "joinedGood": "I joined another herd. They welcomed me.",
       "seekPack": "I can smell others like me, far away. Going to find them: alone, you don't make it.",
       "searchPrey": "Nothing to hunt around here. Off to look further away.",
+      "fishing": "Fish for dinner today. Heading to the water.",
+      "fished": "Caught a fish. Not much, but better than nothing.",
+      "stalking": "I can see the {prey}. Crouching, creeping closer, not a sound.",
+      "keepAway": "A {predator} too close. Backing off without taking my eyes off it.",
+      "watching": "There's a {predator} around. I stop eating and keep an eye on it.",
+      "heardSomething": "Heard something. Standing still, listening.",
+      "sawKill": "They caught {name} right in front of us. We ran without looking back.",
       "joinedBad": "Another herd chased me off with their antlers.",
       "rut": "Autumn is here and {name} keeps looking at me funny.",
       "birth": "My calf was born. Its name is {name}.",

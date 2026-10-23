@@ -7,6 +7,7 @@
     "play": "Reanudar",
     "paused": "Pausa",
     "settings": "Ajustes",
+    "dropSand": "Soltar la arena",
     "island": "Isla viva · Nivel {level}"
   },
   "season": {
@@ -598,6 +599,13 @@
       "joinedGood": "Me he unido a otra manada. Me han recibido bien.",
       "seekPack": "Huelo a otros como yo, lejos. Voy a buscarlos: solo no se sobrevive.",
       "searchPrey": "No huelo nada que cazar por aquí. Me voy a buscar más lejos.",
+      "fishing": "Hoy toca pescado. Me voy al agua.",
+      "fished": "He sacado un pez. Poca cosa, pero algo es algo.",
+      "stalking": "Ya veo al {prey}. Me agacho y me acerco despacio, sin hacer ruido.",
+      "keepAway": "Un {predator} demasiado cerca. Me aparto sin perderlo de vista.",
+      "watching": "Hay un {predator} por ahí. Dejo de comer y lo vigilo.",
+      "heardSomething": "He oído algo. Me quedo quieto escuchando.",
+      "sawKill": "Han cazado a {name} delante de nosotros. Hemos corrido sin mirar atrás.",
       "joinedBad": "Otra manada me ha echado a cornadas.",
       "rut": "Ha llegado el otoño y {name} me mira raro.",
       "birth": "Ha nacido mi cría. Se llama {name}.",

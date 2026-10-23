@@ -140,6 +140,12 @@ export const SIGNAL_ANIM = {
  */
 export const FAUNA_LOD = { coinsBelow: 2 } as const;
 
+/**
+ * Agachado acechando (depredador ya a la vista de su presa): el dibujo se aplasta (`squash` de su alto), se oscurece
+ * un poco (`tint`) y los pasos van más despacio (`steps` de la velocidad de la animación)
+ */
+export const FAUNA_CROUCH = { squash: 0.78, tint: 0xb8b0a8, steps: 0.5 } as const;
+
 /** Moneda: diámetro (px de arte), colores del canto (luz, medio, sombra) y del fondo, e insignia del número */
 export const COIN = {
   size: 17,

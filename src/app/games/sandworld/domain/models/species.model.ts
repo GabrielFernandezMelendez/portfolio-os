@@ -80,13 +80,29 @@ export interface SpeciesDef {
    */
   readonly flight: { readonly mode: 'away' | 'refuge'; readonly freeze: number; readonly alarm: number; readonly zigzag: number };
   /**
-   * Sentidos (comunes a todas): olfato, en islas (× WORLD.CELLS): hasta dónde huele presas, carroña o
-   * depredadores; cuanto más lejos, menos probable olerlo. Vigilancia: probabilidad por minuto de ver a un
-   * depredador que se le acerca a menos de VIGIL_RANGE celdas.
+   * Sentidos (comunes a todas) [PROPUESTA]:
+   * - `smell`: olfato, en islas (× WORLD.CELLS): hasta dónde huele presas o carroña (más lejos, menos probable).
+   * - `vigilance`: lo atenta que está: cuánto le cuesta a un depredador que acecha agachado pasar sin que lo vea.
+   * - `sight`: vista en celdas, de día y a campo abierto (entre árboles, SIGHT_COVER); `night`: la parte que ve de
+   *   noche (1 = igual).
+   * - `hearing`: a cuántas celdas oye un ruido normal (volumen 1: un aviso de alarma); los fuertes, más lejos.
+   * - `stealth`: depredador: lo que cuesta verle cuando acecha agachado (0..1).
+   * - `wary`: presa: distancias (celdas) a un depredador que caza: a `alert` deja de comer y lo mira (el '!'); a
+   *   `flee` se aparta. De un depredador saciado, la mitad (CALM_PREDATOR): se nota que no caza.
    */
-  readonly senses: { readonly smell: number; readonly vigilance: number };
+  readonly senses: {
+    readonly smell: number;
+    readonly vigilance: number;
+    readonly sight: number;
+    readonly night: number;
+    readonly hearing: number;
+    readonly stealth?: number;
+    readonly wary?: { readonly alert: number; readonly flee: number };
+  };
   /** Depredador: qué caza, cuándo y cómo (ver PredatorDef) */
   readonly predator?: PredatorDef;
+  /** Pesca (ver FishingDef) */
+  readonly fishing?: FishingDef;
   /**
    * Planta cara a un depredador: se planta (`stand`), el depredador se va (`repel`) o no, puede salir herido
    * (`injure`) y, si el grupo es capaz (humanos), puede matarlo: `kill` por cada compañero cerca que le ayuda.
@@ -287,6 +303,17 @@ export interface SeasonBreeding {
  * compañero que caza con él (hasta `packMax`) + `snowBonus` con nieve. Persiguiendo más de `giveUpAfter` minutos,
  * cada 5 minutos abandona con `giveUp`. Con poca presa cerca de su guarida, se va de viaje de caza (`trip`).
  */
+/**
+ * Pesca [PROPUESTA]: con la saciedad por debajo de `below` y sin otra presa a mano, va al agua honda a pescar (hasta
+ * `waterRange`). Cada intento (cada vez que piensa) saca un pez con `catch`; un pez da `gain` de saciedad: poco
+ * nutritivo, pero quita el hambre.
+ */
+export interface FishingDef {
+  readonly below: number;
+  readonly catch: number;
+  readonly gain: number;
+}
+
 export interface PredatorDef {
   /** Pica los huesos (cuervo): sigue comiendo de un cadáver cuando a los demás ya no les compensa (BONES_LEFT) */
   readonly bones?: boolean;
