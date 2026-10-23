@@ -5,7 +5,7 @@ import { Diet } from '../../domain/models/plant.model';
 import { SeasonId, Season, toGameTime, DAYS_PER_YEAR } from '../../domain/models/time.model';
 import { SeededRandom } from '../../infrastructure/seeded-random';
 import { PLANT_DEFS } from '../../config/plants.config';
-import { SPECIES_BY_KEY, SPECIES_DEFS } from '../../config/species.config';
+import { SPECIES_DEFS } from '../../config/species.config';
 import { lifeStage } from './needs';
 import { litterSize, tryConceive } from './breeding';
 import { SeasonBreeding } from '../../domain/models/species.model';
@@ -809,10 +809,7 @@ describe('Fauna: lobos', () => {
     expect(alone).toBeLessThan(0.2);
     expect(catchChance(wolf, calf, deer, 0, false, t0)).toBeGreaterThan(alone * 2);
     expect(catchChance(wolf, adult, deer, 3, false, t0)).toBeGreaterThan(alone);
-    // Con nieve, más fácil (de uno o dos)
-    expect(catchChance(wolf, adult, deer, 1, true, t0)).toBeGreaterThan(catchChance(wolf, adult, deer, 1, false, t0));
-    // La manada entera junta (3 o más): 90 %
-    expect(catchChance(wolf, adult, deer, 2, false, t0)).toBeCloseTo(0.9, 5);
+    expect(catchChance(wolf, adult, deer, 3, true, t0)).toBeGreaterThan(catchChance(wolf, adult, deer, 3, false, t0));
   });
 
   it('con hambre cazan ciervos y conejos (más los débiles), se los comen y el resto lo cuenta la crónica', () => {
@@ -956,9 +953,8 @@ describe('Fauna: crías, agua y llegadas (comunes a todas las especies)', () => 
       if (fauna.news.some(n => n.type === 'left')) left++;
       if (pack.some(w => w.cause === 'starvation')) starved++;
     }
-    // Solo tras varios días de hambre y con poca probabilidad (lobo: 3 días y 10 %): algunas, no todas
-    expect(left).toBeGreaterThanOrEqual(1);
-    expect(left).toBeLessThan(15);
+    // La mitad o más (además, sin presas los jóvenes se van antes por su cuenta: la manada que queda es más pequeña)
+    expect(left).toBeGreaterThanOrEqual(10);
     expect(starved).toBeGreaterThan(0);
   }, 30000);
 
@@ -1601,29 +1597,5 @@ describe('Fauna: vista y oído (comunes)', () => {
       void island;
     }
     expect(ran / total).toBeGreaterThan(0.8);
-  });
-});
-
-describe('Fauna: ajuste del lobo (camadas según la comida)', () => {
-  it('con poca presa para tantos lobos, la camada es de 2 a 4; con presa de sobra, puede ser más grande', () => {
-    const wolfDef = SPECIES_BY_KEY['wolf'];
-    const sizes = (scarce: boolean) => {
-      const out: number[] = [];
-      for (let seed = 1; seed <= 40; seed++) {
-        const { fauna } = setup(16, 0.8, seed);
-        const t0 = at(Season.WINTER, 5);
-        const pack = fauna.spawnHerd('wolf', 30, 30, t0, false, [{ sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' }]);
-        const mum = pack[0];
-        mum.satiety = 1;
-        mum.happiness = 1;
-        const male = tryConceive(mum, pack, wolfDef, t0, 0, 30, new SeededRandom(seed), scarce);
-        if (male) out.push(mum.litter);
-      }
-      return out;
-    };
-    const poor = sizes(true), rich = sizes(false);
-    expect(poor.length).toBeGreaterThan(10);
-    expect(Math.max(...poor)).toBeLessThanOrEqual(4);
-    expect(Math.max(...rich)).toBeGreaterThan(4);
   });
 });

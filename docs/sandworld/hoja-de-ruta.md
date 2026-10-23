@@ -31,8 +31,6 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 - **Isla el doble de grande** (parcelas de 2×2 chunks, mismos animales): hecho en 4L.
 - Rendimiento del agua (rejilla de chunks por clave numérica), zoom lejano y búsqueda de presas: 4M.
 - Sentidos comunes (vista y oído), peces, la loba que cuida la guarida y el botón para soltar la arena: 4N.
-- Ajuste del lobo (caza en manada, pesca tras fallar, camadas según la comida): 4O.
-- Manada que caza junta (90 %), lobos que no se van enseguida y vuelven antes, la sed antes que dormir, vista en Ajustes: 4P.
 
 ## Después (fase 4)
 
