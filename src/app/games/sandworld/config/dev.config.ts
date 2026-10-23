@@ -16,6 +16,7 @@ export const DEV_ACTIONS = [
   'glade',         // despertar un Claro sin sorteo
   'viewValues',    // ver esencia y afinidad de cada tile
   'viewBiomes',    // ver el bioma de cada tile
+  'viewSenses',    // ver hasta dónde ve cada animal (de lejos, cada manada) y sus distancias de alerta y huida
   'discoverPlants', // conocer todas las plantas (sus nombres al tocarlas)
   'garden',        // sembrar un huerto en un sitio llano al azar (como lo hará una especie evolucionada)
   'fruitAllYear',  // ver el fruto todo el año (sin esperar a su temporada)

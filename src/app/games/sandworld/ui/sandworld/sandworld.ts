@@ -75,6 +75,8 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
     effect(() => this.runtime.setBrushEnabled(this.game.selectedSand() !== null));
     // Modo desarrollo: esencia y afinidad de cada tile encima de la isla
     effect(() => this.runtime.setDevView(this.game.devView()));
+    // Modo desarrollo: anillos con la vista de cada animal
+    effect(() => this.runtime.setSensesView(this.game.devSenses()));
     // Chunk descubierto → emerge de las nubes
     this.game.events.on('chunkRevealed', c => this.runtime.showChunk(c.cx, c.cy));
     // Terreno cambiado (desprendimientos, vertidos) → re-horneado

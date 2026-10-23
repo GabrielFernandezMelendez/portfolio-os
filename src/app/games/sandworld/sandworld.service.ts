@@ -116,6 +116,8 @@ export class SandworldService implements OnDestroy {
   readonly islandLabel = signal(false);
   /** Modo desarrollo: capa de esencia y afinidad o de biomas sobre la isla (null = ninguna) */
   readonly devView = signal<DevTileView | null>(null);
+  /** Modo desarrollo: ver hasta dónde ve cada animal */
+  readonly devSenses = signal(false);
   /** El tiempo que hace (la placa de la hora muestra su icono) */
   readonly weather = signal<WeatherState>(CLEAR_WEATHER);
   /**
@@ -719,6 +721,7 @@ export class SandworldService implements OnDestroy {
       case 'glade': return this.debugGlade();
       case 'viewValues': return this.toggleDevView('values');
       case 'viewBiomes': return this.toggleDevView('biomes');
+      case 'viewSenses': return this.devSenses.update(v => !v);
       case 'discoverPlants': return this.debugDiscoverPlants();
       case 'garden': return this.debugGarden();
       case 'eatFruit': return this.debugEatFruit();

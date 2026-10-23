@@ -65,7 +65,7 @@ export function arrivalChance(s: SpeciesDef, c: ArrivalContext): number {
   if (!m || c.groupSize <= 0 || c.groups >= c.cap) return 0;
   // Desaparecida: nada antes de RETURN_AFTER_DAYS[0]; luego la tirada va subiendo hasta [1] (suele volver entre
   // los 60 y los 80 días, a veces más tarde)
-  const [wait, ramp] = RETURN_AFTER_DAYS;
+  const [wait, ramp] = s.migration?.returnAfter ?? RETURN_AFTER_DAYS;
   if (c.population === 0 && c.absentDays < wait) return 0;
   const returning = c.population === 0 && c.absentDays < ramp ? (c.absentDays - wait) / (ramp - wait) : 1;
   if (m.onlyIfAbsent && c.population > 0) return 0;

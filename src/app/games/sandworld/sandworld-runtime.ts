@@ -24,6 +24,7 @@ import { REBAKE_INTERVAL_MS, REBAKE_VISIBLE_MARGIN, REBAKES_PER_FRAME } from './
 import { POUR_EDGE_BAND, POUR_TAP_SECONDS } from './config/pour.config';
 import { ChunkCoord } from './domain/events/game-events';
 import { FaunaLayer, FaunaView, Ground } from './rendering/fauna/fauna-layer';
+import { SensesOverlay } from './rendering/dev/senses-overlay';
 import { FAUNA_LOD } from './config/fauna-art.config';
 
 /** Avisos del runtime hacia fuera (el componente los conecta con el servicio) */
@@ -89,6 +90,9 @@ export class SandworldRuntime {
   private readonly cursor = new CellCursor();
   private readonly grains = new GrainParticles();
   private devOverlay: DevTileOverlay | null = null;
+  /** Modo desarrollo: hasta dónde ve cada animal o cada manada */
+  private sensesOverlay: SensesOverlay | null = null;
+  private sensesWanted = false;
   private readonly precipitation = new Precipitation();
   private readonly lightning = new Lightning();
   private readonly fauna = new FaunaLayer();
@@ -135,6 +139,9 @@ export class SandworldRuntime {
     this.devOverlay = new DevTileOverlay(this.world);
     this.stage.world.addChild(this.clouds.back, this.cursor.view, this.grains.view, this.devOverlay.view);
     this.devOverlay.show(this.devViewWanted);
+    this.sensesOverlay = new SensesOverlay((gx, gy) => this.cellWorld(gx, gy));
+    this.stage.world.addChild(this.sensesOverlay.view);
+    this.sensesOverlay.show(this.sensesWanted);
     // Lluvia y nieve por encima del mundo, en coordenadas de pantalla
     app.stage.addChild(this.precipitation.view);
     this.precipitation.resize(app.screen.width, app.screen.height);
@@ -282,6 +289,12 @@ export class SandworldRuntime {
     this.devOverlay?.show(view);
   }
 
+  /** Modo desarrollo: anillos con hasta dónde ve cada animal (de lejos, cada manada) */
+  setSensesView(on: boolean): void {
+    this.sensesWanted = on;
+    this.sensesOverlay?.show(on);
+  }
+
   setBrushEnabled(enabled: boolean): void {
     this.brushEnabled = enabled;
     if (!enabled) this.cursor.hide();
@@ -330,6 +343,7 @@ export class SandworldRuntime {
     this.lightning.update(dt);
     const fauna = this.hooks.fauna?.();
     if (fauna) this.fauna.update(dt, fauna, this.groundAt, this.engine.isPaused, this.camera.scale);
+    this.sensesOverlay?.update(dt, fauna, this.camera.scale < FAUNA_LOD.coinsBelow, this.camera.scale);
     // Vista de lejos (monedas): se avisa al cambiar (desde ahí las órdenes son para toda la manada)
     const far = this.camera.scale < FAUNA_LOD.coinsBelow;
     if (far !== this.farView) {

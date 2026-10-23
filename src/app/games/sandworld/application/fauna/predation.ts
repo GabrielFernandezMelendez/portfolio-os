@@ -76,5 +76,8 @@ export function catchChance(s: SpeciesDef, prey: Animal, preyS: SpeciesDef, help
   const pack = Math.min(helpers, pred.packMax - 1) * pred.packBonus;
   // Dormida fuera de su refugio: mucho más fácil (común a todas; así un goblin de día bajo un árbol es vulnerable)
   const asleep = prey.action === 'sleep' && prey.inside === null ? SLEEP_CATCH_BONUS : 0;
-  return Math.min(0.95, base + pack + asleep + (snow ? pred.snowBonus : 0));
+  const chance = Math.min(0.95, base + pack + asleep + (snow ? pred.snowBonus : 0));
+  // Toda la manada junta (3 o más alcanzándola a la vez): casi siempre la cazan (`packCatch`), si es presa posible
+  if (pred.packCatch && base > 0 && helpers >= 2) return Math.max(chance, pred.packCatch);
+  return chance;
 }
