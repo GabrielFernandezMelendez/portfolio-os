@@ -37,6 +37,8 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 - Manada mínima de 5 que caza siempre junta, el que caza solo a escondidas, fundar manada o irse, cadáveres que se pudren: 4R.
 - **Panel de Equilibrio**: barras por especie en el botón (con aviso "!"), y tres pestañas para que los testers elijan:
   Especies (estado en palabras y su porqué), Gráfico (30 días, con lo que contó la crónica) y Cadena alimentaria: 4S.
+- **El paisaje del miedo**: una presa que ve a su depredador (aunque no cace) se aleja hasta dejar de verlo, su
+  manada la sigue y evita esa zona día y medio; no duermen donde lo vieron: 4T.
 
 ## Después (fase 4)
 

@@ -139,7 +139,9 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       // Al humano lo evita: solo se atreve con un niño (y no siempre)
       prey: { deer: 1, rabbit: 0.6, human: 0.15, crow: 0.1, goblin: 0.3 },
       // Comen menos: cazan solo con hambre de verdad, pero rematan su presa en cuanto les entra algo de hambre
-      huntBelow: 0.35, carrionBelow: 0.7, huntChance: 0.4, carrion: 0.8, revisit: 0.3,
+      // Con el paisaje del miedo las presas viven lejos de la guarida: salen a cazar algo antes (0,45) para no llegar
+      // agotados a una caza que ahora es más larga
+      huntBelow: 0.45, carrionBelow: 0.7, huntChance: 0.4, carrion: 0.8, revisit: 0.3,
       // La manada comparte la presa y los adultos regurgitan comida a los jóvenes (el 81 % de las veces, a los lobeznos)
       shareKill: true, feedYoung: 0.5,
       catch: {
@@ -156,7 +158,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       // Sale a cazar toda la manada (`packHunt`); de vez en cuando (9,5 %) uno se va solo a escondidas. En manada: dos
       // juntos al alcanzarla 75 %, tres o más 90 %; el que llega antes espera a los demás (hasta 40 min)
       packCatch: [0.75, 0.9], soloHunt: 0.095, gather: { range: 6, wait: 40 },
-      giveUpAfter: 20, giveUp: 0.7,
+      // Persistentes: aguantan más la persecución antes de rendirse (30 min)
+      giveUpAfter: 30, giveUp: 0.7,
       trip: { chance: 0.5, days: [2, 4], islands: 2 },
       carry: { tire: 2, relay: 0.5 },
       howl: 0.6,

@@ -12,7 +12,7 @@ import {
   FOOD_HERE, FORAGE_RADIUS, FORAGE_SAMPLES, FULL, GATHER_MARGIN, JOIN_RANGE, LOST_NIGHT, MAX_STEP, PATH_FROM, PATH_NODES,
   REJECT_HEALTH, RETURN_CHANCE, ROAM_CHANCE, ROAM_HOURS, RUN_MIN, RUN_STOP, RUN_TIRE_PER_MINUTE, SEED_GUT_HOURS,
   SLEEP_BELOW, SOIL_DAMAGE, SOIL_DAMAGE_FROM, STUCK_MINUTES, THINK_MINUTES, THIRST_BELOW, TOXIC_HEALTH, TRAMPLE,
-  WELCOME_CHANCE, DEN_MOTHER_STARVING, ALERT_REPEAT, CARRION_DAYS, CORPSE_COLD, CORPSE_COLD_KEEP, STARVING_HUNTER, SHARE_MARGIN, LEAVE_HUNGRY_BELOW, KEEP_AWAY_MINUTES, FISH_AFTER_FAIL, JOIN_HUNT_RANGE, SOUND, STALK_FROM, STALK_SPEED, FISH_PER_TILE, FISH_REGROW_PER_DAY, FISH_MINUTES, SCAVENGE_SHARE, REFUGE_WARMTH, HUDDLE_WARMTH, SHADE_COOL, EXPOSURE_RATE, EXPOSURE_RECOVER, EXPOSURE_SEEK, EXPOSURE_DAMAGE, FEED_YOUNG_ABOVE, REGURGITATE, SHARE_RANGE, FIGHT_MINUTES, FIGHT_WOUND, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
+  WELCOME_CHANCE, DEN_MOTHER_STARVING, ALERT_REPEAT, CARRION_DAYS, CORPSE_COLD, CORPSE_COLD_KEEP, STARVING_HUNTER, SHARE_MARGIN, LEAVE_HUNGRY_BELOW, KEEP_AWAY_MINUTES, FEAR_LEAVE, FEAR_MARGIN, FEAR_ZONE_HOURS, FEAR_FOLLOW, FEAR_FOLLOW_RANGE, FISH_AFTER_FAIL, JOIN_HUNT_RANGE, SOUND, STALK_FROM, STALK_SPEED, FISH_PER_TILE, FISH_REGROW_PER_DAY, FISH_MINUTES, SCAVENGE_SHARE, REFUGE_WARMTH, HUDDLE_WARMTH, SHADE_COOL, EXPOSURE_RATE, EXPOSURE_RECOVER, EXPOSURE_SEEK, EXPOSURE_DAMAGE, FEED_YOUNG_ABOVE, REGURGITATE, SHARE_RANGE, FIGHT_MINUTES, FIGHT_WOUND, FLY_FROM, SUN_HOURS, THIRST_URGENT, WATER_STUCK_MINUTES, WATER_GIVE_UP_HOURS, MIGRATION_EVERY_DAYS, LEAVE_HOURS, MEMORY_SPOTS, SEARCH_GROWTH, SEARCH_MAX_ISLANDS,
 } from '../../config/fauna.config';
 import { bonesLeft, CLEAN_BONES } from './carcass';
 import { NeedMods, ageDays, appetite, lifeStage, passTime, updateHappiness } from './needs';
@@ -543,6 +543,8 @@ export class FaunaSystem {
       else if (!herd.bed) {
         // De viaje de caza duermen fuera, donde estén; si no, en su refugio o bajo los árboles
         herd.bed = herd.trip ? { x: a.x, y: a.y } : home ? { x: home.x, y: home.y } : this.world.shelterNear(Math.floor(a.x), Math.floor(a.y), 14) ?? { x: a.x, y: a.y };
+        // No duermen donde han visto al depredador: mejor a la intemperie, donde están
+        if (!home && !herd.trip && inZone(herd, herd.bed.x, herd.bed.y, now)) herd.bed = { x: a.x, y: a.y };
       }
     }
     // Con la adrenalina de una carrera no hay quien duerma (salvo que se caiga de agotamiento); tomando el sol, tampoco
@@ -837,6 +839,16 @@ export class FaunaSystem {
       herd.tx = burrow.x;
       herd.ty = burrow.y;
       return;
+    }
+    // Donde iban han visto a un depredador: a comer a otra parte (más lejos si hace falta)
+    if (inZone(herd, herd.tx, herd.ty, now)) {
+      const away = this.searchFood(a, s, herd.avoid, now, season, FORAGE_RADIUS * 2.5);
+      if (away && !(burrow && Math.hypot(away.x - burrow.x, away.y - burrow.y) > near)) {
+        herd.tx = away.x;
+        herd.ty = away.y;
+        write(a, 'avoidZone', now);
+        return;
+      }
     }
     const food = this.world.foodAt(Math.floor(herd.tx), Math.floor(herd.ty), s.diets, herd.avoid, now, season);
     if (food > FOOD_HERE * 3 && Math.hypot(herd.tx - a.x, herd.ty - a.y) < FORAGE_RADIUS * 2) return;
@@ -1536,34 +1548,76 @@ export class FaunaSystem {
           nearD = d;
         }
       }
-      if (near) this.wary(a, s, near, nearD, now);
+      if (near) this.wary(a, s, near, nearD, now, range);
     }
     for (const w of found) this.discovered(w, now);
   }
 
-  /** Ve a un depredador a `d` celdas: lo mira o se aparta (según su `wary` y si el otro caza) */
-  private wary(a: Animal, s: SpeciesDef, b: Animal, d: number, now: number): void {
+  /**
+   * Ve a un depredador a `d` celdas (`range`: hasta dónde ve ahora). Cerca (su `alert`): '!', avisa a los demás y se
+   * va. Más lejos: a veces (FEAR_LEAVE) se va sin escándalo. En los dos casos se aleja hasta dejar de verlo (y un poco
+   * más), su manada le sigue y evita esa zona un tiempo: el paisaje del miedo.
+   */
+  private wary(a: Animal, s: SpeciesDef, b: Animal, d: number, now: number, range: number): void {
     const bs = SPECIES_DEFS[b.species];
     const w = waryOf(s, b, bs);
-    if (!w || d > w.alert) return;
-    const fresh = !a.signal || now - a.signal.at >= ALERT_REPEAT;
+    if (!w) return;
+    // Si viene hacia él asusta entero, aunque no cace
+    const coming = b.action === 'walk' && Math.hypot(b.tx - a.x, b.ty - a.y) < d - 1;
+    const alert = coming ? Math.max(w.alert, s.senses.wary!.alert) : w.alert;
+    const close = d <= alert;
+    if (!close && (a.keepAway || this.random.next() >= FEAR_LEAVE)) return;
     this.face(a, b.x - a.x, b.y - a.y);
-    if (fresh) {
+    const fresh = !a.signal || now - a.signal.at >= ALERT_REPEAT;
+    if (close && fresh) {
       this.signal(a, 'alarm', now);
-      write(a, d <= w.flee ? 'keepAway' : 'watching', now, { predator: `@species.${bs.key}` });
+      write(a, 'keepAway', now, { predator: `@species.${bs.key}` });
       // Avisa a los demás (pisotón, golpe, graznido): lo oyen también los de otras especies que temen al mismo
       if (this.random.next() < s.flight.alarm * 0.5) this.sound(a.x, a.y, SOUND.alarm, b.species, a, now);
+    } else if (!close && !a.keepAway) write(a, 'moveAway', now, { predator: `@species.${bs.key}` });
+    if (a.keepAway && Math.hypot(a.keepAway.x - b.x, a.keepAway.y - b.y) > range) return;
+    const to = this.awayFrom(a, b, range + FEAR_MARGIN);
+    if (!to) {
+      if (a.action === 'eat' || a.action === 'walk') this.setAction(a, 'idle', now);
+      return;
     }
-    if (d <= w.flee) {
-      // Se aparta andando, lejos del depredador
-      const dx = a.x - b.x, dy = a.y - b.y, n = Math.hypot(dx, dy) || 1;
-      const x = a.x + (dx / n) * w.flee * 1.5, y = a.y + (dy / n) * w.flee * 1.5;
-      if (this.walkable(Math.floor(x), Math.floor(y))) {
-        a.roam = null;
-        a.keepAway = { x, y, until: now + KEEP_AWAY_MINUTES };
-        this.walkTo(a, x, y, now);
-      }
-    } else if (a.action === 'eat' || a.action === 'walk') this.setAction(a, 'idle', now);
+    this.keepAwayTo(a, to.x, to.y, now);
+    const herd = this.herds.get(a.herd);
+    if (!herd) return;
+    // La manada evita la zona (se renueva cada vez que lo ven allí) y se va hacia donde va este
+    addZone(herd, b.x, b.y, range, now + FEAR_ZONE_HOURS * 60);
+    if (!herd.trip) {
+      herd.tx = to.x;
+      herd.ty = to.y;
+    }
+    for (const m of this.animals) {
+      if (m.herd !== a.herd || m === a || m.keepAway || m.inside !== null || m.diedAt !== null || m.fleeing || m.hunt) continue;
+      if (m.action === 'run' || m.action === 'fight' || dist(m, a) > FEAR_FOLLOW_RANGE || this.random.next() >= FEAR_FOLLOW) continue;
+      const [ox, oy] = this.offset(m.id, s.herd.cohesion * s.spacing.graze);
+      const ok = this.walkable(Math.floor(to.x + ox), Math.floor(to.y + oy));
+      this.keepAwayTo(m, ok ? to.x + ox : to.x, ok ? to.y + oy : to.y, now);
+    }
+  }
+
+  /** Echa a andar hacia (x, y) para apartarse (y no se para hasta llegar o hasta KEEP_AWAY_MINUTES) */
+  private keepAwayTo(a: Animal, x: number, y: number, now: number): void {
+    a.roam = null;
+    a.keepAway = { x, y, until: now + KEEP_AWAY_MINUTES };
+    this.walkTo(a, x, y, now);
+  }
+
+  /**
+   * Un sitio a `far` celdas de `b`, al otro lado de `a` (si no se puede andar, girando poco a poco hacia los lados).
+   * null si no hay ninguno (acorralado contra el agua o el borde).
+   */
+  private awayFrom(a: Animal, b: Animal, far: number): { x: number; y: number } | null {
+    const base = Math.atan2(a.y - b.y, a.x - b.x);
+    for (const turn of [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2]) {
+      const angle = base + turn;
+      const x = b.x + Math.cos(angle) * far, y = b.y + Math.sin(angle) * far;
+      if (this.walkable(Math.floor(x), Math.floor(y))) return { x, y };
+    }
+    return null;
   }
 
   /**

@@ -1540,32 +1540,35 @@ describe('Fauna: peces', () => {
 });
 
 describe('Fauna: vista y oído (comunes)', () => {
-  it('un ciervo que ve a un lobo con hambre cerca deja de comer, lo mira y se aparta; si el lobo está saciado, le importa menos', () => {
-    // A 7 celdas: al que caza lo vigila (alerta 9); al saciado, no (la mitad). A 4: del que caza se aparta (huida 5)
-    const trial = (seed: number, gap: number, hungry: boolean) => {
+  it('un ciervo que ve a un lobo (aunque no cace) se aleja hasta dejar de verlo, y su manada le sigue', () => {
+    // El paisaje del miedo: a la vista (no agachado) el lobo asusta aunque esté saciado y durmiendo
+    const trial = (seed: number, hungry: boolean) => {
       const { island, fauna } = setup(16, 0.8, seed);
       const t0 = at(Season.SUMMER, 2);
-      const [deer] = fauna.spawnHerd('deer', 30, 30, t0, false, [{ sex: 'female', age: 'adult' }]);
-      const [wolf] = fauna.spawnHerd('wolf', 30 + gap, 30, t0, false, [{ sex: 'male', age: 'adult' }]);
-      deer.x = deer.tx = 30; deer.y = deer.ty = 30;
-      wolf.x = wolf.tx = 30 + gap; wolf.y = wolf.ty = 30;
-      // Con hambre de cazar (pero agotado: aún no sale a cazar) o saciado
+      const herd = fauna.spawnHerd('deer', 30, 30, t0, false, [
+        { sex: 'female', age: 'adult' }, { sex: 'female', age: 'adult' }, { sex: 'male', age: 'adult' },
+      ]);
+      const [wolf] = fauna.spawnHerd('wolf', 37, 30, t0, false, [{ sex: 'male', age: 'adult' }]);
+      herd.forEach((d, i) => { d.x = d.tx = 30; d.y = d.ty = 29 + i; });
+      wolf.x = wolf.tx = 37; wolf.y = wolf.ty = 30;
       wolf.satiety = hungry ? 0.3 : 1;
       wolf.rest = 0.05;
       wolf.action = 'sleep';
-      run(fauna, island, t0, 20);
-      const reacted = deer.diary.some(e => e.key === 'keepAway' || e.key === 'watching' || e.key === 'sawPredator');
-      return { reacted, gap: Math.hypot(deer.x - wolf.x, deer.y - wolf.y) };
+      run(fauna, island, t0, 120);
+      const sight = SPECIES_DEFS.find(s => s.key === 'deer')!.senses.sight;
+      const out = herd.filter(d => Math.hypot(d.x - wolf.x, d.y - wolf.y) > sight * 0.9).length;
+      return { first: Math.hypot(herd[0].x - wolf.x, herd[0].y - wolf.y) > sight * 0.9, out };
     };
-    let hungryFar = 0, calmFar = 0, apart = 0;
+    let calmGone = 0, hungryGone = 0, followed = 0;
     for (let seed = 1; seed <= 8; seed++) {
-      if (trial(seed, 7, true).reacted) hungryFar++;
-      if (trial(seed, 7, false).reacted) calmFar++;
-      if (trial(seed, 4, true).gap > 5.5) apart++;
+      const calm = trial(seed, false);
+      if (calm.first) calmGone++;
+      if (calm.out >= 2) followed++;
+      if (trial(seed, true).first) hungryGone++;
     }
-    expect(hungryFar).toBeGreaterThanOrEqual(6);
-    expect(calmFar).toBeLessThanOrEqual(2);
-    expect(apart).toBeGreaterThanOrEqual(5);
+    expect(calmGone).toBeGreaterThanOrEqual(6);
+    expect(hungryGone).toBeGreaterThanOrEqual(6);
+    expect(followed).toBeGreaterThanOrEqual(5);
   });
 
   it('el lobo que acecha a la vista de su presa se agacha y va despacio', () => {

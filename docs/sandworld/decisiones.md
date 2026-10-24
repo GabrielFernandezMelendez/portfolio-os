@@ -54,6 +54,13 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
 - El **miedo no tiene barra**: se muestra como un **estado** abajo en la ficha ("Asustado"), igual que
   "Sediento" o "Hambriento". Sobre todo se ve en el comportamiento (se quedan quietos, huyen hasta relajarse,
   estampidas, evitan zonas, no duermen con tormenta).
+- **El paisaje del miedo** (como los alces de Yellowstone con los lobos): un depredador **a la vista** asusta
+  aunque no cace (solo pasa desapercibido el que acecha agachado). La presa se aleja **hasta dejar de verlo, como
+  mínimo**; cerca, con su '!' y avisando a los demás; lejos, sin escándalo y no siempre. Su manada la sigue (cada uno
+  con su tirada) y **evita esa zona** un día y medio; si los ven una y otra vez en el mismo sitio, la zona se renueva
+  y la manada acaba viviendo en otra parte. No eligen para dormir un sitio donde lo vieron.
+  Para compensar (las presas viven más lejos de la guarida), el lobo sale a cazar algo antes (hambre 0,45) y aguanta
+  más la persecución (30 min).
 - Sobre la cabeza sale un **"!"** al asustarse y un **"?"** cuando algo le da curiosidad, unos segundos, para que el
   jugador abra la ficha y descubra qué pasa.
 - Las **distancias de cada especie se dan en islas** (no se hacen islas más grandes): de día un adulto explora por

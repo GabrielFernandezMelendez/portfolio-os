@@ -245,8 +245,11 @@ export const FISH_MINUTES = 90;
 */
 /** Entre árboles se ve menos: el alcance se multiplica por esto si el que mira o el mirado están bajo árboles */
 export const SIGHT_COVER = 0.6;
-/** Un depredador saciado (que no caza) asusta menos: las distancias de alerta y de huida se multiplican por esto */
-export const CALM_PREDATOR = 0.5;
+/**
+ * Un depredador a la vista que no caza asusta casi lo mismo: las distancias de alerta y de huida se multiplican por
+ * esto (si viene hacia la presa, asusta entero). Solo el que acecha agachado pasa desapercibido: para eso se esconde.
+ */
+export const CALM_PREDATOR = 0.85;
 /** Ver a uno que acecha agachado: (1 - distancia/alcance) × (1 - sigilo) × vigilancia × esto, cada vez que mira */
 export const SPOT_FACTOR = 8;
 /** Comiendo mira menos (la cabeza en el pasto) */
@@ -260,7 +263,23 @@ export const STALK_FROM = 1.2;
 /** Velocidad agachado (parte de la de andar) */
 export const STALK_SPEED = 0.5;
 /** Al apartarse de un depredador, como mucho este rato andando (luego vuelve a lo suyo y, si sigue cerca, otra vez) */
-export const KEEP_AWAY_MINUTES = 40;
+export const KEEP_AWAY_MINUTES = 90;
+
+/*
+  El paisaje del miedo [PROPUESTA] (los alces de Yellowstone evitan las zonas donde ven lobos y vuelven cuando pasa
+  el peligro): una presa que ve a su depredador se aleja hasta dejar de verlo, su manada la sigue y evita esa zona un
+  tiempo. Si los ven una y otra vez en el mismo sitio, la zona se renueva y la manada acaba viviendo en otra parte.
+*/
+/** Al ver a un depredador más allá de su distancia de alerta, probabilidad de irse (cada vez que mira, si no se iba ya) */
+export const FEAR_LEAVE = 0.6;
+/** Se aleja hasta quedar a su vista más esto (celdas) del depredador */
+export const FEAR_MARGIN = 3;
+/** Horas que la manada evita la zona donde lo vio (zona = su vista alrededor del depredador) */
+export const FEAR_ZONE_HOURS = 36;
+/** Probabilidad de que cada uno de su manada (a su alcance) le siga al alejarse */
+export const FEAR_FOLLOW = 0.7;
+/** Hasta dónde (celdas) se entera la manada de que uno se aleja (le ven irse) */
+export const FEAR_FOLLOW_RANGE = 14;
 /** Tras una caza fallida, durante este rato (minutos) el depredador con hambre prueba a pescar si tiene agua honda cerca */
 export const FISH_AFTER_FAIL = 360;
 /** Hasta dónde (celdas) se apuntan los de la manada a una cacería */

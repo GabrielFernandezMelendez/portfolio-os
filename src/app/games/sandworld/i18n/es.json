@@ -652,6 +652,8 @@
       "fished": "He sacado un pez. Poca cosa, pero algo es algo.",
       "stalking": "Ya veo al {prey}. Me agacho y me acerco despacio, sin hacer ruido.",
       "keepAway": "Un {predator} demasiado cerca. Me aparto sin perderlo de vista.",
+      "moveAway": "Un {predator} a lo lejos. Mejor pastar donde no me vea.",
+      "avoidZone": "Por aquí vimos a un depredador. Vamos a comer a otra parte.",
       "watching": "Hay un {predator} por ahí. Dejo de comer y lo vigilo.",
       "heardSomething": "He oído algo. Me quedo quieto escuchando.",
       "sawKill": "Han cazado a {name} delante de nosotros. Hemos corrido sin mirar atrás.",

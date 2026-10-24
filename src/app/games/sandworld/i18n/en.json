@@ -652,6 +652,8 @@
       "fished": "Caught a fish. Not much, but better than nothing.",
       "stalking": "I can see the {prey}. Crouching, creeping closer, not a sound.",
       "keepAway": "A {predator} too close. Backing off without taking my eyes off it.",
+      "moveAway": "A {predator} in the distance. Better graze where it can't see me.",
+      "avoidZone": "We saw a predator around here. Let's eat somewhere else.",
       "watching": "There's a {predator} around. I stop eating and keep an eye on it.",
       "heardSomething": "Heard something. Standing still, listening.",
       "sawKill": "They caught {name} right in front of us. We ran without looking back.",
