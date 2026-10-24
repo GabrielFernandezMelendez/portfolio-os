@@ -2,6 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import { WORLD } from '../../domain/models/world.model';
 import { SPECIES_DEFS } from '../../config/species.config';
 import { SUN_HOURS } from '../../config/fauna.config';
+import { SPECIES_COLORS } from '../../config/balance.config';
 import { toGameTime } from '../../domain/models/time.model';
 import { FaunaView } from '../fauna/fauna-layer';
 
@@ -12,10 +13,10 @@ import { FaunaView } from '../fauna/fauna-layer';
   - De lejos (monedas): un anillo por manada, en su guía.
 */
 
-/** Colores por especie (los mismos que en los gráficos de la simulación) */
-const COLORS: Readonly<Record<string, number>> = {
-  deer: 0x2a78d6, rabbit: 0xeb6834, wolf: 0x1baf7a, crow: 0xeda100, human: 0xe87ba4, goblin: 0x008300,
-};
+/** Colores por especie (los mismos que en el gráfico del Equilibrio) */
+const COLORS: Readonly<Record<string, number>> = Object.fromEntries(
+  Object.entries(SPECIES_COLORS).map(([k, c]) => [k, parseInt(c.slice(1), 16)]),
+);
 const ALERT = 0xf6d04c;
 const FLEE = 0xe84a2a;
 const REFRESH_MS = 250;

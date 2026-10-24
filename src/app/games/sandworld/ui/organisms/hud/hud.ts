@@ -67,7 +67,7 @@ import { AnimalSheetComponent } from '../animal-sheet/animal-sheet';
           />
         }
       </div>
-      <sw-plank-bar [planks]="planks" [panel]="game.panel()" [selectedSand]="game.selectedSand()" [strokeLeft]="game.strokeLeft()" (toggle)="game.togglePanel($event)" />
+      <sw-plank-bar [planks]="planks" [panel]="game.panel()" [selectedSand]="game.selectedSand()" [strokeLeft]="game.strokeLeft()" [balance]="game.balanceView()" (toggle)="game.togglePanel($event)" />
     </div>
 
     @switch (game.menu()) {
@@ -80,7 +80,7 @@ import { AnimalSheetComponent } from '../animal-sheet/animal-sheet';
           (close)="game.closeMenu()"
           (exit)="exit.emit()"
           [devOn]="game.devOn()"
-          (devAction)="game.closeMenu(); game.runDevAction($event)"
+          (devAction)="game.closeMenu(); game.runDevAction($event); game.refreshBalance()"
         />
       }
       @case ('chronicle') {

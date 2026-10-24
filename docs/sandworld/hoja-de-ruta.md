@@ -35,17 +35,18 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
 - Manada que caza junta (90 %), lobos que no se van enseguida y vuelven antes, la sed antes que dormir, vista en Ajustes: 4P.
 - Caza en manada de verdad (llamar al compañero, esperar para saltar juntos), reparto en la presa, cadáveres que el frío conserva: 4Q.
 - Manada mínima de 5 que caza siempre junta, el que caza solo a escondidas, fundar manada o irse, cadáveres que se pudren: 4R.
+- **Panel de Equilibrio**: barras por especie en el botón (con aviso "!"), y tres pestañas para que los testers elijan:
+  Especies (estado en palabras y su porqué), Gráfico (30 días, con lo que contó la crónica) y Cadena alimentaria: 4S.
 
 ## Después (fase 4)
 
 - El resto de especies (hasta ~20) queda para la **ampliación**, después del producto mínimo viable.
-- Panel de Equilibrio con la densidad de cada especie.
 
 ## Fases siguientes
 
 | Fase | Contenido | Resultado |
 |---|---|---|
-| 5 | Disparadores, cartas (Dios Espagueti), reglas permanentes, decisiones del jugador, guardado local | **MVP jugable** |
+| 5 | Aparición natural de los animales y prueba de su equilibrio; guardado local; disparadores, cartas (Dios Espagueti), reglas permanentes, decisiones del jugador | **MVP jugable** |
 | 6 | Escalera evolutiva, sociedades (huertos, descubrir el fuego), rivalidad con humanos | Evolución social |
 | 7 | Catástrofes, expansión con nubes, criatura de ceniza y brasa (diseño guardado), fin de partida | Mundo ampliado |
 | 8 | Simulación offline ("Mientras no estabas…"), combinaciones | Partidas largas |

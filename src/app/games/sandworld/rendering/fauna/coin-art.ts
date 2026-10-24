@@ -108,7 +108,30 @@ function portraitPixels(species: string, d: number): Int32Array {
   return px;
 }
 
+const coinImages = new Map<string, string>();
+
+/**
+ * La misma moneda como imagen (data URL) para la interfaz (panel de Equilibrio). Se dibuja una vez por especie;
+ * el `<img>` la escala con `image-rendering: pixelated`.
+ */
+export function coinImage(species: string): string {
+  let url = coinImages.get(species);
+  if (!url) {
+    const portrait = COIN_PORTRAIT[species];
+    const d = portrait ? SPECIES_ART[species]?.density ?? 1 : 1;
+    url = portrait ? toCanvas(portraitPixels(species, d), COIN.size * d, COIN.size * d).toDataURL() : toCanvas(coinPixels(species), COIN.size, COIN.size).toDataURL();
+    coinImages.set(species, url);
+  }
+  return url;
+}
+
 function toTexture(px: Int32Array, w: number, h: number): Texture {
+  const tex = Texture.from(toCanvas(px, w, h));
+  tex.source.scaleMode = 'nearest';
+  return tex;
+}
+
+function toCanvas(px: Int32Array, w: number, h: number): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
@@ -123,7 +146,5 @@ function toTexture(px: Int32Array, w: number, h: number): Texture {
     img.data[k * 4 + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
-  const tex = Texture.from(canvas);
-  tex.source.scaleMode = 'nearest';
-  return tex;
+  return canvas;
 }

@@ -29,6 +29,7 @@ import type { TappedTile } from './sandworld-runtime';
 import { Season } from './domain/models/time.model';
 import { DevTileView } from './rendering/dev/dev-tile-overlay';
 import { DevAction } from './config/dev.config';
+import { BalanceRow, BalanceTracker, BalanceView } from './application/balance/balance-tracker';
 import { VegetationSystem } from './application/vegetation/vegetation';
 import { eatFruit, plantDevFlags } from './application/vegetation/plant-layout';
 import { PLANT_DEFS, VEGETATION_CHECK_MINUTES } from './config/plants.config';
@@ -93,6 +94,7 @@ export class SandworldService implements OnDestroy {
   readonly faunaWorld = new FaunaWorldAdapter(this.world, this.vegetation, (gx, gy) => this.physics.temperatureAt(gx, gy));
   /** Fauna: animales, manadas, celo y partos (bloque C: ciervos) */
   readonly fauna = new FaunaSystem(this.faunaWorld, new SeededRandom(this.world.seed * 2903 + 19));
+  private readonly balance = new BalanceTracker();
   /** Criaturas que nacen con la Tierra Quemada (goblins): sus nidos y la vida de cada zona */
   readonly burntBorn = new BurntBorn(this.physics.fire, this.fauna, new SeededRandom(this.world.seed * 7121 + 5));
   /** Trazo en curso mientras el dedo vierte */
@@ -113,6 +115,8 @@ export class SandworldService implements OnDestroy {
   /** Franja de arriba (con ritmo: lo que va saliendo de la cola) */
   readonly chronicleStrip = signal<readonly ChronicleEntry[]>([]);
   readonly indicatorValues = signal<readonly IndicatorValue[]>([]);
+  /** Panel de Equilibrio: cómo va cada especie, su gráfico y la cadena alimentaria (se refresca cada hora de juego) */
+  readonly balanceView = signal<BalanceView | null>(null);
   readonly islandLabel = signal(false);
   /** Modo desarrollo: capa de esencia y afinidad o de biomas sobre la isla (null = ninguna) */
   readonly devView = signal<DevTileView | null>(null);
@@ -164,6 +168,12 @@ export class SandworldService implements OnDestroy {
       if (t.minute % CLOCK_STEP_MINUTES === 0) this.time.set(t);
     });
     this.events.on('hour', () => this.refreshIndicators());
+    this.events.on('hour', () => this.refreshBalance());
+    // Cada amanecer, un punto nuevo en el gráfico del Equilibrio
+    this.events.on('dawn', t => {
+      this.balance.dawn(t.day, this.balanceRows());
+      this.refreshBalance();
+    });
     this.events.on('hour', t => {
       for (const b of this.burntBorn.hour(t.totalMinutes)) {
         if (b.nests) this.log({ type: 'species', key: `chronicle.fauna.${SPECIES_DEFS[b.species].key}.burntBorn`, params: { count: b.nests }, priority: 9 });
@@ -292,6 +302,7 @@ export class SandworldService implements OnDestroy {
   togglePanel(panel: HudPanel): void {
     this.closeAnimal();
     this.panel.update(p => (p === panel ? null : panel));
+    if (this.panel() === 'balance') this.refreshBalance();
   }
 
   closePanel(): void {
@@ -432,6 +443,7 @@ export class SandworldService implements OnDestroy {
   private reportFauna(): void {
     const news = this.fauna.news.splice(0);
     if (!news.length) return;
+    this.balance.record(news, this.engine.time.day);
     if (this.selectedAnimal() !== null) this.refreshAnimal();
     const told = new Set<string>();
     const tell = (n: FaunaNews, event: string, priority: number, params?: Record<string, string | number>) => {
@@ -848,6 +860,26 @@ export class SandworldService implements OnDestroy {
 
   private refreshIndicators(): void {
     this.indicatorValues.set(this.indicators.snapshot());
+  }
+
+  /** Foto del Equilibrio (cada hora de juego, al amanecer y al abrir el panel) */
+  refreshBalance(): void {
+    this.balanceView.set(this.balance.view(this.engine.time.day, this.balanceRows()));
+  }
+
+  /** Cuántos hay de cada especie, cuántos puede alimentar la isla y cómo de llenos van */
+  private balanceRows(): BalanceRow[] {
+    const sat = new Map<number, { sum: number; n: number }>();
+    for (const a of this.fauna.animals) {
+      const m = sat.get(a.species) ?? { sum: 0, n: 0 };
+      m.sum += a.satiety;
+      m.n++;
+      sat.set(a.species, m);
+    }
+    return this.fauna.stats().map(st => {
+      const m = sat.get(st.species);
+      return { species: st.species, population: st.population, capacity: st.capacity, satiety: m ? m.sum / m.n : null };
+    });
   }
 }
 

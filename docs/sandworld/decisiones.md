@@ -214,6 +214,18 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
 - Los nombres se generan solos y son irónicos (nombres de persona o de su comida favorita: Bellota, Brote;
   un lobo "Conejito" por la comida favorita de su padre).
 
+## Panel de Equilibrio
+
+- El botón **Equilibrio** enseña una columna por especie (alto = cuántos hay frente a lo que la isla puede
+  alimentar; color = cómo están) y un **"!"** si alguna está al borde. Sin animales, la balanza.
+- El panel tiene **tres pestañas** (los testers dirán cuál se queda): **Especies** (estado en palabras y su porqué:
+  "Los lobos les aprietan", "Pasan hambre", "Demasiados para lo que hay"..., flecha de tendencia y barra con la raya
+  de lo que la isla puede alimentar), **Gráfico** (un punto por amanecer, 30 días, con círculos de lo que contó la
+  crónica) y **Cadena** (quién come a quién, sale sola de los datos de las especies; flecha roja si se cazan más de
+  las que nacen).
+- **Sin spoilers**: solo salen las especies que ya han pisado la isla. **Sin números internos**: el gráfico cuenta
+  animales (se pueden contar en la isla), pero el hambre o la capacidad se dicen con palabras y barras.
+
 ## Para la fase de pulido (no hacer antes)
 - **Cambio de presa** (si hace falta): que los depredadores elijan presa según lo abundante que sea y no cacen una
   especie de la que quedan menos de 4 en la isla salvo con hambre extrema. Se reconsidera si el tamaño de manada

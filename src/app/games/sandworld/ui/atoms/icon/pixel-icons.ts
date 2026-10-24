@@ -143,6 +143,29 @@ export const PIXEL_ICONS: Readonly<Record<string, readonly string[]>> = {
     'k.k.......',
     'k.........',
   ],
+  // Peces (cadena alimentaria del Equilibrio)
+  fish: [
+    '..........',
+    '...kkkk..k',
+    '..kBBBbkkk',
+    '.kBkBbbbbk',
+    'kBbbbbbbkk',
+    '.kbbbbbk.k',
+    '..kkkkk...',
+    '..........',
+  ],
+  // Carroña: huesos cruzados (cadena alimentaria del Equilibrio)
+  bone: [
+    '.kk....kk.',
+    'kwwk..kwwk',
+    'kwmwkkwmwk',
+    '.kkmwwmkk.',
+    '...kmmk...',
+    '.kkmwwmkk.',
+    'kwmwkkwmwk',
+    'kwwk..kwwk',
+    '.kk....kk.',
+  ],
   // Correr: doble flecha (ficha del animal)
   run: [
     'kk...kk...',

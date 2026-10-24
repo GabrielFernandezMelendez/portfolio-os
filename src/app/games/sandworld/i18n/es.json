@@ -446,7 +446,54 @@
   },
   "balance": {
     "title": "Equilibrio",
-    "hint": "Así está la isla ahora mismo. La fauna se sumará cuando lleguen los animales."
+    "hint": "Así está la isla ahora mismo.",
+    "empty": "Aún no ha llegado ningún animal. Cuando lleguen, aquí verás cómo les va.",
+    "tabs": {
+      "species": "Especies",
+      "chart": "Gráfico",
+      "web": "Cadena"
+    },
+    "mood": {
+      "thriving": "Prosperan",
+      "stable": "Estables",
+      "edge": "Quedan muy pocos",
+      "pressed": "Los {predator} les aprietan",
+      "hungry": "Pasan hambre",
+      "thirsty": "Pasan sed",
+      "sick": "Hay enfermedad",
+      "crowded": "Demasiados para lo que hay",
+      "gone": "Desaparecidos",
+      "left": "Se fueron de la isla"
+    },
+    "back": "Pueden volver por la orilla.",
+    "capHint": "La raya negra es lo que la isla puede alimentar.",
+    "chartHint": "Un punto cada amanecer. Los círculos son lo que contó la crónica.",
+    "webHint": "Moneda más grande = más animales. Flecha roja = esa presa no aguanta el ritmo.",
+    "day": "D{day}",
+    "mark": {
+      "arrived": "llegan",
+      "last": "el último",
+      "left": "se van",
+      "outbreak": "brote"
+    },
+    "resource": {
+      "plants": "plantas",
+      "fish": "peces",
+      "carrion": "carroña"
+    },
+    "group": {
+      "deer": "ciervos",
+      "rabbit": "conejos",
+      "wolf": "lobos",
+      "crow": "cuervos",
+      "human": "humanos",
+      "goblin": "goblins"
+    },
+    "trend": {
+      "up": "Suben",
+      "down": "Bajan",
+      "flat": "Se mantienen"
+    }
   },
   "decisions": {
     "title": "Decisiones",

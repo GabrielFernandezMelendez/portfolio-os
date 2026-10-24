@@ -446,7 +446,54 @@
   },
   "balance": {
     "title": "Balance",
-    "hint": "This is how the island is doing right now. Wildlife joins once the animals arrive."
+    "hint": "This is how the island is doing right now.",
+    "empty": "No animals have arrived yet. Once they do, you'll see how they're faring here.",
+    "tabs": {
+      "species": "Species",
+      "chart": "Chart",
+      "web": "Food chain"
+    },
+    "mood": {
+      "thriving": "Thriving",
+      "stable": "Stable",
+      "edge": "Very few left",
+      "pressed": "The {predator} are squeezing them",
+      "hungry": "Going hungry",
+      "thirsty": "Going thirsty",
+      "sick": "Disease is spreading",
+      "crowded": "Too many for what there is",
+      "gone": "Vanished",
+      "left": "Left the island"
+    },
+    "back": "They may come back by the shore.",
+    "capHint": "The black line is how many the island can feed.",
+    "chartHint": "One point every dawn. Circles are what the chronicle told.",
+    "webHint": "Bigger coin = more animals. Red arrow = that prey can't keep up.",
+    "day": "D{day}",
+    "mark": {
+      "arrived": "arrive",
+      "last": "the last one",
+      "left": "leave",
+      "outbreak": "outbreak"
+    },
+    "resource": {
+      "plants": "plants",
+      "fish": "fish",
+      "carrion": "carrion"
+    },
+    "group": {
+      "deer": "deer",
+      "rabbit": "rabbits",
+      "wolf": "wolves",
+      "crow": "ravens",
+      "human": "humans",
+      "goblin": "goblins"
+    },
+    "trend": {
+      "up": "Rising",
+      "down": "Falling",
+      "flat": "Holding"
+    }
   },
   "decisions": {
     "title": "Decisions",
