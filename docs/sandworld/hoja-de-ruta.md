@@ -41,6 +41,11 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
   manada la sigue y evita esa zona día y medio; no duermen donde lo vieron: 4T.
 - El lobo aprovecha su ciervo (vuelve a comer en cuanto se le pasa el atracón; el ciervo tarda 4 días en pudrirse): 4U.
 
+## Fase 5 (en curso)
+
+- Los cuervos vuelan por toda la isla y vuelven al nido a dormir; la madre que vigila el nido también duerme: 5A.
+- Pruebas de equilibrio en la isla inicial (3 a 8 grupos) para ajustar la aparición natural de los grupos.
+
 ## Después (fase 4)
 
 - El resto de especies (hasta ~20) queda para la **ampliación**, después del producto mínimo viable.

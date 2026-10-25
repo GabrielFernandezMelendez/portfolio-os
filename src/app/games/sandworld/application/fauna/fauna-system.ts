@@ -646,7 +646,22 @@ export class FaunaSystem {
     }
     // De excursión por su cuenta (hasta su alcance): se acaba al cumplir su tiempo o si toca apiñarse
     const range = this.roamRange(a, s, now, leader);
-    if (a.roam && (now > a.roam.until || huddle || gather || !anchor || dist(a, anchor) > range * 1.15)) a.roam = null;
+    // (los que recorren la isla —`patrol`, los que vuelan— van lejos de los suyos: su vuelo solo acaba por tiempo, al
+    // apiñarse o al caer la tarde, cuando vuelven al nido)
+    const patrol = !!s.range.patrol;
+    if (a.roam && (now > a.roam.until || huddle || gather || (!anchor && !patrol) || (anchor && !patrol && dist(a, anchor) > range * 1.15))) a.roam = null;
+    // Los que vuelan recorren la isla: cada adulto, de vez en cuando, se va a mirar a otro sitio dentro de su alcance
+    // alrededor del nido (`home`), aunque sea la guía; al caer la tarde vuelven a dormir al nido
+    if (patrol && !a.roam && !a.strayed && !huddle && !gather && ageDays(a, now) >= s.youngDays && herd && this.random.next() < perThink(s.range.patrol!)) {
+      const nest = this.burrows.get(herd.burrow);
+      const spot = this.patrolSpot(a, s, nest ?? a, (s.range.home ?? s.range.roam) * ISLAND, herd, now, t.season);
+      if (spot) {
+        const [lo, hi] = ROAM_HOURS;
+        a.roam = { ...spot, until: now + (lo + this.random.next() * (hi - lo)) * 60 };
+        write(a, 'explore', now);
+        return this.walkTo(a, spot.x, spot.y, now);
+      }
+    }
     if (!a.roam && !a.strayed && anchor && dist(a, anchor) > reach * 1.4) {
       const [ox, oy] = this.offset(a.id, reach);
       return this.walkTo(a, anchor.x + ox, anchor.y + oy, now);
@@ -833,7 +848,9 @@ export class FaunaSystem {
       }
     }
     const burrow = this.burrows.get(herd.burrow);
-    const near = burrow ? FORAGE_RADIUS : Infinity;
+    // Cuánto se aleja de su refugio de día (los que vuelan, la isla entera) y dónde busca comida
+    const near = burrow ? (s.range.home !== undefined ? s.range.home * ISLAND : FORAGE_RADIUS) : Infinity;
+    const forage = s.range.forage ?? FORAGE_RADIUS;
     // Lejos de la madriguera: vuelve hacia ella, pero no siempre a la primera (tirada por hora de la especie)
     if (burrow && Math.hypot(a.x - burrow.x, a.y - burrow.y) > near && this.random.next() < perThink(s.homing.leaderReturn ?? 1)) {
       herd.tx = burrow.x;
@@ -842,7 +859,7 @@ export class FaunaSystem {
     }
     // Donde iban han visto a un depredador: a comer a otra parte (más lejos si hace falta)
     if (inZone(herd, herd.tx, herd.ty, now)) {
-      const away = this.searchFood(a, s, herd.avoid, now, season, FORAGE_RADIUS * 2.5);
+      const away = this.searchFood(a, s, herd.avoid, now, season, forage * 2.5);
       if (away && !(burrow && Math.hypot(away.x - burrow.x, away.y - burrow.y) > near)) {
         herd.tx = away.x;
         herd.ty = away.y;
@@ -851,14 +868,30 @@ export class FaunaSystem {
       }
     }
     const food = this.world.foodAt(Math.floor(herd.tx), Math.floor(herd.ty), s.diets, herd.avoid, now, season);
-    if (food > FOOD_HERE * 3 && Math.hypot(herd.tx - a.x, herd.ty - a.y) < FORAGE_RADIUS * 2) return;
-    const spot = this.searchFood(a, s, herd.avoid, now, season, FORAGE_RADIUS);
+    if (food > FOOD_HERE * 3 && Math.hypot(herd.tx - a.x, herd.ty - a.y) < forage * 2) return;
+    const spot = this.searchFood(a, s, herd.avoid, now, season, forage);
     if (spot && burrow && Math.hypot(spot.x - burrow.x, spot.y - burrow.y) > near) return;
     if (spot) {
       herd.tx = spot.x;
       herd.ty = spot.y;
       remember(herd.food, spot.x, spot.y);
     }
+  }
+
+  /**
+   * Un sitio al azar a `radius` celdas de `center` (lejos o cerca, según caiga), fuera de zonas de miedo: mejor con
+   * comida; si no la hay (el cuervo vive de carroña y fruta, que no siempre hay), uno cualquiera para ir a mirar
+   */
+  private patrolSpot(a: Animal, s: SpeciesDef, center: { x: number; y: number }, radius: number, herd: Herd, now: number, season: SeasonId): { x: number; y: number } | null {
+    let any: { x: number; y: number } | null = null;
+    for (let n = 0; n < FORAGE_SAMPLES; n++) {
+      const angle = this.random.next() * Math.PI * 2, r = radius * Math.sqrt(this.random.next());
+      const x = Math.floor(center.x + Math.cos(angle) * r), y = Math.floor(center.y + Math.sin(angle) * r);
+      if (!this.walkable(x, y) || inZone(herd, x + 0.5, y + 0.5, now)) continue;
+      if (this.world.foodAt(x, y, s.diets, herd.avoid, now, season) > FOOD_HERE) return { x: x + 0.5, y: y + 0.5 };
+      any ??= { x: x + 0.5, y: y + 0.5 };
+    }
+    return any;
   }
 
   /** Ir a comer: aquí si hay; si no, a su sitio junto a la manada (si allí hay) o al mejor que encuentre cerca */
@@ -875,7 +908,8 @@ export class FaunaSystem {
       const px = herd.tx + ox, py = herd.ty + oy;
       if (Math.hypot(px - a.x, py - a.y) > 1 && food(px, py) > FOOD_HERE) return this.walkTo(a, px, py, now);
     }
-    const near = this.searchFood(a, s, avoid, now, season, FORAGE_RADIUS) ?? this.searchFood(a, s, avoid, now, season, FORAGE_RADIUS * 2.5);
+    const forage = s.range.forage ?? FORAGE_RADIUS;
+    const near = this.searchFood(a, s, avoid, now, season, forage) ?? this.searchFood(a, s, avoid, now, season, forage * 2.5);
     if (near) {
       a.search = null;
       if (herd) remember(herd.food, near.x, near.y);
@@ -883,7 +917,7 @@ export class FaunaSystem {
     }
     // Nada a la vista: a donde la manada recuerda haber comido bien; si no, busca cada hora más lejos
     const spot = this.rememberedFood(a, s, herd, now, season)
-      ?? this.widerSearch(a, herd, 'food', FORAGE_RADIUS * 2.5, now, r => this.searchFood(a, s, avoid, now, season, r));
+      ?? this.widerSearch(a, herd, 'food', forage * 2.5, now, r => this.searchFood(a, s, avoid, now, season, r));
     if (spot) return this.walkTo(a, spot.x, spot.y, now);
     this.searchWalk(a, now);
   }
@@ -1474,6 +1508,8 @@ export class FaunaSystem {
     if (d > s.herd.cohesion * 0.8) {
       if (a.action !== 'walk' || Math.hypot(a.tx - den.x, a.ty - den.y) > 1.5) this.walkTo(a, den.x + 1, den.y + 1, now);
     } else if (a.action === 'walk' && reached(a)) this.setAction(a, a.rest < 0.9 ? 'sleep' : 'idle', now);
+    // Vigilando junto a la guarida también se duerme cuando está cansada (si no, se quedaba en vela días enteros)
+    else if (a.action === 'idle' && a.rest < SLEEP_BELOW) this.setAction(a, 'sleep', now);
     else if (a.action !== 'sleep' && a.action !== 'idle' && a.action !== 'walk') this.setAction(a, 'idle', now);
     return true;
   }

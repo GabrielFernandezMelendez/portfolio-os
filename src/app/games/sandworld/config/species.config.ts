@@ -228,7 +228,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     // De -20 °C a 42 °C
     comfort: [-0.2, 1.05],
     speed: { walk: 0.08, run: 0.9, fly: 1.1 },
-    range: { roam: 2.5, flee: 1 },
+    // Vuela: recorre la isla entera (6 islas) buscando comida y vuelve al nido a dormir
+    range: { roam: 6, flee: 1, home: 6, forage: 30, patrol: 0.6 },
     flight: { mode: 'away', freeze: 0, alarm: 0.95, zigzag: 0 },
     // Huele (y ve) la carroña hasta 3 islas; muy atento a todo
     senses: { smell: 3, vigilance: 0.3, sight: 20, night: 0.2, hearing: 14, wary: { alert: 6, flee: 3 } },

@@ -72,6 +72,18 @@ export interface SpeciesDef {
     /** Si las hembras se alejan menos que los machos (conejo), su alcance; si no, el mismo */
     readonly roamFemale?: number;
     readonly flee: number;
+    /**
+     * Con refugio (madriguera, nido...): hasta dónde se aleja la manada de él de día (islas). Sin dar, poco (lo que
+     * busca comida alrededor, FORAGE_RADIUS). Los que vuelan cruzan la isla entera y vuelven a dormir al nido.
+     */
+    readonly home?: number;
+    /** Radio (celdas) en el que buscan comida la guía y cada uno; sin dar, FORAGE_RADIUS. Volando, mucho más */
+    readonly forage?: number;
+    /**
+     * Probabilidad por hora de que la guía cambie de comedero aunque aún quede comida donde está: a otro sitio con
+     * comida al azar dentro de su alcance (`home`). Los que vuelan recorren así la isla; sin dar, no lo hacen.
+     */
+    readonly patrol?: number;
   };
   /**
    * Huida: 'away' = lejos del peligro (ciervo); 'refuge' = a su refugio (conejo: a la madriguera; si no tiene o

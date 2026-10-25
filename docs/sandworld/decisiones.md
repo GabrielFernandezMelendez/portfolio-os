@@ -54,6 +54,9 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
 - El **miedo no tiene barra**: se muestra como un **estado** abajo en la ficha ("Asustado"), igual que
   "Sediento" o "Hambriento". Sobre todo se ve en el comportamiento (se quedan quietos, huyen hasta relajarse,
   estampidas, evitan zonas, no duermen con tormenta).
+- **Los que vuelan recorren la isla**: el cuervo no está atado a su nido como los de tierra a su madriguera. Cada
+  adulto se va de vez en cuando a mirar a cualquier parte de la isla (hasta 6 islas del nido) y al caer la tarde
+  vuelve a dormir al nido (`range.home`, `range.forage` y `range.patrol` en su registro).
 - **El paisaje del miedo** (como los alces de Yellowstone con los lobos): un depredador **a la vista** asusta
   aunque no cace (solo pasa desapercibido el que acecha agachado). La presa se aleja **hasta dejar de verlo, como
   mínimo**; cerca, con su '!' y avisando a los demás; lejos, sin escándalo y no siempre. Su manada la sigue (cada uno
