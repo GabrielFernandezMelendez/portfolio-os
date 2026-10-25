@@ -39,6 +39,7 @@ hash → commit (checkpoint) → deploy. La versión jugable (MVP) llega al fina
   Especies (estado en palabras y su porqué), Gráfico (30 días, con lo que contó la crónica) y Cadena alimentaria: 4S.
 - **El paisaje del miedo**: una presa que ve a su depredador (aunque no cace) se aleja hasta dejar de verlo, su
   manada la sigue y evita esa zona día y medio; no duermen donde lo vieron: 4T.
+- El lobo aprovecha su ciervo (vuelve a comer en cuanto se le pasa el atracón; el ciervo tarda 4 días en pudrirse): 4U.
 
 ## Después (fase 4)
 

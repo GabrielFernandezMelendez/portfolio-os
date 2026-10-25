@@ -61,6 +61,9 @@ Lo que ya está decidido. Antes de cambiar algo de esta lista, se pregunta.
   y la manada acaba viviendo en otra parte. No eligen para dormir un sitio donde lo vieron.
   Para compensar (las presas viven más lejos de la guarida), el lobo sale a cazar algo antes (hambre 0,45) y aguanta
   más la persecución (30 min).
+- **Cadáveres**: una manada de lobos vuelve a su presa en cuanto se le pasa el atracón (hambre 0,85) y el ciervo
+  tarda 4 días en pudrirse (más con frío): antes se echaba a perder casi un tercio de la carne. Los conejos se cazan
+  mucho, pero dan poco (la décima parte de un ciervo).
 - Sobre la cabeza sale un **"!"** al asustarse y un **"?"** cuando algo le da curiosidad, unos segundos, para que el
   jugador abra la ficha y descubra qué pasa.
 - Las **distancias de cada especie se dan en islas** (no se hacen islas más grandes): de día un adulto explora por

@@ -1692,10 +1692,12 @@ describe('Fauna: cadáveres que se pudren y el lobo que caza a escondidas', () =
     const [deer] = fauna.spawnHerd('deer', 30, 30, t0, false, [{ sex: 'female', age: 'adult' }]);
     (fauna as unknown as { die(a: unknown, c: string, n: number): void }).die(deer, 'oldAge', t0);
     const full = deer.meat;
-    run(fauna, island, t0, 3.5 * DAY);
+    // El ciervo se pudre a los 4 días (corpseDays) y los huesos duran CARRION_DAYS más
+    const days = SPECIES_BY_KEY['deer'].corpseDays;
+    run(fauna, island, t0, (days + 0.5) * DAY);
     expect(fauna.corpses.includes(deer)).toBe(true);
     expect(deer.meat).toBeLessThan(full * 0.2);
-    run(fauna, island, t0 + 3.5 * DAY, 2 * DAY);
+    run(fauna, island, t0 + (days + 0.5) * DAY, 2 * DAY);
     expect(fauna.corpses.includes(deer)).toBe(false);
   });
 

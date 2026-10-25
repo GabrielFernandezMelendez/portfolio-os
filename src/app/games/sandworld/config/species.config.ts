@@ -52,7 +52,8 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
     // Se vacía de agua en algo más de un día; bebe hasta llenarse en ~40 minutos
     thirstPerDay: 0.8, drinkPerMinute: 0.025,
     tirePerDay: 0.9, restPerHour: 0.15, sleepHours: [22, 5],
-    waterRange: 12, thirstSearch: 30, corpseDays: 3,
+    // Un ciervo da para 4 días a una manada de lobos: tarda 4 en pudrirse (más con frío)
+    waterRange: 12, thirstSearch: 30, corpseDays: 4,
     // Llega una manada si hay hierba para más ciervos (de 1 a 5 manadas en un 2×2); en invierno come un 30 % menos
     // Llega una manada distinta cada vez: dos hembras y un macho, y por tirada de 0 a 2 adultos y de 0 a 2 crías más
     // Las ciervas que llegan entre el otoño y la primavera suelen venir preñadas (60 %): crías el primer año
@@ -141,7 +142,9 @@ export const SPECIES_DEFS: readonly SpeciesDef[] = [
       // Comen menos: cazan solo con hambre de verdad, pero rematan su presa en cuanto les entra algo de hambre
       // Con el paisaje del miedo las presas viven lejos de la guarida: salen a cazar algo antes (0,45) para no llegar
       // agotados a una caza que ahora es más larga
-      huntBelow: 0.45, carrionBelow: 0.7, huntChance: 0.4, carrion: 0.8, revisit: 0.3,
+      // Vuelven a su presa en cuanto se les pasa el atracón (0,85), como los lobos de verdad, que comen varias veces
+      // al día del mismo ciervo: así no se pudre la mitad
+      huntBelow: 0.45, carrionBelow: 0.85, huntChance: 0.4, carrion: 0.8, revisit: 0.3,
       // La manada comparte la presa y los adultos regurgitan comida a los jóvenes (el 81 % de las veces, a los lobeznos)
       shareKill: true, feedYoung: 0.5,
       catch: {
