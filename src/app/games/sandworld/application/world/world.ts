@@ -2,7 +2,10 @@ import { ChunkData } from '../../domain/models/chunk.model';
 import { generateChunk } from './chunk-generator';
 import { computeClimate } from './climate';
 import { ExplorationMap } from './exploration';
+import { PLOT } from '../../config/island.config';
 import { placeNaturalSprings } from './springs';
+import { VegetationSystem } from '../vegetation/vegetation';
+import { SeededRandom } from '../../infrastructure/seeded-random';
 
 /**
  * El mundo de una partida: semilla y chunks cargados.
@@ -14,10 +17,16 @@ export class World {
   /** Nivel de la isla: sube con la expansión (fase 7) */
   level = 1;
 
-  /** Chunks descubiertos; el resto está bajo las nubes */
-  readonly exploration = new ExplorationMap();
+  /** Chunks descubiertos; el resto está bajo las nubes (empieza con la primera parcela) */
+  readonly exploration: ExplorationMap;
 
-  constructor(readonly seed: number) {}
+  /** Plantas que el jugador ya conoce (las descubre al ver en la crónica que una especie se las come) */
+  readonly discoveredPlants = new Set<number>();
+
+  /** `plot`: chunks por lado de la parcela inicial (los tests usan 1: un solo chunk) */
+  constructor(readonly seed: number, plot = PLOT) {
+    this.exploration = new ExplorationMap(plot);
+  }
 
   /** Devuelve el chunk (cx, cy), generándolo la primera vez */
   chunk(cx: number, cy: number): ChunkData {
@@ -27,6 +36,7 @@ export class World {
       c = generateChunk(this.seed, cx, cy);
       computeClimate(c, this.seed);
       placeNaturalSprings(c, this.seed);
+      VegetationSystem.seed(c, new SeededRandom(this.seed * 31 + cx * 7919 + cy * 104729));
       this.chunks.set(key, c);
     }
     return c;

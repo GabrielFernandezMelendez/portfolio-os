@@ -2,7 +2,13 @@ import { Ticker } from 'pixi.js';
 import { PixiStage } from './rendering/pixi-stage';
 import { TerrainLayer } from './rendering/terrain/terrain-layer';
 import { Camera, Rect } from './rendering/camera';
-import { CellCursor } from './rendering/cell-cursor';
+import { BrushArea, CellCursor } from './rendering/cell-cursor';
+import { GrainParticles } from './rendering/sands/grain-particles';
+import { DevTileOverlay, DevTileView } from './rendering/dev/dev-tile-overlay';
+import { Precipitation } from './rendering/weather/precipitation';
+import { Lightning } from './rendering/weather/lightning';
+import { SeasonBlend } from './rendering/daylight-layer';
+import { WeatherState } from './domain/models/weather.model';
 import { DaylightLayer } from './rendering/daylight-layer';
 import { CloudLayer } from './rendering/clouds/cloud-layer';
 import { RevealEffect } from './rendering/clouds/reveal-effect';
@@ -13,18 +19,65 @@ import { World } from './application/world/world';
 import { WORLD } from './domain/models/world.model';
 import { BRUSH_CELLS } from './config/brush.config';
 import { CLOUD_CAMERA_MARGIN, REVEAL_ON_START } from './config/clouds.config';
-import { REBAKE_INTERVAL_MS } from './config/physics.config';
+import { PLOT } from './config/island.config';
+import { REBAKE_INTERVAL_MS, REBAKE_VISIBLE_MARGIN, REBAKES_PER_FRAME } from './config/physics.config';
+import { POUR_EDGE_BAND, POUR_TAP_SECONDS } from './config/pour.config';
 import { ChunkCoord } from './domain/events/game-events';
+import { FaunaLayer, FaunaView, Ground } from './rendering/fauna/fauna-layer';
+import { SensesOverlay } from './rendering/dev/senses-overlay';
+import { FAUNA_LOD } from './config/fauna-art.config';
 
 /** Avisos del runtime hacia fuera (el componente los conecta con el servicio) */
 export interface RuntimeHooks {
   /** Cada frame, con el tiempo real actual en ms */
   frame?(nowMs: number): void;
-  /** Toque sobre la isla sin arena seleccionada */
-  islandTap?(): void;
+  /** Toque sobre la isla sin arena seleccionada: tile tocado y punto de pantalla */
+  tileTap?(tile: TappedTile): void;
+  /** Tiempo y estación del momento (para la luz, el tono y la lluvia) */
+  atmosphere?(): { readonly weather: WeatherState; readonly season: SeasonBlend };
+  /** Pincel de arena (lo implementa el servicio) */
+  pour?: PourHooks;
+  /** Animales que dibujar (solo lectura) */
+  fauna?(): FaunaView;
+  /** La cámara pasa a la vista de lejos (monedas de las manadas) o vuelve de ella */
+  farView?(far: boolean): void;
+  /** Toque sobre un animal */
+  animalTap?(id: number): void;
+}
+
+/** Tile que se ha tocado (chunk + tile) y dónde está en pantalla */
+export interface TappedTile {
+  readonly cx: number;
+  readonly cy: number;
+  readonly i: number;
+  readonly j: number;
+  /** Celda tocada dentro del chunk (para saber si es agua) */
+  readonly ci: number;
+  readonly cj: number;
+  readonly screenX: number;
+  readonly screenY: number;
+  /** Planta tocada (id del registro), si el dedo cayó sobre una */
+  readonly plant: number | null;
+}
+
+/** Lo que el runtime necesita del servicio para verter: el runtime sabe dónde está el dedo; el servicio, qué cae */
+export interface PourHooks {
+  /** El dedo se apoya con una arena elegida */
+  begin(): void;
+  /** El dedo pasa `seconds` sobre el bloque que empieza en la celda global (gx, gy). Devuelve si cayó arena. */
+  at(gx: number, gy: number, seconds: number): boolean;
+  /** El dedo se levanta (o entra un segundo dedo): lo vertido pasa a asentarse */
+  end(): void;
+  /** Color de los granos (el de la arena elegida) */
+  color(): number;
 }
 
 const chunkKey = (cx: number, cy: number): string => `${cx},${cy}`;
+/** Al tocar un animal: si está por debajo de esta parte de la pantalla (la tapará su ficha), se sube a ANIMAL_SCREEN_Y */
+const ANIMAL_VISIBLE_UNTIL = 0.36;
+const ANIMAL_SCREEN_Y = 0.26;
+/** Cada cuántos ms se revisa el aspecto de estación de las plantas */
+const PLANT_LOOK_MS = 500;
 
 /**
  * Raíz de composición del juego en marcha: une motor de tiempo, render, cámara y entrada.
@@ -35,8 +88,21 @@ export class SandworldRuntime {
   private readonly stage = new PixiStage();
   private readonly camera = new Camera();
   private readonly cursor = new CellCursor();
+  private readonly grains = new GrainParticles();
+  private devOverlay: DevTileOverlay | null = null;
+  /** Modo desarrollo: hasta dónde ve cada animal o cada manada */
+  private sensesOverlay: SensesOverlay | null = null;
+  private sensesWanted = false;
+  private readonly precipitation = new Precipitation();
+  private readonly lightning = new Lightning();
+  private readonly fauna = new FaunaLayer();
+  private farView = false;
+  /** Punto de pantalla donde está el dedo que vierte, o null si no se está vertiendo */
+  private brushPoint: { x: number; y: number } | null = null;
   private readonly terrains = new Map<string, TerrainLayer>();
   private readonly reveals: RevealEffect[] = [];
+  /** Chunks descubiertos que esperan a hornearse (uno por frame) */
+  private readonly pendingReveals: ChunkCoord[] = [];
   /** Chunks con el terreno cambiado pendientes de re-hornear, y cuándo se hornearon por última vez */
   private readonly dirty = new Set<string>();
   private readonly lastBake = new Map<string, number>();
@@ -47,6 +113,11 @@ export class SandworldRuntime {
   private destroyed = false;
   /** true cuando hay una arena seleccionada. Sin arena, 1 dedo mueve la cámara. */
   private brushEnabled = false;
+  /** Lo pidió el servicio antes de montar (el efecto de Angular puede llegar antes que Pixi) */
+  private devViewWanted: DevTileView | null = null;
+  private plantClock = 0;
+  /** ¿Está descubierto el chunk? (para saber qué bordes son precipicio) */
+  private readonly revealed = (cx: number, cy: number): boolean => this.world.exploration.isRevealed(cx, cy);
 
   constructor(
     private readonly engine: TimeEngine,
@@ -56,12 +127,31 @@ export class SandworldRuntime {
 
   /** Devuelve false si se destruyó antes de terminar de cargar */
   async mount(host: HTMLElement): Promise<boolean> {
-    const app = await this.stage.mount(host, (w, h) => this.camera.setViewport(w, h));
+    const app = await this.stage.mount(host, (w, h) => {
+      this.camera.setViewport(w, h);
+      this.precipitation.resize(w, h);
+      this.lightning.resize(w, h);
+    });
     if (!app || this.destroyed) return false;
 
     // Mar de nubes detrás de todo; la isla flota encima
     this.clouds = new CloudLayer(this.world.seed);
-    this.stage.world.addChild(this.clouds.back, this.cursor.view);
+    this.devOverlay = new DevTileOverlay(this.world);
+    this.stage.world.addChild(this.clouds.back, this.cursor.view, this.grains.view, this.devOverlay.view);
+    this.devOverlay.show(this.devViewWanted);
+    this.sensesOverlay = new SensesOverlay((gx, gy) => this.cellWorld(gx, gy));
+    this.stage.world.addChild(this.sensesOverlay.view);
+    this.sensesOverlay.show(this.sensesWanted);
+    // Lluvia y nieve por encima del mundo, en coordenadas de pantalla
+    app.stage.addChild(this.precipitation.view);
+    this.precipitation.resize(app.screen.width, app.screen.height);
+    // Rayos: el rayo dentro del mundo (encima de todo) y el destello sobre toda la pantalla
+    this.lightning.view.zIndex = 1e6;
+    this.stage.world.addChild(this.lightning.view);
+    // Monedas de las manadas (vista de lejos): encima de la isla, debajo del rayo
+    this.stage.world.addChild(this.fauna.overlay);
+    app.stage.addChild(this.lightning.flash);
+    this.lightning.resize(app.screen.width, app.screen.height);
 
     // Chunks ya descubiertos (en la fase 5 vendrán de la partida guardada)
     for (const { cx, cy } of this.world.exploration.list()) {
@@ -78,13 +168,51 @@ export class SandworldRuntime {
 
     this.input = new PointerInput(host, {
       brush: (phase, x, y) => {
-        // Fase 2: aquí caerá la arena. De momento el pincel solo mueve el cursor de celda.
-        if (phase === 'cancel') this.cursor.hide();
-        else this.pointAt(x, y);
+        if (phase === 'start') {
+          this.brushPoint = { x, y };
+          this.hooks.pour?.begin();
+          // Un toque corto también deja un pellizco de arena
+          this.pourUnderFinger(POUR_TAP_SECONDS * 1000);
+        } else if (phase === 'move') {
+          this.brushPoint = { x, y };
+        } else {
+          // 'end' o 'cancel' (segundo dedo): lo vertido hasta ahora se queda y empieza a asentarse
+          if (phase === 'end') this.pointAt(x, y);
+          this.brushPoint = null;
+          this.hooks.pour?.end();
+          if (phase === 'cancel') this.cursor.hide();
+        }
       },
       hover: (x, y) => this.pointAt(x, y),
       tap: (x, y) => {
-        if (this.pointAt(x, y)) this.hooks.islandTap?.();
+        const G = WORLD.CELLS_PER_TILE;
+        const w = this.camera.screenToWorld(x, y);
+        // Primero, ¿hay un animal bajo el dedo? Después, ¿una planta? (su copa puede tapar celdas de detrás)
+        const animal = this.fauna.animalAt(w.x, w.y);
+        if (animal !== null) {
+          this.hooks.animalTap?.(animal);
+          // La ficha tapa la mitad de abajo: si el animal queda debajo, la cámara lo sube a la parte de arriba
+          const vh = this.camera.viewportHeight;
+          if (y > vh * ANIMAL_VISIBLE_UNTIL) this.camera.glideTo(w.x, w.y + (vh * (0.5 - ANIMAL_SCREEN_Y)) / this.camera.scale);
+          return;
+        }
+        for (const layer of [...this.terrains.values()].sort((a, b) => b.view.zIndex - a.view.zIndex)) {
+          const plant = layer.plantAt(w.x, w.y);
+          const coords = layer.coords;
+          if (!plant || !coords) continue;
+          this.hooks.tileTap?.({
+            cx: coords.cx, cy: coords.cy, i: Math.floor(plant.ci / G), j: Math.floor(plant.cj / G),
+            ci: plant.ci, cj: plant.cj, screenX: x, screenY: y, plant: plant.plant,
+          });
+          return;
+        }
+        const area = this.areaAt(x, y);
+        if (area) {
+          this.hooks.tileTap?.({
+            cx: area.cx, cy: area.cy, i: Math.floor(area.ci / G), j: Math.floor(area.cj / G),
+            ci: area.ci, cj: area.cj, screenX: x, screenY: y, plant: null,
+          });
+        }
       },
       leave: () => this.cursor.hide(),
       pan: (dx, dy) => this.camera.panBy(dx, dy),
@@ -98,22 +226,73 @@ export class SandworldRuntime {
   }
 
   /**
-   * Muestra un chunk recién descubierto: emerge de las nubes y la cámara se desliza hacia él.
+   * Muestra un chunk recién descubierto: emerge de las nubes y la cámara se desliza hacia su parcela.
    * Qué se descubre lo decide la lógica (SandworldService.revealNextChunk). La unión sin costuras
    * entre chunks llega en la fase 7.
    */
   showChunk(cx: number, cy: number): void {
+    // Se hornea en un frame próximo, uno por frame: una parcela son varios chunks y hornearlos juntos daría un tirón
+    if (!this.pendingReveals.some(c => c.cx === cx && c.cy === cy)) this.pendingReveals.push({ cx, cy });
+  }
+
+  /** Un chunk descubierto por frame (ver showChunk) */
+  private revealPending(): void {
+    const next = this.pendingReveals.shift();
+    if (!next) return;
+    const { cx, cy } = next;
     if (!this.clouds || this.terrains.has(chunkKey(cx, cy))) return;
     this.addChunk(cx, cy, true);
+    // Los vecinos ya no tienen precipicio por ese lado: sus plantas pueden llegar hasta el borde compartido
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+      this.terrains.get(chunkKey(cx + dx, cy + dy))?.layoutPlants(this.engine.time, this.revealed);
+    }
     this.camera.setBounds(this.discoveredBounds(CLOUD_CAMERA_MARGIN));
-    const N = WORLD.TILES;
-    const c = isoToWorld(cx * N + N / 2 - 0.5, cy * N + N / 2 - 0.5);
+    // Hacia el centro de su parcela (se descubren sus chunks a la vez)
+    const N = WORLD.TILES, P = PLOT * N;
+    const px = Math.floor(cx / PLOT) * P, py = Math.floor(cy / PLOT) * P;
+    const c = isoToWorld(px + P / 2 - 0.5, py + P / 2 - 0.5);
     this.camera.glideTo(c.x, c.y);
   }
 
   /** El terreno de estos chunks ha cambiado: se re-hornearán en los próximos frames */
+  /** La vegetación de estos chunks ha cambiado: se recolocan sus plantas */
+  refreshPlants(chunks: readonly ChunkCoord[]): void {
+    for (const c of chunks) this.terrains.get(chunkKey(c.cx, c.cy))?.layoutPlants(this.engine.time, this.revealed);
+  }
+
+  /** Cae un rayo en la celda global (gx, gy): rayo con ramas y destello */
+  strike(gx: number, gy: number): void {
+    const p = this.cellWorld(gx, gy);
+    if (p) this.lightning.strike(p.x, p.y);
+  }
+
+  /** Lleva la cámara hasta la celda global (gx, gy) */
+  focusCell(gx: number, gy: number): void {
+    const p = this.cellWorld(gx, gy);
+    if (p) this.camera.glideTo(p.x, p.y);
+  }
+
+  /** Punto del mundo de una celda global (null si su chunk no está dibujado) */
+  private cellWorld(gx: number, gy: number): { x: number; y: number } | null {
+    const C = WORLD.CELLS;
+    const cx = Math.floor(gx / C), cy = Math.floor(gy / C);
+    return this.terrains.get(chunkKey(cx, cy))?.cellPoint(gx - cx * C, gy - cy * C) ?? null;
+  }
+
   markDirty(chunks: readonly ChunkCoord[]): void {
     for (const c of chunks) this.dirty.add(chunkKey(c.cx, c.cy));
+  }
+
+  /** Modo desarrollo: capa con la esencia y la afinidad, o con el bioma, de cada tile (null = ninguna) */
+  setDevView(view: DevTileView | null): void {
+    this.devViewWanted = view;
+    this.devOverlay?.show(view);
+  }
+
+  /** Modo desarrollo: anillos con hasta dónde ve cada animal (de lejos, cada manada) */
+  setSensesView(on: boolean): void {
+    this.sensesWanted = on;
+    this.sensesOverlay?.show(on);
   }
 
   setBrushEnabled(enabled: boolean): void {
@@ -139,6 +318,8 @@ export class SandworldRuntime {
     this.terrains.clear();
     this.clouds?.destroy();
     this.clouds = null;
+    this.lightning.destroy();
+    this.fauna.destroy();
     this.stage.destroy();
   }
 
@@ -146,9 +327,34 @@ export class SandworldRuntime {
     const dt = ticker.deltaMS;
     this.now += dt;
     // Primero se dibuja lo que cambió en el frame anterior (p. ej. arena recién caída) y después avanza la física
+    this.revealPending();
     this.rebakeDirty();
     this.engine.update(dt);
-    this.camera.update(dt, this.input?.edgeVector() ?? { x: 0, y: 0 });
+    // Borde de pantalla: ratón quieto en el borde, o dedo vertiendo en la banda del borde
+    const edge = this.input?.edgeVector() ?? { x: 0, y: 0 };
+    const pourEdge = this.input?.brushEdgeVector(POUR_EDGE_BAND) ?? { x: 0, y: 0 };
+    this.camera.update(dt, { x: edge.x + pourEdge.x, y: edge.y + pourEdge.y });
+    // El dedo que vierte sigue vertiendo aunque no se mueva (el tiempo encima de un bloque cuenta)
+    if (this.brushPoint) this.pourUnderFinger(dt);
+    this.grains.update(dt);
+    this.devOverlay?.update(dt);
+    // Aspecto de estación de las plantas (cambia en días de juego: basta con mirarlo dos veces por segundo)
+    for (const t of this.terrains.values()) t.animatePlants(dt);
+    this.lightning.update(dt);
+    const fauna = this.hooks.fauna?.();
+    if (fauna) this.fauna.update(dt, fauna, this.groundAt, this.engine.isPaused, this.camera.scale);
+    this.sensesOverlay?.update(dt, fauna, this.camera.scale < FAUNA_LOD.coinsBelow, this.camera.scale);
+    // Vista de lejos (monedas): se avisa al cambiar (desde ahí las órdenes son para toda la manada)
+    const far = this.camera.scale < FAUNA_LOD.coinsBelow;
+    if (far !== this.farView) {
+      this.farView = far;
+      this.hooks.farView?.(far);
+    }
+    this.plantClock += dt;
+    if (this.plantClock >= PLANT_LOOK_MS) {
+      this.plantClock = 0;
+      for (const t of this.terrains.values()) t.updatePlants(this.engine.time);
+    }
     this.clouds?.update(dt);
     // Apariciones en curso (en tiempo real: siguen aunque el juego esté en pausa)
     for (let i = this.reveals.length - 1; i >= 0; i--) {
@@ -159,21 +365,44 @@ export class SandworldRuntime {
     }
     this.stage.world.scale.set(this.camera.scale);
     this.stage.world.position.set(this.camera.offsetX, this.camera.offsetY);
-    this.daylight?.apply(this.engine.exactMinuteOfDay);
+    const atmosphere = this.hooks.atmosphere?.();
+    this.daylight?.apply(this.engine.exactMinuteOfDay, atmosphere?.season, atmosphere?.weather.gloom ?? 0);
+    // La lluvia se ve también en pausa (queda quieta en el aire si el juego está parado)
+    const weather = atmosphere?.weather;
+    this.precipitation.update(this.engine.isPaused ? 0 : dt, weather?.look ?? 'none', weather?.intensity ?? 0);
     this.hooks.frame?.(ticker.lastTime);
   };
 
-  /** Re-hornea los chunks cambiados, cada uno como mucho cada REBAKE_INTERVAL_MS */
+  /** Suelo de una celda global para los animales: el contenedor de su chunk y sus puntos del mundo */
+  private readonly groundAt = (gx: number, gy: number): Ground | null => {
+    const C = WORLD.CELLS;
+    const cx = Math.floor(gx / C), cy = Math.floor(gy / C);
+    const layer = this.terrains.get(chunkKey(cx, cy));
+    if (!layer) return null;
+    return { container: layer.plantsView, point: (x, y) => layer.floatPoint(x - cx * C, y - cy * C) };
+  };
+
+  /**
+   * Re-hornea los chunks cambiados, cada uno como mucho cada REBAKE_INTERVAL_MS y como mucho REBAKES_PER_FRAME por
+   * frame (el que lleva más tiempo esperando, primero). Los que no se ven esperan a entrar en pantalla: así el coste
+   * de dibujar no depende del tamaño de la isla. La simulación no se entera: solo cambia cuándo se redibuja.
+   */
   private rebakeDirty(): void {
-    for (const key of this.dirty) {
+    let budget = REBAKES_PER_FRAME;
+    const waiting = [...this.dirty].sort((a, b) => (this.lastBake.get(a) ?? -Infinity) - (this.lastBake.get(b) ?? -Infinity));
+    for (const key of waiting) {
+      if (budget <= 0) break;
       const layer = this.terrains.get(key);
       if (!layer) {
         this.dirty.delete(key);
         continue;
       }
       if (this.now - (this.lastBake.get(key) ?? -Infinity) < REBAKE_INTERVAL_MS) continue;
+      if (!this.camera.sees(layer.bounds, REBAKE_VISIBLE_MARGIN)) continue;
+      budget--;
       const [cx, cy] = key.split(',').map(Number);
       layer.render(this.world.chunk(cx, cy));
+      layer.layoutPlants(this.engine.time, this.revealed, true);
       this.lastBake.set(key, this.now);
       this.dirty.delete(key);
     }
@@ -184,6 +413,7 @@ export class SandworldRuntime {
     const clouds = this.clouds!;
     const layer = new TerrainLayer(this.world.seed);
     layer.render(this.world.chunk(cx, cy));
+    layer.layoutPlants(this.engine.time, this.revealed, true);
     layer.view.zIndex = cx + cy;                   // de atrás hacia delante en isométrica
     this.terrains.set(chunkKey(cx, cy), layer);
     this.stage.world.addChild(layer.view);
@@ -209,8 +439,25 @@ export class SandworldRuntime {
     return { x: x0 - margin, y: y0 - margin, w: x1 - x0 + 2 * margin, h: y1 - y0 + 2 * margin };
   }
 
+  /** Vierte durante `dtMs` sobre el bloque bajo el dedo y suelta granos sobre él */
+  private pourUnderFinger(dtMs: number): void {
+    const pour = this.hooks.pour;
+    if (!pour || !this.brushPoint) return;
+    const area = this.areaAt(this.brushPoint.x, this.brushPoint.y);
+    if (!area) return;
+    const C = WORLD.CELLS;
+    if (pour.at(area.cx * C + area.ci, area.cy * C + area.cj, dtMs / 1000)) {
+      this.grains.emit(this.cursor.view.x, this.cursor.view.y, pour.color(), dtMs);
+    }
+  }
+
   /** Coloca el cursor sobre el bloque del pincel bajo un punto de pantalla. Devuelve si hay isla ahí. */
   private pointAt(sx: number, sy: number): boolean {
+    return this.areaAt(sx, sy) !== null;
+  }
+
+  /** Bloque del pincel bajo un punto de pantalla (y coloca el cursor ahí), o null si no hay isla */
+  private areaAt(sx: number, sy: number): BrushArea | null {
     const w = this.camera.screenToWorld(sx, sy);
     // El chunk más cercano a la cámara (mayor cx + cy) tapa a los de detrás
     const layers = [...this.terrains.values()].sort((a, b) => b.view.zIndex - a.view.zIndex);
@@ -221,15 +468,16 @@ export class SandworldRuntime {
     }
     if (!cell) {
       this.cursor.hide();
-      return false;
+      return null;
     }
-    this.cursor.show({
+    const area: BrushArea = {
       cx: cell.cx,
       cy: cell.cy,
       ci: Math.floor(cell.ci / BRUSH_CELLS) * BRUSH_CELLS,
       cj: Math.floor(cell.cj / BRUSH_CELLS) * BRUSH_CELLS,
       surface: cell.surface,
-    });
-    return true;
+    };
+    this.cursor.show(area);
+    return area;
   }
 }

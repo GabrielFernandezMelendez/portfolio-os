@@ -36,7 +36,7 @@ describe('Camera', () => {
     const before = cam.screenToWorld(600, 300);
     cam.zoomStep(1, 600, 300);
     settle(cam);
-    expect(cam.scale).toBe(ZOOM_LEVELS[3]);
+    expect(cam.scale).toBe(ZOOM_LEVELS[5]);
     const after = cam.screenToWorld(600, 300);
     expect(after.x).toBeCloseTo(before.x, 0);
     expect(after.y).toBeCloseTo(before.y, 0);
@@ -44,7 +44,7 @@ describe('Camera', () => {
 
   it('no pasa del nivel mínimo ni del máximo', () => {
     const cam = make(390, 844);
-    cam.zoomStep(-1, 0, 0);
+    for (let i = 0; i < 10; i++) cam.zoomStep(-1, 0, 0);
     settle(cam);
     expect(cam.scale).toBe(ZOOM_LEVELS[0]);
     for (let i = 0; i < 10; i++) cam.zoomStep(1, 195, 422);

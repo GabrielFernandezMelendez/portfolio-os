@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { PrecipitationLook } from '../../../domain/models/weather.model';
 import { GameTime } from '../../../domain/models/time.model';
 import { ChronicleEntry } from '../../../domain/models/chronicle.model';
 import { IndicatorValue } from '../../../application/indicators/indicator-registry';
@@ -18,7 +19,7 @@ import { TPipe } from '../../../i18n/t.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="row">
-      <sw-time-plate class="plate" [time]="time()" />
+      <sw-time-plate class="plate" [time]="time()" [weather]="weather()" />
       <sw-chronicle-strip class="board" [entries]="entries()" (open)="chronicle.emit()" />
       <button swWood class="gear" (click)="settings.emit()" [attr.aria-label]="'hud.settings' | t">
         <sw-icon name="gear" [scale]="2" />
@@ -63,6 +64,7 @@ import { TPipe } from '../../../i18n/t.pipe';
 })
 export class HudTopComponent {
   readonly time = input.required<GameTime>();
+  readonly weather = input<PrecipitationLook>('none');
   readonly entries = input.required<readonly ChronicleEntry[]>();
   readonly indicators = input.required<readonly IndicatorValue[]>();
   readonly settings = output<void>();

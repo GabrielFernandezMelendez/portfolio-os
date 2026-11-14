@@ -9,6 +9,8 @@ import { Translator } from '../../i18n/translator';
 import { SETTINGS_STORAGE } from '../../infrastructure/settings-storage.token';
 import { LocalSettingsStorage } from '../../infrastructure/local-settings-storage';
 import { HudComponent } from '../organisms/hud/hud';
+import { herdMarks } from '../../application/fauna/herds';
+import { SPECIES_DEFS } from '../../config/species.config';
 import { FRAME_VARS } from '../atoms/frame/pixel-frames';
 
 /**
@@ -45,7 +47,23 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
   protected readonly game = inject(SandworldService);
   private readonly runtime = new SandworldRuntime(this.game.engine, this.game.world, {
     frame: now => this.game.tick(now),
-    islandTap: () => this.zone.run(() => this.game.showIslandLabel()),
+    tileTap: t => this.zone.run(() => this.game.inspectTile(t)),
+    atmosphere: () => ({ weather: this.game.weatherSystem.current, season: this.game.physics.climate.seasonBlend }),
+    fauna: () => ({
+      animals: this.game.fauna.animals, corpses: this.game.fauna.corpses,
+      selected: this.game.selectedAnimal(), now: this.game.engine.time.totalMinutes,
+      herds: () => herdMarks(this.game.fauna.animals, SPECIES_DEFS, this.game.engine.time.totalMinutes),
+      burrows: this.game.fauna.burrows.list,
+      blood: this.game.blood(),
+    }),
+    animalTap: id => this.zone.run(() => this.game.selectAnimal(id)),
+    farView: far => (this.game.herdView = far),
+    pour: {
+      begin: () => this.game.beginStroke(),
+      at: (gx, gy, s) => this.game.pourAt(gx, gy, s),
+      end: () => this.game.endStroke(),
+      color: () => this.game.sandColor(),
+    },
   });
 
   constructor() {
@@ -55,10 +73,20 @@ export class SandworldComponent implements AfterViewInit, OnDestroy {
     });
     // Con una arena elegida, 1 dedo es pincel; sin arena, mueve la cámara
     effect(() => this.runtime.setBrushEnabled(this.game.selectedSand() !== null));
+    // Modo desarrollo: esencia y afinidad de cada tile encima de la isla
+    effect(() => this.runtime.setDevView(this.game.devView()));
+    // Modo desarrollo: anillos con la vista de cada animal
+    effect(() => this.runtime.setSensesView(this.game.devSenses()));
     // Chunk descubierto → emerge de las nubes
     this.game.events.on('chunkRevealed', c => this.runtime.showChunk(c.cx, c.cy));
     // Terreno cambiado (desprendimientos, vertidos) → re-horneado
     this.game.events.on('terrainChanged', cs => this.runtime.markDirty(cs));
+    // Vegetación cambiada → se recolocan las plantas
+    this.game.events.on('vegetationChanged', cs => this.runtime.refreshPlants(cs));
+    // Rayo de la tormenta eléctrica → rayo y destello
+    this.game.events.on('lightning', c => this.runtime.strike(c.gx, c.gy));
+    // Botón de prueba → la cámara va hasta donde ha pasado
+    this.game.events.on('focus', c => this.runtime.focusCell(c.gx, c.gy));
   }
 
   ngAfterViewInit(): void {

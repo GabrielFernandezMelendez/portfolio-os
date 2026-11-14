@@ -9,6 +9,12 @@ export const SKY = {
 /** Tinte que se aplica al mundo de noche */
 export const NIGHT_TINT = 0x5a66a8;
 
+/** Tono de cada estación sobre el mundo (primavera, verano, otoño, invierno) */
+export const SEASON_TINT = [0xffffff, 0xfff1c4, 0xffe2bc, 0xd6e0f0] as const;
+
+/** Cielo gris de lluvia */
+export const STORM_GREY = 0x8a97a8;
+
 /** Tinte cálido del amanecer y el atardecer */
 export const DUSK_TINT = 0xffb27a;
 
@@ -33,6 +39,10 @@ export const TERRAIN_RAMPS = {
   mud:     [0x4a3a26, 0x5a4730, 0x6b553a, 0x7c6445, 0x8d7452],
   peat:    [0x2c2418, 0x3a2f1f, 0x483a27, 0x574631, 0x66523b],
   charred: [0x16120f, 0x221c18, 0x2f2722, 0x3d332c, 0x4c4038],
+  // Biomas nuevos
+  swamp:   [0x2c3a22, 0x3a4a2a, 0x4b5c33, 0x5d6e3d, 0x6f8048],
+  murky:   [0x26301e, 0x2f3a24, 0x3b4a2c, 0x4a5c34, 0x5b6e3e],
+  glade:   [0x1f7a5a, 0x2a9a6e, 0x3cb57e, 0x5fd08f, 0x8fe8ae],
 } as const;
 
 /** Paredes entre terrazas: [labio, tierra clara, media, oscura] */

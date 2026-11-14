@@ -3,6 +3,10 @@ import { ChunkData } from '../../domain/models/chunk.model';
 import { WORLD } from '../../domain/models/world.model';
 import { BAKE_HEIGHT, BAKE_ORIGIN_X, BAKE_ORIGIN_Y, BAKE_WIDTH, ChunkBaker } from './chunk-baker';
 import { Rect } from '../camera';
+import { VegetationLayer } from '../vegetation/vegetation-layer';
+import { FireLayer } from '../fire/fire-layer';
+import { GameTime } from '../../domain/models/time.model';
+import { PlantInstance, RevealedFn, invalidateLayout } from '../../application/vegetation/plant-layout';
 
 /** Celda seleccionada: chunk + índice local + altura visible */
 export interface PickedCell {
@@ -28,6 +32,10 @@ export class TerrainLayer {
   private readonly texture: Texture;
   private readonly sprite: Sprite;
   private chunk: ChunkData | null = null;
+  /** Plantas del chunk, encima del terreno */
+  private readonly plants = new VegetationLayer();
+  /** Fuego, humo y brasas, mezclados con las plantas (se ordenan juntos por profundidad) */
+  private readonly fire = new FireLayer(this.plants.view);
 
   constructor(seed: number) {
     this.baker = new ChunkBaker(seed);
@@ -44,7 +52,7 @@ export class TerrainLayer {
     this.texture.source.scaleMode = 'nearest';     // pixel art: sin interpolación al escalar
 
     this.sprite = new Sprite(this.texture);
-    this.view.addChild(this.sprite);
+    this.view.addChild(this.sprite, this.plants.view);
   }
 
   /** Hornea el chunk y lo coloca en su posición isométrica dentro del mundo */
@@ -63,6 +71,72 @@ export class TerrainLayer {
     );
   }
 
+  /** Chunk que dibuja esta capa (null antes del primer horneado) */
+  get coords(): { cx: number; cy: number } | null {
+    return this.chunk ? { cx: this.chunk.cx, cy: this.chunk.cy } : null;
+  }
+
+  /**
+   * Vuelve a colocar las plantas. `terrainChanged`: el agua o las alturas han cambiado y hay que volver a mirar
+   * dónde caben (no solo cuántas hay).
+   */
+  layoutPlants(time: GameTime, revealed: RevealedFn, terrainChanged = false): void {
+    if (!this.chunk) return;
+    if (terrainChanged) invalidateLayout(this.chunk);
+    this.plants.layout(this.chunk, (ci, cj) => this.cellTop(ci, cj), time, revealed);
+    if (terrainChanged) this.fire.layout(this.chunk, (ci, cj) => this.cellTop(ci, cj));
+  }
+
+  /** Actualiza el aspecto de estación de las plantas (otoño, caída de hojas, nieve) */
+  updatePlants(time: GameTime): void {
+    if (this.chunk) this.plants.updateSeason(this.chunk, time);
+  }
+
+  /** Animaciones de las plantas (nacer, caer, hundirse…), en tiempo real */
+  animatePlants(dtMs: number): void {
+    this.plants.update(dtMs);
+    if (this.chunk) this.fire.update(dtMs, this.chunk, (ci, cj) => this.cellTop(ci, cj));
+  }
+
+  /** Punto del mundo de la cara superior de una celda del chunk (para el rayo y para llevar la cámara) */
+  cellPoint(ci: number, cj: number): { x: number; y: number } {
+    return this.cellTop(ci, cj);
+  }
+
+  /** Contenedor de las plantas del chunk: los animales que están en él se ordenan con ellas por profundidad */
+  get plantsView(): Container {
+    return this.plants.view;
+  }
+
+  /**
+   * Punto del mundo de una posición con decimales dentro del chunk (celdas locales): lo usan los animales,
+   * que se mueven entre celdas. La altura es la de la celda en la que está.
+   */
+  floatPoint(ci: number, cj: number): { x: number; y: number } {
+    const G = WORLD.CELLS_PER_TILE, C = WORLD.CELLS;
+    const u = ci / G - 0.5, v = cj / G - 0.5;
+    const k = this.baker.surfaceAtCell(Math.max(0, Math.min(C - 1, Math.floor(ci))), Math.max(0, Math.min(C - 1, Math.floor(cj))));
+    return {
+      x: this.sprite.x + BAKE_ORIGIN_X + (u - v) * WORLD.TILE_W / 2,
+      y: this.sprite.y + BAKE_ORIGIN_Y + (u + v) * WORLD.TILE_H / 2 - k * WORLD.LEVEL_PX,
+    };
+  }
+
+  /** Planta dibujada bajo un punto del mundo, o null */
+  plantAt(wx: number, wy: number): PlantInstance | null {
+    return this.plants.plantAt(wx, wy);
+  }
+
+  /** Punto (en coordenadas del mundo, que son las del contenedor) de la cara superior de una celda */
+  private cellTop(ci: number, cj: number): { x: number; y: number } {
+    const G = WORLD.CELLS_PER_TILE;
+    const u = (ci + 0.5) / G - 0.5, v = (cj + 0.5) / G - 0.5;
+    return {
+      x: this.sprite.x + BAKE_ORIGIN_X + (u - v) * WORLD.TILE_W / 2,
+      y: this.sprite.y + BAKE_ORIGIN_Y + (u + v) * WORLD.TILE_H / 2 - this.baker.surfaceAtCell(ci, cj) * WORLD.LEVEL_PX,
+    };
+  }
+
   /** Rectángulo que ocupa el chunk en coordenadas de mundo (para los límites de la cámara) */
   get bounds(): Rect {
     return { x: this.sprite.x, y: this.sprite.y, w: BAKE_WIDTH, h: BAKE_HEIGHT };
@@ -79,6 +153,8 @@ export class TerrainLayer {
   }
 
   destroy(): void {
+    this.fire.destroy();
+    this.plants.destroy();
     this.view.destroy({ children: true });
     this.texture.destroy(true);
   }

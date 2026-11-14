@@ -8,6 +8,9 @@ import { ChronicleBookComponent } from '../chronicle-book/chronicle-book';
 import { IslandLabelComponent } from '../island-label/island-label';
 import { SpeedControlComponent } from '../../molecules/speed-control/speed-control';
 import { HUD_PLANKS } from './hud-planks';
+import { TileTagComponent } from '../../molecules/tile-tag/tile-tag';
+import { TPipe } from '../../../i18n/t.pipe';
+import { AnimalSheetComponent } from '../animal-sheet/animal-sheet';
 
 /**
  * HUD completo sobre el mundo. Lee el estado del servicio y le devuelve las acciones del jugador.
@@ -19,19 +22,25 @@ import { HUD_PLANKS } from './hud-planks';
   standalone: true,
   imports: [
     NgComponentOutlet, HudTopComponent, PlankBarComponent, SettingsMenuComponent, ChronicleBookComponent,
-    IslandLabelComponent, SpeedControlComponent,
+    IslandLabelComponent, SpeedControlComponent, TileTagComponent, TPipe, AnimalSheetComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <sw-hud-top
       class="top"
       [time]="game.time()"
-      [entries]="game.chronicleEntries()"
+      [weather]="game.weather().look"
+      [entries]="game.chronicleStrip()"
       [indicators]="game.indicatorValues()"
       (settings)="game.openMenu('settings')"
       (balance)="game.togglePanel('balance')"
       (chronicle)="game.openMenu('chronicle')"
     />
+
+    <!-- Al tocar un tile: su bioma (o agua) junto al dedo. Cada toque crea una etiqueta nueva -->
+    @for (info of game.inspected(); track info.id) {
+      <sw-tile-tag class="tag" [style.left]="'clamp(100px, ' + info.x + 'px, calc(100% - 100px))'" [style.top.px]="info.y" [label]="info.labelKey | t" />
+    }
 
     @if (game.islandLabel()) {
       <sw-island-label class="label" [level]="game.world.level" />
@@ -39,7 +48,12 @@ import { HUD_PLANKS } from './hud-planks';
 
     <div class="bottom">
       <div class="float">
-        @if (openPanel(); as panel) {
+        @if (game.animalView(); as animal) {
+          <!-- Ficha del animal tocado en el mapa -->
+          <div class="panel">
+            <sw-animal-sheet [view]="animal" (close)="game.closeAnimal()" (order)="game.orderAnimal(animal.id, $event)" />
+          </div>
+        } @else if (openPanel(); as panel) {
           <!-- Envoltorio propio: los componentes creados dinámicamente no reciben los estilos de este HUD -->
           <div class="panel"><ng-container *ngComponentOutlet="panel" /></div>
         } @else {
@@ -48,10 +62,12 @@ import { HUD_PLANKS } from './hud-planks';
             [paused]="game.isPaused()"
             (cycle)="game.cycleSpeed()"
             (togglePause)="game.togglePause()"
+            [sand]="game.selectedSand() !== null"
+            (drop)="game.selectSand(null)"
           />
         }
       </div>
-      <sw-plank-bar [planks]="planks" [panel]="game.panel()" [selectedSand]="game.selectedSand()" (toggle)="game.togglePanel($event)" />
+      <sw-plank-bar [planks]="planks" [panel]="game.panel()" [selectedSand]="game.selectedSand()" [strokeLeft]="game.strokeLeft()" [balance]="game.balanceView()" (toggle)="game.togglePanel($event)" />
     </div>
 
     @switch (game.menu()) {
@@ -59,11 +75,12 @@ import { HUD_PLANKS } from './hud-planks';
         <sw-settings-menu
           [lang]="game.lang()"
           (langChange)="game.setLang($event)"
+          [blood]="game.blood()"
+          (bloodChange)="game.setBlood($event)"
           (close)="game.closeMenu()"
           (exit)="exit.emit()"
-          (devReveal)="game.closeMenu(); game.revealNextChunk()"
-          (devSand)="game.closeMenu(); game.debugSandPile()"
-          (devSpring)="game.closeMenu(); game.debugSpring()"
+          [devOn]="game.devOn()"
+          (devAction)="game.closeMenu(); game.runDevAction($event); game.refreshBalance()"
         />
       }
       @case ('chronicle') {
@@ -92,6 +109,9 @@ import { HUD_PLANKS } from './hud-planks';
       justify-content: center;
       pointer-events: none;
     }
+    /* La etiqueta del bioma sale encima del dedo (el HUD ocupa toda la pantalla, así que left/top son de pantalla) */
+    /* translate (no transform): la animación de la etiqueta usa transform y lo pisaría */
+    .tag { position: absolute; translate: -50% calc(-100% - 18px); pointer-events: none; z-index: 2; }
     .bottom { display: flex; flex-direction: column; gap: 6px; }
     /* Lo que flota sobre el estante: velocidad y pausa, o el panel abierto */
     .float {

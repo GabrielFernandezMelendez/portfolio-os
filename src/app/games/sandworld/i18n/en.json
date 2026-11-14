@@ -7,6 +7,7 @@
     "play": "Resume",
     "paused": "Paused",
     "settings": "Settings",
+    "dropSand": "Drop the sand",
     "island": "Living island · Level {level}"
   },
   "season": {
@@ -25,9 +26,42 @@
     "language": "Language",
     "exit": "Exit Sandworld",
     "resume": "Back to the island",
-    "devReveal": "Test: uncover land",
-    "devSand": "Test: sand pile",
-    "devSpring": "Test: spring"
+    "dev": {
+      "on": "· on",
+      "reveal": "Test: reveal land",
+      "sandPile": "Test: sand pile (random)",
+      "spring": "Test: spring (random)",
+      "rain": "Test: rain",
+      "nextSeason": "Test: next season",
+      "glade": "Test: Awakened Glade",
+      "viewValues": "Show essence and affinity",
+      "viewBiomes": "Show biomes",
+      "viewSenses": "Show animal sight",
+      "discoverPlants": "Test: know all plants",
+      "garden": "Test: sow a garden (random)",
+      "fruitAllYear": "Test: fruit all year (on/off)",
+      "eatFruit": "Test: eat the fruit",
+      "storm": "Test: thunderstorm",
+      "dryStorm": "Test: dry storm",
+      "ignite": "Test: start a fire (random)",
+      "burntLand": "Test: Burnt Land 3×3 (random)",
+      "drainLife": "Test: drain Burnt Land of life",
+      "deerHerd": "Test: deer herd (random)",
+      "overpopulate": "Test: 6 deer herds",
+      "ageAnimals": "Test: age animals 30 days",
+      "rabbitColony": "Test: rabbit colony (random)",
+      "rabbitBoom": "Test: 6 rabbit colonies",
+      "rabbitLitter": "Test: rabbits give birth now",
+      "rabbitOutbreak": "Test: disease outbreak (rabbits)",
+      "findBurrow": "Test: go to a burrow",
+      "wolfPack": "Test: wolf pack (random)",
+      "crowPair": "Test: raven pair (with chicks)",
+      "humanBand": "Test: human band",
+      "goblinNest": "Test: Burnt Land with goblins"
+    },
+    "blood": "Blood in fights",
+    "yes": "Yes",
+    "no": "No"
   },
   "lang": {
     "es": "Español",
@@ -49,7 +83,362 @@
       "2": "Autumn arrives: the leaves turn.",
       "3": "Winter arrives: the cold creeps down from the peaks."
     },
-    "reveal": "The clouds part: the island grows to level {level}."
+    "reveal": "The clouds part: the island grows to level {level}.",
+    "settled": {
+      "duna": "The dune has settled: the land has risen.",
+      "brasa": "The ember has settled.",
+      "humus": "The humus has settled.",
+      "manantial": "The spring sand has settled.",
+      "escarcha": "The frost has settled.",
+      "marea": "The tide has settled.",
+      "despertar": "The awakening has settled.",
+      "afinidad": "The affinity has settled."
+    },
+    "outcome": {
+      "springNew": "A new spring wells up.",
+      "springStronger": "A spring flows stronger.",
+      "ignited": "The embers set the dry vegetation alight.",
+      "springBurnt": "The Burnt Land swallows the spring: no water rises."
+    },
+    "spring": {
+      "buried": "A spring has been buried.",
+      "frozen": "A spring has frozen over.",
+      "open": "A spring flows again."
+    },
+    "biome": {
+      "forest": "The forest regains ground.",
+      "desert": "The desert advances.",
+      "tundra": "The tundra spreads.",
+      "wetland": "A wetland forms.",
+      "swamp": "A swamp is born.",
+      "rockland": "A rocky outcrop is laid bare.",
+      "burnt": "The land is left burnt.",
+      "glade": "An Awakened Glade is born!"
+    },
+    "thaw": "The thaw arrives: the rivers run high.",
+    "drought": "Drought: {days} days without rain.",
+    "weather": {
+      "rain": {
+        "start": "It starts to rain.",
+        "end": "The rain stops.",
+        "startSnow": "It starts to snow.",
+        "endSnow": "The snow stops."
+      },
+      "storm": {
+        "start": "A thunderstorm breaks out.",
+        "end": "The storm moves away.",
+        "startSnow": "A snowstorm breaks out.",
+        "endSnow": "The snowstorm moves away."
+      },
+      "dryStorm": {
+        "start": "Dry storm: lightning without rain.",
+        "end": "The dry storm passes.",
+        "startSnow": "Dry storm: lightning without rain.",
+        "endSnow": "The dry storm passes."
+      }
+    },
+    "fire": {
+      "lightning": "Lightning strikes the island.",
+      "lightningFire": "Lightning sets the forest on fire!",
+      "brasa": "The embers set the vegetation on fire.",
+      "dev": "A fire breaks out on the island.",
+      "out": "The rain puts out the fire.",
+      "burntLand": "The wildfire leaves Burnt Land behind.",
+      "remit": "The Burnt Land recedes: life returns to its edges.",
+      "drained": "The Burnt Land is left lifeless."
+    },
+    "fauna": {
+      "deer": {
+        "arrived": "A herd of {count} deer arrives on the island.",
+        "born": "A fawn is born: {name}, calf of {mother}.",
+        "twins": "{mother} had twins! One is called {name}.",
+        "died": {
+          "starvation": "{name} starved to death.",
+          "oldAge": "{name} died of old age.",
+          "poison": "{name} died of poisoning.",
+          "exhaustion": "{name} died of exhaustion.",
+          "fire": "{name} didn't escape the fire.",
+          "dehydration": "{name} died of thirst.",
+          "lightning": "{name} was struck by lightning.",
+          "buried": "{name} was buried under the sand.",
+          "predation": "{name} was caught by the wolves.",
+          "injury": "{name} has died of its wounds.",
+          "frost": "{name} froze to death.",
+          "heat": "{name} died of heatstroke.",
+          "sun": "{name} died of sunstroke."
+        },
+        "herdSplit": "A deer herd has split up: there were too many of them.",
+        "hunger": "The deer are starving: there isn't enough food for everyone.",
+        "poisoned": "{name} ate {food} and is paying for it.",
+        "lost": {
+          "back": "{name} got lost running, but made it back to the herd.",
+          "joined": "{name} has joined another herd.",
+          "rejected": "Another herd chased {name} off with their antlers.",
+          "alone": "{name} got lost and is now on their own."
+        },
+        "discovered": "The deer eat {food}.",
+        "stampede": "Stampede! Something spooked a herd of deer.",
+        "herdRun": "The deer herd runs off together.",
+        "herdRunSplit": "The deer herd runs off; {count} break away from the group.",
+        "leaving": "A hungry herd of {count} deer leaves the island in search of grazing.",
+        "left": "The deer herd has left the island."
+      },
+      "rabbit": {
+        "arrived": "A colony of {count} rabbits reaches the island.",
+        "born": "A kit is born: {name}, child of {mother}.",
+        "twins": "{mother} has had two kits. One is called {name}.",
+        "litter": "{mother} has had {count} kits. One is called {name}.",
+        "died": {
+          "starvation": "{name} has starved to death.",
+          "oldAge": "{name} has died of old age.",
+          "poison": "{name} has been poisoned.",
+          "exhaustion": "{name} has died of exhaustion.",
+          "fire": "{name} didn't escape the fire.",
+          "dehydration": "{name} has died of thirst.",
+          "lightning": "{name} was struck by lightning.",
+          "buried": "{name} was buried in its burrow.",
+          "disease": "{name} has died of the disease.",
+          "drowned": "{name} has drowned in its burrow.",
+          "orphaned": "{name} didn't make it without its mother.",
+          "predation": "{name} was caught by the wolves.",
+          "injury": "{name} has died of its wounds.",
+          "frost": "{name} froze to death.",
+          "heat": "{name} died of heatstroke.",
+          "sun": "{name} died of sunstroke."
+        },
+        "herdSplit": "A rabbit colony has split up: the burrow wasn't big enough.",
+        "hunger": "The rabbits are going hungry: there isn't enough grass for so many.",
+        "poisoned": "{name} ate {food} and is paying for it.",
+        "lost": {
+          "back": "{name} spent the night out, but has made it back to the burrow.",
+          "joined": "{name} has joined another colony.",
+          "rejected": "Another colony has chased {name} off with bites.",
+          "alone": "{name} got lost and is on its own now."
+        },
+        "discovered": "Rabbits eat {food}.",
+        "stampede": "Scatter! Something has spooked a rabbit colony.",
+        "herdRun": "The rabbit colony bolts for its burrow.",
+        "herdRunSplit": "The rabbit colony bolts; {count} lose their way.",
+        "burrow": {
+          "dug": "A rabbit colony has dug its burrow.",
+          "collapsed": "A rabbit burrow has caved in!",
+          "blocked": "Sand has blocked the entrance to a rabbit burrow.",
+          "flooded": "A rabbit burrow is flooding!"
+        },
+        "outbreak": "{name} is the first to fall ill as a disease breaks out among the rabbits.",
+        "dispersed": "{name} leaves its colony to found its own.",
+        "leaving": "A starving colony of {count} rabbits abandons its burrow and moves on.",
+        "left": "The rabbit colony has left the island."
+      },
+      "wolf": {
+        "arrived": "A pack of {count} wolves reaches the island.",
+        "born": "A wolf pup is born: {name}, child of {mother}.",
+        "twins": "{mother} has had two pups. One is called {name}.",
+        "litter": "{mother} has had {count} pups in the den. One is called {name}.",
+        "died": {
+          "starvation": "{name} has starved to death.",
+          "oldAge": "{name} has died of old age.",
+          "poison": "{name} has been poisoned.",
+          "exhaustion": "{name} has died of exhaustion.",
+          "fire": "{name} didn't escape the fire.",
+          "dehydration": "{name} has died of thirst.",
+          "lightning": "{name} was struck by lightning.",
+          "buried": "{name} was buried in its den.",
+          "disease": "{name} has died of a disease.",
+          "drowned": "{name} has drowned in its den.",
+          "orphaned": "{name} didn't make it without its mother.",
+          "predation": "{name} was hunted down.",
+          "injury": "{name} has died of its wounds.",
+          "frost": "{name} froze to death.",
+          "heat": "{name} died of heatstroke.",
+          "sun": "{name} died of sunstroke."
+        },
+        "herdSplit": "A wolf pack has split up: too many for one den.",
+        "hunger": "The wolves are going hungry: there isn't enough prey.",
+        "poisoned": "{name} ate {food} and is paying for it.",
+        "lost": {
+          "back": "{name} spent the night out, but has rejoined the pack.",
+          "joined": "{name} has joined another pack.",
+          "rejected": "Another pack has chased {name} off with bites.",
+          "alone": "{name} got lost and now hunts alone."
+        },
+        "discovered": "Wolves eat {food}.",
+        "stampede": "Something has spooked a wolf pack!",
+        "herdRun": "The wolf pack runs off together.",
+        "herdRunSplit": "The wolf pack runs off; {count} break away.",
+        "burrow": {
+          "dug": "A wolf pack has built its den.",
+          "collapsed": "A wolf den has caved in!",
+          "blocked": "A wolf den has been covered up.",
+          "flooded": "A wolf den is flooding!"
+        },
+        "outbreak": "A disease breaks out among the wolves. {name} is the first to fall ill.",
+        "dispersed": "{name} leaves its pack to found its own.",
+        "killed": "The wolves have caught {name} ({prey}).",
+        "repelled": "{name} ({prey}) stood up to the wolves and they left.",
+        "howl": "Howling echoes across the island.",
+        "trip": "A wolf pack heads off to hunt far from its den.",
+        "leaving": "A pack of {count} wolves, with nothing left to hunt, leaves the island.",
+        "left": "The wolf pack has left the island. The prey breathe again."
+      },
+      "crow": {
+        "arrived": "{count} ravens reach the island. They land, look around and take notes.",
+        "born": "A raven chick hatches: {name}, child of {mother}.",
+        "twins": "{mother} has raised two chicks. One is called {name}.",
+        "litter": "{mother} has {count} chicks in the nest. One is called {name}.",
+        "died": {
+          "starvation": "{name} has starved to death.",
+          "oldAge": "{name} has died of old age. It knew everything.",
+          "poison": "{name} has been poisoned.",
+          "exhaustion": "{name} has died of exhaustion.",
+          "fire": "{name} didn't fly away from the fire in time.",
+          "dehydration": "{name} has died of thirst.",
+          "lightning": "{name} was struck by lightning mid-flight.",
+          "buried": "{name} was buried in its nest.",
+          "disease": "{name} has died of a disease.",
+          "drowned": "{name} has drowned.",
+          "orphaned": "{name} didn't make it without its mother.",
+          "predation": "{name} was hunted down.",
+          "injury": "{name} has died of its wounds.",
+          "sun": "{name} was scorched by the sun.",
+          "frost": "{name} froze in its nest.",
+          "heat": "{name} died of heatstroke."
+        },
+        "herdSplit": "A flock of ravens has split up: too many beaks for one nest.",
+        "hunger": "The ravens are going hungry: no carrion, nothing to steal.",
+        "poisoned": "{name} ate {food} and is paying for it.",
+        "lost": {
+          "back": "{name} spent the night out, but has rejoined the flock.",
+          "joined": "{name} has joined another flock.",
+          "rejected": "Another flock has pecked {name} away.",
+          "alone": "{name} got lost and now goes it alone."
+        },
+        "discovered": "Ravens eat {food}.",
+        "stampede": "Something has spooked the ravens!",
+        "herdRun": "The ravens take off all at once.",
+        "herdRunSplit": "The ravens take off; {count} go their own way.",
+        "burrow": {
+          "dug": "A pair of ravens has built a nest in a tree.",
+          "collapsed": "A raven nest has fallen!",
+          "blocked": "A raven nest has been covered up.",
+          "flooded": "A raven nest is soaked!"
+        },
+        "outbreak": "A disease breaks out among the ravens. {name} is the first to fall ill.",
+        "dispersed": "{name} leaves its flock to find a mate.",
+        "killed": "The ravens have caught {name} ({prey}).",
+        "repelled": "{name} ({prey}) has scared the ravens off.",
+        "howl": "Cawing echoes across the island. Someone has found something.",
+        "trip": "The ravens head off to forage far from their nest.",
+        "leaving": "{count} ravens, with nothing to eat, leave the island.",
+        "left": "The ravens have left the island. Silence, at last.",
+        "defended": "{name} stood up to a {attacker} and killed it."
+      },
+      "human": {
+        "arrived": "A band of {count} humans lands on the island. Nothing will ever be the same.",
+        "born": "A human baby is born: {name}, child of {mother}.",
+        "twins": "{mother} has had twins. One is called {name}.",
+        "litter": "{mother} has had {count} babies. One is called {name}.",
+        "died": {
+          "starvation": "{name} has starved to death.",
+          "oldAge": "{name} has died of old age, surrounded by family.",
+          "poison": "{name} ate something they shouldn't have.",
+          "exhaustion": "{name} has died of exhaustion.",
+          "fire": "{name} didn't escape the fire.",
+          "dehydration": "{name} has died of thirst.",
+          "lightning": "{name} was struck by lightning.",
+          "buried": "{name} was buried in their hut.",
+          "disease": "{name} has died of a disease.",
+          "drowned": "{name} has drowned in their hut.",
+          "orphaned": "{name} didn't make it without their mother.",
+          "predation": "{name} was hunted down.",
+          "injury": "{name} has died of their wounds.",
+          "sun": "{name} has died of heatstroke.",
+          "frost": "{name} froze in their hut.",
+          "heat": "{name} died of heatstroke."
+        },
+        "herdSplit": "A band of humans has split up: they didn't fit in the hut (or in the conversation).",
+        "hunger": "The humans are going hungry: hunting and berries aren't enough for everyone.",
+        "poisoned": "{name} ate {food} and is paying for it.",
+        "lost": {
+          "back": "{name} spent the night out, but has rejoined the band.",
+          "joined": "{name} has joined another band.",
+          "rejected": "Another band has chased {name} off with stones.",
+          "alone": "{name} got lost and now lives alone."
+        },
+        "discovered": "Humans eat {food}.",
+        "stampede": "Something has spooked a band of humans!",
+        "herdRun": "The band of humans runs off together.",
+        "herdRunSplit": "The band of humans runs off; {count} break away.",
+        "burrow": {
+          "dug": "A band of humans has put up its hut.",
+          "collapsed": "A hut has collapsed!",
+          "blocked": "A hut has been buried in sand.",
+          "flooded": "A hut is flooding!"
+        },
+        "outbreak": "A disease breaks out among the humans. {name} is the first to fall ill.",
+        "dispersed": "{name} leaves their band to found their own.",
+        "killed": "The humans have caught {name} ({prey}).",
+        "repelled": "{name} ({prey}) stood up to the humans and they left.",
+        "howl": "War cries echo across the island.",
+        "trip": "A human hunting party heads away from its hut.",
+        "leaving": "A band of {count} humans, with nothing to eat, packs up.",
+        "left": "The humans have left the island. Nature breathes again (and doesn't trust it).",
+        "defended": "The humans fought back: {name} has killed a {attacker}."
+      },
+      "goblin": {
+        "arrived": "{count} goblins appear on the island.",
+        "born": "A goblin is born: {name}, child of {mother}. It already bites.",
+        "twins": "{mother} has had two goblins. One is called {name}.",
+        "litter": "{mother} has had {count} goblins in the nest. One is called {name}.",
+        "died": {
+          "starvation": "{name} has starved to death.",
+          "oldAge": "{name} has died of old age (nobody knows how).",
+          "poison": "{name} has been poisoned.",
+          "exhaustion": "{name} has died of exhaustion.",
+          "fire": "{name} has burned. Not even fire wanted it.",
+          "dehydration": "{name} has died of thirst.",
+          "lightning": "{name} was struck by lightning.",
+          "buried": "{name} was buried in its nest.",
+          "disease": "{name} has died of a disease.",
+          "drowned": "{name} has drowned in its nest.",
+          "orphaned": "{name} didn't make it without its mother.",
+          "predation": "{name} was hunted down.",
+          "injury": "{name} has died of its wounds.",
+          "sun": "{name} stayed out in the sun and withered away.",
+          "frost": "The frost sealed the nest: {name} froze to death.",
+          "heat": "{name} died of heat (which should be impossible)."
+        },
+        "herdSplit": "A goblin band has split up. Loudly, of course.",
+        "hunger": "The goblins are going hungry. Bad news for everyone else.",
+        "poisoned": "{name} ate {food} and is paying for it.",
+        "lost": {
+          "back": "{name} got back to the nest before dawn.",
+          "joined": "{name} has joined another goblin band.",
+          "rejected": "Another band has clubbed {name} away.",
+          "alone": "{name} got lost and now hunts alone."
+        },
+        "discovered": "Goblins eat {food}.",
+        "stampede": "Something has spooked the goblins!",
+        "herdRun": "The goblins run off together.",
+        "herdRunSplit": "The goblins run off; {count} break away.",
+        "burrow": {
+          "dug": "The goblins have dug a nest in the Burnt Land.",
+          "collapsed": "A goblin nest has caved in!",
+          "blocked": "A goblin nest has been buried.",
+          "flooded": "A goblin nest is flooding!"
+        },
+        "outbreak": "A disease breaks out among the goblins. {name} is the first to fall ill.",
+        "dispersed": "{name} leaves its band to dig its own nest.",
+        "killed": "The goblins have caught {name} ({prey}).",
+        "repelled": "{name} ({prey}) stood up to the goblins and they left.",
+        "howl": "A goblin war cry tears through the night.",
+        "trip": "The goblins go hunting far from their nest.",
+        "leaving": "{count} goblins leave the island.",
+        "left": "The goblins have left the island.",
+        "defended": "{name} has killed a {attacker} that came for it.",
+        "burntBorn": "Something stirs in the Burnt Land: {count} goblin nests have hatched."
+      }
+    }
   },
   "indicators": {
     "water": "Water",
@@ -57,7 +446,54 @@
   },
   "balance": {
     "title": "Balance",
-    "hint": "This is how the island is doing right now. Wildlife joins once the animals arrive."
+    "hint": "This is how the island is doing right now.",
+    "empty": "No animals have arrived yet. Once they do, you'll see how they're faring here.",
+    "tabs": {
+      "species": "Species",
+      "chart": "Chart",
+      "web": "Food chain"
+    },
+    "mood": {
+      "thriving": "Thriving",
+      "stable": "Stable",
+      "edge": "Very few left",
+      "pressed": "The {predator} are squeezing them",
+      "hungry": "Going hungry",
+      "thirsty": "Going thirsty",
+      "sick": "Disease is spreading",
+      "crowded": "Too many for what there is",
+      "gone": "Vanished",
+      "left": "Left the island"
+    },
+    "back": "They may come back by the shore.",
+    "capHint": "The black line is how many the island can feed.",
+    "chartHint": "One point every dawn. Circles are what the chronicle told.",
+    "webHint": "Bigger coin = more animals. Red arrow = that prey can't keep up.",
+    "day": "D{day}",
+    "mark": {
+      "arrived": "arrive",
+      "last": "the last one",
+      "left": "leave",
+      "outbreak": "outbreak"
+    },
+    "resource": {
+      "plants": "plants",
+      "fish": "fish",
+      "carrion": "carrion"
+    },
+    "group": {
+      "deer": "deer",
+      "rabbit": "rabbits",
+      "wolf": "wolves",
+      "crow": "ravens",
+      "human": "humans",
+      "goblin": "goblins"
+    },
+    "trend": {
+      "up": "Rising",
+      "down": "Falling",
+      "flat": "Holding"
+    }
   },
   "decisions": {
     "title": "Decisions",
@@ -66,7 +502,6 @@
   "sands": {
     "title": "Sands",
     "hint": "Pick a sand and drag one finger over the island. Two fingers move the camera.",
-    "soon": "Sands don't fall yet: they arrive in the next phase.",
     "drop": "Put the sand away",
     "brasa": {
       "name": "Ember",
@@ -78,7 +513,7 @@
     },
     "humus": {
       "name": "Humus",
-      "desc": "Fertile soil that holds water."
+      "desc": "Fertile soil that holds water. Burns easily."
     },
     "manantial": {
       "name": "Spring",
@@ -86,7 +521,7 @@
     },
     "escarcha": {
       "name": "Frost",
-      "desc": "Snow. Cools the area and freezes water."
+      "desc": "Snow. Cools the area, freezes water and puts out fire."
     },
     "despertar": {
       "name": "Awakening",
@@ -94,11 +529,258 @@
     },
     "marea": {
       "name": "Tide",
-      "desc": "Dissolves sediment: digs wells and canals."
+      "desc": "Dissolves sediment: digs wells and canals. A trench works as a firebreak."
     },
     "afinidad": {
       "name": "Affinity",
       "desc": "Massless. More offspring, less aggression."
+    }
+  },
+  "biome": {
+    "forest": "Forest",
+    "desert": "Desert",
+    "tundra": "Tundra",
+    "wetland": "Wetland",
+    "swamp": "Swamp",
+    "rockland": "Rockland",
+    "burnt": "Burnt Land",
+    "glade": "Awakened Glade",
+    "water": "Water"
+  },
+  "weather": {
+    "rain": "Rain",
+    "snow": "Snow",
+    "clear": "Clear",
+    "storm": "Thunderstorm",
+    "dryStorm": "Dry storm"
+  },
+  "plant": {
+    "grass": "Common grass",
+    "clover": "Clover",
+    "rockMoss": "Rock moss",
+    "reed": "Reed",
+    "thistle": "Thistle",
+    "sage": "Sage",
+    "swampShroom": "Swamp mushroom",
+    "snowLichen": "Snow lichen",
+    "glowFlower": "Glowflower",
+    "redBerries": "Red berries",
+    "blueberry": "Blueberry",
+    "shadeBerries": "Shade berries",
+    "bramble": "Bramble",
+    "vine": "Creeping vine",
+    "cactus": "Cactus",
+    "oak": "Oak",
+    "pine": "Pine",
+    "appleTree": "Wild apple tree",
+    "willow": "Willow",
+    "deadTree": "Dead tree",
+    "unknown": {
+      "small": "Undiscovered plant",
+      "bush": "Undiscovered shrub",
+      "tree": "Undiscovered tree"
+    }
+  },
+  "species": {
+    "deer": "Red deer",
+    "rabbit": "European rabbit",
+    "wolf": "Grey wolf",
+    "crow": "Common raven",
+    "human": "Human",
+    "goblin": "Goblin"
+  },
+  "animal": {
+    "sex": {
+      "male": "Male",
+      "female": "Female"
+    },
+    "stage": {
+      "young": "Calf",
+      "juvenile": "Young",
+      "adult": "Adult",
+      "elder": "Elder"
+    },
+    "action": {
+      "idle": "resting",
+      "walk": "walking",
+      "eat": "eating",
+      "sleep": "sleeping",
+      "run": "running",
+      "dead": "dead",
+      "drink": "drinking",
+      "inside": "in the burrow",
+      "howl": "howling",
+      "fight": "fighting"
+    },
+    "factor": {
+      "goodFood": "Good food",
+      "favourite": "Favourite food",
+      "herd": "Herd",
+      "alone": "Alone",
+      "smallHerd": "Small herd",
+      "waterNear": "Water nearby",
+      "waterFar": "River far away",
+      "crowded": "Crowded",
+      "fear": "Scared",
+      "hungry": "Hunger",
+      "tired": "Tiredness",
+      "hurt": "Hurt",
+      "thirsty": "Thirst",
+      "sick": "Sick"
+    },
+    "diary": {
+      "born": "I was born. Everything is huge and smells of grass.",
+      "favourite": "{food}. My life has meaning.",
+      "poison": {
+        "lethal": "I ate {food}. I feel awful, truly awful.",
+        "sick": "Something in {food} didn't agree with me.",
+        "confused": "I ate {food}. I can see colours."
+      },
+      "ran": "I ran until I couldn't feel my legs.",
+      "split": "I got separated from my herd mid-run. Where did they go?",
+      "foundHerd": "Found them! I'm acting like I was never lost.",
+      "explore": "Off for a wander. If anyone asks, I went out for cigarettes.",
+      "regroup": "It's getting late. Back to my lot; everything is scarier at night.",
+      "fled": "I ran without looking back. Fine, now I'm looking. Phew.",
+      "nightAlone": "Sleeping far from my herd tonight. I'll find them tomorrow. Every noise is a wolf.",
+      "lostBack": "I got lost, but I found my way back to my herd.",
+      "alone": "I'm lost. I'm alone and I talk to the trees.",
+      "joinedGood": "I joined another herd. They welcomed me.",
+      "seekPack": "I can smell others like me, far away. Going to find them: alone, you don't make it.",
+      "searchPrey": "Nothing to hunt around here. Off to look further away.",
+      "fishing": "Fish for dinner today. Heading to the water.",
+      "fished": "Caught a fish. Not much, but better than nothing.",
+      "stalking": "I can see the {prey}. Crouching, creeping closer, not a sound.",
+      "keepAway": "A {predator} too close. Backing off without taking my eyes off it.",
+      "moveAway": "A {predator} in the distance. Better graze where it can't see me.",
+      "avoidZone": "We saw a predator around here. Let's eat somewhere else.",
+      "watching": "There's a {predator} around. I stop eating and keep an eye on it.",
+      "heardSomething": "Heard something. Standing still, listening.",
+      "sawKill": "They caught {name} right in front of us. We ran without looking back.",
+      "callPack": "I'm hungry. I called {name} and we're going after it together.",
+      "shareKill": "I've had enough. Making room for the hungrier ones.",
+      "soloHunt": "Slipping away from the pack for a bit. Going after a {prey} on my own.",
+      "secretMeal": "I caught {name} all by myself. Nobody in the pack knows.",
+      "soloFled": "It got away and I ran. Back to my pack like nothing happened.",
+      "noRoom": "There's not enough food for another pack on this island. Off to find territory elsewhere.",
+      "joinedBad": "Another herd chased me off with their antlers.",
+      "rut": "Autumn is here and {name} keeps looking at me funny.",
+      "birth": "My calf was born. Its name is {name}.",
+      "twins": "Twins! {name} and {name2}. Goodbye, sleep.",
+      "dream": "I dreamt I was a tree today. So peaceful.",
+      "spaghetti": "Why do I see spaghetti in the sky? And how do I know what spaghetti is?",
+      "starving": "I can't remember what grass tastes like.",
+      "hungry": "I'm so hungry I could eat a cactus.",
+      "crowded": "There are too many of us in this meadow. The good grass is gone.",
+      "waterFar": "No river nearby… but maybe there's squirrel pee.",
+      "lonely": "Still alone. The trees don't talk back.",
+      "cold": "It's freezing out here.",
+      "old": "My knees creak when I get up.",
+      "goodGrass": "The grass is better here.",
+      "thirsty": "My tongue feels like an old shoe.",
+      "parched": "I'd give my antlers for a puddle.",
+      "arrived": "I've arrived on the island. It smells of fresh grass and a hint of pasta.",
+      "scare": {
+        "fire": "Fire! I ran without looking back.",
+        "sandFall": "It rained sand from the sky. I hate this place.",
+        "dig": "The ground opened under my hooves. That's not normal.",
+        "spring": "Water burst out of the ground! I nearly fainted.",
+        "heat": "Something is burning the ground around here. I'll keep away.",
+        "frost": "The meadow froze all of a sudden. My hooves are icicles.",
+        "glow": "Something is glowing over there. A bit scary… and I really want to look.",
+        "lightning": "Lightning! I ran without knowing where.",
+        "thunder": "Another thunderclap. My fur is standing on end.",
+        "corpse": "I saw one of us lying on the ground. I walked away."
+      },
+      "used": "The same thing again. I don't even flinch any more.",
+      "curious": {
+        "spring": "I went to see the new water. Nice and cool.",
+        "glow": "I went to see what was glowing. No idea what it is, but it's pretty."
+      },
+      "buried": "Sand fell on top of me. Everything hurts.",
+      "struck": "Lightning struck right next to me. My ears are still ringing.",
+      "grief": "I won't leave {name}. They aren't moving.",
+      "storm": "Nobody can sleep with this thunder.",
+      "stormShelter": "We've gone under the trees to wait out the storm.",
+      "rain": "I took shelter under a tree. Rain puts me in a bad mood.",
+      "siesta": "Too hot to do anything. Siesta in the shade.",
+      "digging": "I got stuck with the digging. The others watch and give opinions.",
+      "newHome": "We found an empty burrow. It smells of strangers, but it's ours now.",
+      "mated": "{name} and I... well, you know how rabbits are.",
+      "litter": "{count} kits! I named one {name}. I'll get to the rest.",
+      "rainHome": "It's raining. Off to the burrow; I'm not a duck.",
+      "sunbathe": "Came out to sunbathe by the entrance for a bit. On guard, of course.",
+      "flood": "Water in the burrow! I paddled out as best I could.",
+      "dugOut": "Someone blocked our entrance. I dug until I saw the sky.",
+      "blocked": "Something blocked the burrow entrance. It's pitch dark in here.",
+      "collapse": "Our burrow caved in on us. I got out by a whisker.",
+      "sick": "My eyes are swollen and I don't even fancy clover.",
+      "recovered": "I got over the disease. I'm practically indestructible now.",
+      "leaveHome": "I'm all grown up. Off to find a burrow of my own.",
+      "hunting": "I can smell {prey}. Dinner's on.",
+      "sawPredator": "A {predator}! I saw it in the grass.",
+      "gaveUp": "It got away. It runs faster than my patience.",
+      "standGround": "I stood my ground and showed my antlers. Come and have a go.",
+      "kicked": "Got kicked so hard I saw stars.",
+      "killed": "I caught {name}. It's nothing personal.",
+      "gorged": "I've eaten until I can't move. I'll lie down for two days.",
+      "carryMeat": "Taking a chunk back to the pups. It's heavier than it looks.",
+      "feedPups": "The pups have eaten. Not even a thank you.",
+      "relay": "I took the meat over from {name}. They were dragging their paws.",
+      "howl": "Awoooooo. (Translation: we're here and there are lots of us.)",
+      "trip": "There's nothing left to hunt here. We're off for a few days.",
+      "tripBack": "Heading home. It smells like us.",
+      "leaving": "Nothing left here. We're off to find another island.",
+      "stole": "I stole a piece from whoever caught it. They do the work; I do the digesting.",
+      "revisit": "Back where there was meat last time. Memory is a wonderful thing.",
+      "sunburnt": "The sun! It burns my skin! Who turned that on?",
+      "frozenIn": "The frost has sealed my nest. It's deadly cold in here. Literally.",
+      "killedAttacker": "It came for us and it didn't go home.",
+      "escaped": "It caught me, but I broke free. I'm bleeding a bit, but I'm still here.",
+      "feedYoung": "I brought {name} some food. Pre-chewed, but food.",
+      "freezing": "I'm so cold I can't feel my legs anymore.",
+      "overheated": "I'm roasting. I need some shade or I'll melt.",
+      "hibernating": "Zzz… (Hibernating. Nobody wake me until spring.)"
+    },
+    "tab": {
+      "status": "Status",
+      "diary": "Diary"
+    },
+    "bar": {
+      "health": "Health",
+      "rest": "Sleep",
+      "satiety": "Hunger",
+      "hydration": "Thirst",
+      "happiness": "Happiness"
+    },
+    "daysAlive": "Days alive",
+    "affects": "Affected by",
+    "day": "day {day}",
+    "order": {
+      "eat": "Eat",
+      "sleep": "Sleep",
+      "run": "Run"
+    },
+    "herd": {
+      "leader": "Leads the herd ({count})",
+      "member": "{name}'s herd ({count})",
+      "alone": "On its own",
+      "none": "No herd"
+    },
+    "cause": {
+      "starvation": "Starved to death.",
+      "dehydration": "Died of thirst.",
+      "oldAge": "Died of old age.",
+      "poison": "Died of poisoning.",
+      "exhaustion": "Died of exhaustion.",
+      "fire": "Didn't escape the fire.",
+      "lightning": "Struck by lightning.",
+      "buried": "Buried under the sand.",
+      "disease": "Died of the disease.",
+      "drowned": "Drowned in its burrow.",
+      "orphaned": "Didn't make it without its mother.",
+      "predation": "Was hunted down.",
+      "injury": "Died of its wounds."
     }
   }
 }

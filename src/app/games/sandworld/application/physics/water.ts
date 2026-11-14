@@ -1,23 +1,43 @@
-import { ChunkData, groundAt, tileIndex } from '../../domain/models/chunk.model';
+import { ChunkData, groundAt, temperatureAt, tileIndex } from '../../domain/models/chunk.model';
 import { MaterialId } from '../../domain/models/material.model';
 import { WORLD } from '../../domain/models/world.model';
 import { MATERIAL_DEFS } from '../../config/materials.config';
 import { WATER_TABLE } from '../../config/world.config';
 import {
   EDGE_DRAIN_RATE, EVAPORATION, INFILTRATION, RULE_INTERVAL_MINUTES, SOIL_DRYING, SOIL_WATER_CAPACITY,
-  STAGNANT_FLOW, WATER_FLOW_RATE, WATER_MIN, WATER_PASSES_PER_MINUTE, WATER_TABLE_RECHARGE, WATER_VISUAL_STEP,
+  HUMUS_ABSORB_MAX_DEPTH, STAGNANT_FLOW, PIPE_INERTIA, PIPE_RATE, WATER_MIN, WATER_PASSES_PER_MINUTE, WATER_TABLE_RECHARGE, WATER_VISUAL_STEP,
   WETTING_DEPTH,
 } from '../../config/water.config';
 import { CellRef, TerrainGrid } from './terrain-grid';
 import { RULES_BY_MATERIAL } from './material-rules';
+import { SPRING_BURY_DEPTH, SPRING_FREEZE_COVER } from '../../config/sand-effects.config';
+import { BURYING_SANDS } from '../../config/sands.config';
+
+/** Estado de un manantial: mana, enterrado (Duna, desprendimientos) o helado (Escarcha, invierno) */
+export type SpringState = 'open' | 'buried' | 'frozen';
+
+/** Cambio de estado de un manantial (para la crónica) */
+export interface SpringChange {
+  readonly gx: number;
+  readonly gy: number;
+  readonly state: SpringState;
+}
+
+/**
+ * Estado actual de un manantial según lo que tiene encima. La arena que acaba de caer y aún se está asentando
+ * (Duna, Humus) ya lo tapa: no hay que esperar a que se asiente para cortar el agua.
+ */
+export function springState(chunk: ChunkData, k: number): SpringState {
+  if (chunk.cover[k] >= SPRING_FREEZE_COVER) return 'frozen';
+  const pending = BURYING_SANDS.has(chunk.pendingSand[k]) ? chunk.pending[k] : 0;
+  if (groundAt(chunk, k) + pending - chunk.springBase[k] >= SPRING_BURY_DEPTH) return 'buried';
+  return 'open';
+}
 
 const NEIGHBOURS: readonly [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
-/** Cuánto se concentra el agua en la pendiente más fuerte (1 = reparto proporcional, más = cauces más definidos) */
-const FLOW_FOCUS = 3;
-
-/** Desnivel mínimo para que el agua se mueva (evita temblores de milésimas en las mesetas) */
-const MIN_DROP = 0.001;
+/** Parte del agua de una celda que puede salir en una pasada */
+const MAX_OUT_FRACTION = 0.5;
 const C = WORLD.CELLS;
 const G = WORLD.CELLS_PER_TILE;
 const MINUTE_IN_DAYS = 1 / 1440;
@@ -27,6 +47,8 @@ export interface WaterOptions {
   infiltration: boolean;
   evaporation: boolean;
   recharge: boolean;
+  /** Hielo con el frío (por defecto, sí) */
+  freezing?: boolean;
 }
 
 /**
@@ -53,15 +75,26 @@ export class WaterSystem {
   /** Celdas que han dejado caer agua por el borde en algún minuto reciente (para ponerlas a cero) */
   private readonly draining = new Set<number>();
   private minutes = 0;
-  private passes = 0;
+  private passCredit = 0;
 
   /** Celdas cuyo material ha cambiado por una regla (para despertar desprendimientos) */
   readonly transformed: [number, number][] = [];
+  /** Manantiales que se han tapado o vuelto a abrir desde la última lectura */
+  readonly springChanges: SpringChange[] = [];
+  /** Último estado conocido de cada manantial */
+  private readonly springStates = new Map<number, SpringState>();
 
   constructor(
     private readonly grid: TerrainGrid,
     private readonly options: WaterOptions = { infiltration: true, evaporation: true, recharge: true },
+    /** Desvío global de temperatura del momento (estación y hora) */
+    private readonly climateOffset: () => number = () => 0,
   ) {}
+
+  /** Celdas con agua o manantial (para el hielo de invierno) */
+  get wetKeys(): ReadonlySet<number> {
+    return this.wet;
+  }
 
   get wetCount(): number {
     return this.wet.size;
@@ -73,6 +106,7 @@ export class WaterSystem {
       const gx = chunk.cx * C + (k % C), gy = chunk.cy * C + Math.floor(k / C);
       const key = TerrainGrid.key(gx, gy);
       if (chunk.water[k] > WATER_MIN || chunk.spring[k] > 0 || groundAt(chunk, k) < WATER_TABLE) this.wet.add(key);
+      if (chunk.spring[k] > 0) this.springStates.set(key, springState(chunk, k));
       this.shown.set(key, chunk.water[k]);
     }
   }
@@ -90,7 +124,12 @@ export class WaterSystem {
     this.minutes++;
     this.clearDrains();
     this.outflow.clear();
-    for (let i = 0; i < WATER_PASSES_PER_MINUTE; i++) this.flowPass();
+    // Pasadas de este minuto (puede ser menos de una por minuto: se acumulan)
+    this.passCredit += WATER_PASSES_PER_MINUTE;
+    while (this.passCredit >= 1) {
+      this.passCredit -= 1;
+      this.flowPass();
+    }
     this.sourcesAndLosses();
     if (this.minutes % RULE_INTERVAL_MINUTES === 0) this.applyRules(RULE_INTERVAL_MINUTES * MINUTE_IN_DAYS);
     this.collectVisualChanges(changed);
@@ -99,72 +138,87 @@ export class WaterSystem {
   // ── Flujo ────────────────────────────────────────────────────────
 
   /**
-   * Una pasada de flujo, actualizando celda a celda sobre el valor ya modificado (Gauss-Seidel).
-   * Si se calculara todo a la vez, el agua de las mesetas rebotaría entre celdas vecinas y dibujaría
-   * un tablero de ajedrez; así se asienta. El orden se invierte en cada pasada para no favorecer una dirección.
+   * Una pasada de flujo con "tuberías virtuales": cada celda tiene un caudal hacia cada vecina que
+   * se acelera con el desnivel de superficie y conserva parte de la pasada anterior (inercia).
+   * Primero se calculan todos los caudales con el estado actual y después se mueve el agua, así que
+   * en cada pasada el agua avanza como mucho una celda: se ve correr como un frente continuo
+   * en lugar de saltar de golpe a charcos lejanos.
    */
   private flowPass(): void {
-    const keys = [...this.wet];
-    if (this.passes++ % 2 === 1) keys.reverse();
+    const movers: number[] = [];
 
-    for (const key of keys) {
+    // 1. Caudales
+    for (const key of this.wet) {
       const [gx, gy] = TerrainGrid.fromKey(key);
       const cell = this.grid.cell(gx, gy);
       if (!cell) continue;
-      const w = cell.chunk.water[cell.k];
-      if (w <= WATER_MIN) continue;
-
+      const c = cell.chunk, k = cell.k, f = k * 4;
+      const w = c.water[k];
+      if (w <= WATER_MIN) {
+        c.flux[f] = c.flux[f + 1] = c.flux[f + 2] = c.flux[f + 3] = 0;
+        continue;
+      }
       const surface = this.grid.ground(cell) + w;
-      const k = WATER_FLOW_RATE * MATERIAL_DEFS[cell.chunk.material[cell.k] as MaterialId].flow;
-
-      // Reparto hacia las vecinas más bajas, concentrado en la pendiente más fuerte (exponente FLOW_FOCUS):
-      // así el agua forma cauces en lugar de extenderse como una sábana por las mesetas
-      let edge = 0;
-      let maxDrop = 0;
-      let weightSum = 0;
-      const out: [CellRef, number, number, number][] = [];   // celda, gx, gy, peso
-      for (const [dx, dy] of NEIGHBOURS) {
+      const pipe = PIPE_RATE * MATERIAL_DEFS[c.material[k] as MaterialId].flow;
+      let sum = 0;
+      for (let d = 0; d < 4; d++) {
+        const [dx, dy] = NEIGHBOURS[d];
         const n = this.grid.cell(gx + dx, gy + dy);
+        let q: number;
         if (!n) {
           // Borde de lo descubierto: el agua cae al mar de nubes
-          edge += w * EDGE_DRAIN_RATE;
+          q = w * EDGE_DRAIN_RATE;
+        } else {
+          const head = surface - (this.grid.ground(n) + n.chunk.water[n.k]);
+          q = Math.max(0, c.flux[f + d] * PIPE_INERTIA + pipe * head);
+        }
+        c.flux[f + d] = q;
+        sum += q;
+      }
+      if (sum <= 0) continue;
+      // En una pasada sale como mucho la mitad del agua de la celda: si se vaciara entera, el agua
+      // avanzaría a saltos (celda llena, celda vacía...) en vez de como una lámina continua
+      const most = w * MAX_OUT_FRACTION;
+      if (sum > most) {
+        const scale = most / sum;
+        for (let d = 0; d < 4; d++) c.flux[f + d] *= scale;
+      }
+      movers.push(key);
+    }
+
+    // 2. Mover el agua (los caudales ya están limitados, el orden no importa)
+    for (const key of movers) {
+      const [gx, gy] = TerrainGrid.fromKey(key);
+      const cell = this.grid.cell(gx, gy)!;
+      const c = cell.chunk, k = cell.k, f = k * 4;
+      let total = 0;
+      for (let d = 0; d < 4; d++) {
+        let q = c.flux[f + d];
+        if (q <= 0) continue;
+        total += q;
+        const [dx, dy] = NEIGHBOURS[d];
+        const nx = gx + dx, ny = gy + dy;
+        const n = this.grid.cell(nx, ny);
+        if (!n) {
+          c.drain[k] += q;
+          this.draining.add(key);
           continue;
         }
-        const drop = surface - (this.grid.ground(n) + n.chunk.water[n.k]);
-        if (drop <= MIN_DROP) continue;
-        const weight = Math.pow(drop, FLOW_FOCUS);
-        out.push([n, gx + dx, gy + dy, weight]);
-        maxDrop = Math.max(maxDrop, drop);
-        weightSum += weight;
-      }
-      // Lo que sale hacia las vecinas: proporcional al mayor desnivel y nunca más de la mitad de ese desnivel
-      // (así no se invierte la pendiente) ni más agua de la que hay
-      const flowOut = out.length ? Math.min(k * maxDrop * 4, maxDrop / 2) : 0;
-      const total = flowOut + edge;
-      if (total <= 0) continue;
-      const scale = total > w ? w / total : 1;
-
-      for (const [n, nx, ny, weight] of out) {
-        let share = flowOut * (weight / weightSum) * scale;
         // Frente de mojado: el suelo seco se empapa antes de dejar pasar el agua
         if (this.options.infiltration && n.chunk.moisture[n.k] < 1) {
           const capacity = WETTING_DEPTH * Math.min(1, MATERIAL_DEFS[n.chunk.material[n.k] as MaterialId].permeability * 4);
           if (capacity > 0) {
-            const soak = Math.min(share, (1 - n.chunk.moisture[n.k]) * capacity);
+            const soak = Math.min(q, (1 - n.chunk.moisture[n.k]) * capacity);
             n.chunk.moisture[n.k] += soak / capacity;
-            share -= soak;
+            q -= soak;
             this.damp.add(TerrainGrid.key(nx, ny));
           }
         }
-        n.chunk.water[n.k] += share;
+        n.chunk.water[n.k] += q;
         this.wet.add(TerrainGrid.key(nx, ny));
       }
-      if (edge > 0) {
-        cell.chunk.drain[cell.k] += edge * scale;
-        this.draining.add(key);
-      }
-      cell.chunk.water[cell.k] = Math.max(0, w - total * scale);
-      this.outflow.set(key, (this.outflow.get(key) ?? 0) + total * scale);
+      c.water[k] = Math.max(0, c.water[k] - total);
+      this.outflow.set(key, (this.outflow.get(key) ?? 0) + total);
     }
   }
 
@@ -180,10 +234,20 @@ export class WaterSystem {
       }
       const c = cell.chunk, k = cell.k;
       const def = MATERIAL_DEFS[c.material[k] as MaterialId];
-      const temperature = c.temperature[tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G))];
+      const temperature = temperatureAt(c, tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G))) + this.climateOffset();
 
-      // Manantial
-      if (c.spring[k] > 0) c.water[k] += c.spring[k];
+      // Manantial: solo mana si no está enterrado ni helado
+      if (c.spring[k] > 0) {
+        const state = springState(c, k);
+        const last = this.springStates.get(key);
+        if (last !== state) {
+          this.springStates.set(key, state);
+          if (last !== undefined) this.springChanges.push({ gx, gy, state });
+        }
+        if (state === 'open') c.water[k] += c.spring[k];
+      } else if (this.springStates.has(key)) {
+        this.springStates.delete(key);
+      }
 
       // Nivel freático: rellena despacio lo que está por debajo (lagos generados)
       if (this.options.recharge) {
@@ -198,6 +262,13 @@ export class WaterSystem {
         c.water[k] -= absorbed;
         c.moisture[k] = Math.min(1, c.moisture[k] + absorbed / SOIL_WATER_CAPACITY);
         if (absorbed > 0) this.damp.add(key);
+      }
+
+      // Humus: suelo vivo que bebe la lámina fina aunque esté empapado (frena el agua que avanza por la orilla)
+      if (def.absorb && c.water[k] > 0 && c.water[k] <= HUMUS_ABSORB_MAX_DEPTH) {
+        c.water[k] = Math.max(0, c.water[k] - def.absorb);
+        c.moisture[k] = 1;
+        this.damp.add(key);
       }
 
       // Evaporación según la temperatura
@@ -227,7 +298,7 @@ export class WaterSystem {
       const c = cell.chunk, k = cell.k;
       if (c.moisture[k] <= 0) continue;
       const def = MATERIAL_DEFS[c.material[k] as MaterialId];
-      const temperature = c.temperature[tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G))];
+      const temperature = temperatureAt(c, tileIndex(Math.floor((gx - c.cx * C) / G), Math.floor((gy - c.cy * C) / G))) + this.climateOffset();
       c.moisture[k] = Math.max(0, c.moisture[k] - SOIL_DRYING * (1 - def.retention) * (0.5 + temperature));
     }
   }
@@ -263,7 +334,7 @@ export class WaterSystem {
         c.ruleTimer[k] = 0;
       }
       c.ruleTimer[k] += elapsedDays;
-      if (c.ruleTimer[k] >= rule.days) {
+      if (c.ruleTimer[k] >= (rule.daysAt ? rule.daysAt(ctx) : rule.days)) {
         c.material[k] = rule.to;
         c.ruleId[k] = 0;
         c.ruleTimer[k] = 0;
@@ -286,7 +357,10 @@ export class WaterSystem {
       stagnant: c.stagnant[k],
       deepNeighbour: deep,
       belowTable: this.grid.ground(cell) < WATER_TABLE,
-      temperature: c.temperature[t],
+      temperature: temperatureAt(c, t),
+      mudResist: MATERIAL_DEFS[c.material[k] as MaterialId].mudResist ?? 1,
+      roots: this.grid.reposeBonus?.(cell) ?? 0,
+      jitter: cellJitter(gx, gy),
     };
   }
 
@@ -304,23 +378,35 @@ export class WaterSystem {
 
   /** Chunks con algún cambio de agua visible desde el último dibujo */
   private collectVisualChanges(changed: Set<string>): void {
-    for (const key of new Set([...this.wet, ...this.shownDrain])) {
-      const [gx, gy] = TerrainGrid.fromKey(key);
-      const cell = this.grid.cell(gx, gy);
-      if (!cell) continue;
-      const w = cell.chunk.water[cell.k];
-      const last = this.shown.get(key) ?? 0;
-      if (Math.abs(w - last) >= WATER_VISUAL_STEP || (w > WATER_MIN) !== (last > WATER_MIN)) {
-        this.shown.set(key, w);
-        changed.add(`${cell.chunk.cx},${cell.chunk.cy}`);
-      }
-      // Una cascada de borde solo se vuelve a dibujar cuando empieza o se acaba
-      const draining = cell.chunk.drain[cell.k] > WATER_MIN;
-      if (draining !== this.shownDrain.has(key)) {
-        if (draining) this.shownDrain.add(key);
-        else this.shownDrain.delete(key);
-        changed.add(`${cell.chunk.cx},${cell.chunk.cy}`);
-      }
+    // Las de agua y, aparte, las cascadas que se estaban dibujando (sin crear un conjunto nuevo cada minuto: mirar
+    // dos veces la misma celda no cambia nada)
+    for (const key of this.wet) this.visualChange(key, changed);
+    for (const key of this.shownDrain) if (!this.wet.has(key)) this.visualChange(key, changed);
+  }
+
+  private visualChange(key: number, changed: Set<string>): void {
+    const [gx, gy] = TerrainGrid.fromKey(key);
+    const cell = this.grid.cell(gx, gy);
+    if (!cell) return;
+    const w = cell.chunk.water[cell.k];
+    const last = this.shown.get(key) ?? 0;
+    if (Math.abs(w - last) >= WATER_VISUAL_STEP || (w > WATER_MIN) !== (last > WATER_MIN)) {
+      this.shown.set(key, w);
+      changed.add(`${cell.chunk.cx},${cell.chunk.cy}`);
+    }
+    // Una cascada de borde solo se vuelve a dibujar cuando empieza o se acaba
+    const draining = cell.chunk.drain[cell.k] > WATER_MIN;
+    if (draining !== this.shownDrain.has(key)) {
+      if (draining) this.shownDrain.add(key);
+      else this.shownDrain.delete(key);
+      changed.add(`${cell.chunk.cx},${cell.chunk.cy}`);
     }
   }
+}
+
+/** Azar fijo por celda (0..1) */
+function cellJitter(gx: number, gy: number): number {
+  let h = Math.imul(gx, 374761393) ^ Math.imul(gy, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }

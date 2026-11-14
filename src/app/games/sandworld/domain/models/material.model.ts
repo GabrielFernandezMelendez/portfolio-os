@@ -27,6 +27,8 @@ export type MaterialId = (typeof Material)[keyof typeof Material];
  * - fuel:         cuánto alimenta un fuego (0 = no arde)
  * - maxLoad:      peso de animal que aguanta sin hundirse (Infinity = firme); lo usa la fauna en la fase 4
  * - flow:         velocidad relativa del agua que corre por encima (roca rápida, barro lento)
+ * - absorb:       agua (niveles por minuto) que bebe sin llenarse nunca: suelo vivo que hace de esponja (humus)
+ * - mudResist:    cuánto más tarda en embarrarse con agua estancada (1 = lo normal)
  */
 export interface MaterialProps {
   readonly weight: number;
@@ -38,6 +40,8 @@ export interface MaterialProps {
   readonly fuel: number;
   readonly maxLoad: number;
   readonly flow: number;
+  readonly absorb?: number;
+  readonly mudResist?: number;
 }
 
 /** Definición completa: física + aspecto (nombres de rampas de config/palette.config.ts) */
